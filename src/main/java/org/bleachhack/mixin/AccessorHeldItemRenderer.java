@@ -17,21 +17,21 @@ import net.minecraft.world.item.ItemStack;
 @Mixin(ItemInHandRenderer.class)
 public interface AccessorHeldItemRenderer {
 
-	@Accessor
+	@Accessor("mainHandItem")
 	void setMainHand(ItemStack value);
 
-	@Accessor
+	@Accessor("offHandItem")
 	void setOffHand(ItemStack value);
 
-	@Accessor
+	@Accessor("mainHandHeight")
 	float getEquipProgressMainHand();
 
-	@Accessor
+	@Accessor("mainHandHeight")
 	void setEquipProgressMainHand(float value);
 
-	@Accessor
+	@Accessor("offHandHeight")
 	float getEquipProgressOffHand();
 
-	@Accessor
+	@Accessor("offHandHeight")
 	void setEquipProgressOffHand(float value);
 }

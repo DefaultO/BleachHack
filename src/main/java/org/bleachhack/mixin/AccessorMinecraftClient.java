@@ -16,6 +16,6 @@ import net.minecraft.client.Minecraft;
 @Mixin(Minecraft.class)
 public interface AccessorMinecraftClient {
 
-	@Accessor
+	@Accessor("rightClickDelay")
 	public abstract int getItemUseCooldown();
 }
