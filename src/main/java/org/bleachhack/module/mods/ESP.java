@@ -20,14 +20,9 @@ import org.bleachhack.setting.module.SettingSlider;
 import org.bleachhack.setting.module.SettingToggle;
 import org.bleachhack.util.render.Renderer;
 import org.bleachhack.util.render.color.QuadColor;
-import org.bleachhack.util.shader.BleachCoreShaders;
-import org.bleachhack.util.shader.ColorVertexConsumerProvider;
-import org.bleachhack.util.shader.ShaderEffectWrapper;
-import org.bleachhack.util.shader.ShaderLoader;
 import org.bleachhack.util.world.EntityUtils;
 
-import com.google.gson.JsonSyntaxException;
-
+import net.minecraft.util.ARGB;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.decoration.ArmorStand;
@@ -36,12 +31,8 @@ import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.vehicle.minecart.AbstractMinecart;
 import net.minecraft.world.entity.vehicle.boat.Boat;
-import net.minecraft.resources.Identifier;
 
 public class ESP extends Module {
-
-	private ShaderEffectWrapper shader;
-	private ColorVertexConsumerProvider colorVertexer;
 
 	public ESP() {
 		super("ESP", KEY_UNBOUND, ModuleCategory.RENDER, "Highlights Entities in the world.",
@@ -71,56 +62,44 @@ public class ESP extends Module {
 
 				new SettingToggle("Armorstands", false).withDesc("Highlights armor stands.").withChildren(
 						new SettingColor("Color", 160, 150, 50).withDesc("Outline color for armor stands.")));
-		
-		try {
-			// TODO(26.2): shaders are data-driven now, the shader util classes are inert stubs - shader mode is a no-op.
-			shader = new ShaderEffectWrapper(
-					ShaderLoader.loadEffect(mc.gameRenderer.mainRenderTarget(), Identifier.fromNamespaceAndPath("bleachhack", "shaders/post/entity_outline.json")));
-
-			colorVertexer = new ColorVertexConsumerProvider(shader.getFramebuffer("main"), BleachCoreShaders::getColorOverlayShader);
-		} catch (JsonSyntaxException e) {
-			throw new RuntimeException("Failed to initialize ESP Shader! loaded too early?", e);
-		}
 	}
 
+	/**
+	 * Shader mode: hand the entity an outline color during render-state extraction.
+	 * 26.2 then draws it into the entity_outline framebuffer and the sobel + box-blur
+	 * post chain turns that into a glow - the same GPU path vanilla uses for glowing
+	 * entities, so it renders through walls and follows the model silhouette exactly.
+	 */
 	@BleachSubscribe
-	public void onWorldRender(EventWorldRender.Pre event) {
-		shader.prepare();
-		shader.clearFramebuffer("main");
-	}
-
-	@BleachSubscribe
-	public void onEntityRender(EventEntityRender.Single.Pre event) {
+	public void onEntityOutline(EventEntityRender.Single.Outline event) {
 		if (getSetting(0).asMode().getMode() != 0)
 			return;
 
 		int[] color = getColor(event.getEntity());
 
 		if (color != null) {
-			event.setVertex(colorVertexer.createDualProvider(event.getVertex(), color[0], color[1], color[2], getSetting(1).asSlider().getValueInt()));
+			// Must be opaque: the sobel pass edge-detects on alpha.
+			event.setColor(ARGB.color(255, color[0], color[1], color[2]));
 		}
 	}
 
 	@BleachSubscribe
 	public void onWorldRender(EventWorldRender.Post event) {
-		if (getSetting(0).asMode().getMode() == 0) {
-			colorVertexer.draw();
-			shader.render();
-			shader.drawFramebufferToMain("main");
-		} else {
-			float width = getSetting(2).asSlider().getValueFloat();
-			int fill = getSetting(3).asSlider().getValueInt();
+		if (getSetting(0).asMode().getMode() == 0)
+			return;
 
-			for (Entity e: mc.level.entitiesForRendering()) {
-				int[] color = getColor(e);
+		float width = getSetting(2).asSlider().getValueFloat();
+		int fill = getSetting(3).asSlider().getValueInt();
 
-				if (color != null) {
-					if (width != 0)
-						Renderer.drawBoxOutline(e.getBoundingBox(), QuadColor.single(color[0], color[1], color[2], 255), width);
+		for (Entity e: mc.level.entitiesForRendering()) {
+			int[] color = getColor(e);
 
-					if (fill != 0)
-						Renderer.drawBoxFill(e.getBoundingBox(), QuadColor.single(color[0], color[1], color[2], fill));
-				}
+			if (color != null) {
+				if (width != 0)
+					Renderer.drawBoxOutline(e.getBoundingBox(), QuadColor.single(color[0], color[1], color[2], 255), width);
+
+				if (fill != 0)
+					Renderer.drawBoxFill(e.getBoundingBox(), QuadColor.single(color[0], color[1], color[2], fill));
 			}
 		}
 	}

@@ -21,6 +21,19 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(EntityRenderer.class)
 public abstract class MixinEntityRenderer<T extends Entity, S extends EntityRenderState> {
 
+	// Glow ESP: 26.2 draws any entity whose render state has a non-zero outlineColor into the
+	// entity_outline framebuffer, which the sobel + box-blur post chain turns into a glow.
+	// Injecting after vanilla's own assignment lets modules override the color per entity.
+	@Inject(method = "extractRenderState(Lnet/minecraft/world/entity/Entity;Lnet/minecraft/client/renderer/entity/state/EntityRenderState;F)V", at = @At("TAIL"))
+	private void extractRenderState(T entity, S state, float partialTicks, CallbackInfo info) {
+		EventEntityRender.Single.Outline event = new EventEntityRender.Single.Outline(entity);
+		BleachHack.eventBus.post(event);
+
+		if (event.getColor() != null) {
+			state.outlineColor = event.getColor();
+		}
+	}
+
 	// TODO(26.2): renderLabelIfPresent no longer exists; name tags are extracted into the render state
 	// (extractNameTags) and submitted later without access to the entity. The Label event is therefore
 	// posted during extraction, with null matrices/vertex (no consumer uses them), and cancelling clears

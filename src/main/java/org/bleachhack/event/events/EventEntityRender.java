@@ -63,6 +63,29 @@ public class EventEntityRender extends Event {
 			}
 		}
 
+		/**
+		 * Fired while an entity's render state is extracted, so modules can give it a
+		 * glow outline. 26.2 renders any entity with a non-zero outlineColor into the
+		 * entity_outline framebuffer, which the sobel+blur post chain turns into a glow.
+		 * Color must be opaque (the sobel pass keys off alpha).
+		 */
+		public static class Outline extends Single {
+
+			private Integer color;
+
+			public Outline(Entity entity) {
+				this.entity = entity;
+			}
+
+			public Integer getColor() {
+				return color;
+			}
+
+			public void setColor(int color) {
+				this.color = color;
+			}
+		}
+
 		public static class Label extends Single {
 
 			public Label(Entity entity, PoseStack matrices, SubmitNodeCollector vertex) {
