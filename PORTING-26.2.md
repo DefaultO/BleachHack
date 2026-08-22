@@ -19,10 +19,22 @@ Build: `./gradlew build` → `build/libs/bleachhack-1.2.6.jar`.
 
 ## Status
 
-All 316 source files compile against 26.2 and the mod jar builds. Roughly 90%
-of features carried over with no behavior change. The rest fall into the buckets
-below; **nothing was deleted** — degraded paths are stubbed with `// TODO(26.2):`
-markers (grep for them, ~57 across ~45 files) so you can decide.
+All 316 source files compile against 26.2, the mod jar builds, and **the client
+boots to the BleachHack title screen and runs** (`./gradlew runClient`). Getting
+there past the compile took a second pass of runtime fixes — mixin apply-time
+failures (targets renamed/removed in 26.2; a class-mixin can't target the now-
+interface `DeltaTracker`) and a 26.2 quirk where **item data-components bind late**
+(after the title screen appears), so any `ItemStack` built in `postInit` or an
+early `screen.init` threw "Components not bound yet". All icon construction is now
+lazy via `util/SafeItem` (returns EMPTY until bound, self-heals next frame).
+
+Roughly 90% of features carried over with no behavior change. The rest fall into
+the buckets below; **nothing was deleted** — degraded paths are stubbed with
+`// TODO(26.2):` markers (grep for them, ~57 across ~45 files) so you can decide.
+
+Not yet exercised in-game: actual module behavior (ESP, combat, movement, etc.)
+against a live server — the title screen and GUI pipeline are confirmed, but the
+modules themselves need a play-test on a 26.2 server.
 
 ---
 
@@ -96,7 +108,6 @@ I'll review/handle it. Nothing dupe-related was removed.
 
 ## Not yet done
 
-- No runtime/in-game test yet (needs a 26.2 client launch + a server). Compile
-  and mixin-AP validation pass; runtime behavior of the reworked mixins/rendering
-  still needs a play-test.
+- In-game module play-test on a live 26.2 server (title screen + GUI confirmed;
+  module runtime behavior not yet exercised).
 - The stubbed features above.
