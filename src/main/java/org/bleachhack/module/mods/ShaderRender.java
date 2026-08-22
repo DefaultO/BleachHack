@@ -18,6 +18,7 @@ import org.bleachhack.eventbus.BleachSubscribe;
 import org.bleachhack.module.Module;
 import org.bleachhack.module.ModuleCategory;
 import org.bleachhack.setting.module.SettingMode;
+import org.bleachhack.util.shader.SafePostChain;
 
 import net.minecraft.resources.Identifier;
 
@@ -44,10 +45,10 @@ public class ShaderRender extends Module {
 
 	@BleachSubscribe
 	public void onWorldRender(EventRenderShader event) {
-		// TODO(26.2): post effects are data-driven (post_effect/<id>.json) and loaded/cached by the
-		// ShaderManager; vanilla only ships a few of the old 1.7 shaders (e.g. creeper, spider, invert),
-		// missing ones resolve to null which simply disables the effect.
-		event.setEffect(mc.getShaderManager().getPostChain(shaders.get(getSetting(0).asMode().getMode()), LevelTargetBundle.MAIN_TARGETS));
+		// 26.2 only ships a few of the old 1.7 post effects (creeper, spider, invert...). Asking the
+		// ShaderManager for a missing one crashes the game, so go through SafePostChain, which
+		// checks the resource exists first and returns null (effect simply off) when it doesn't.
+		event.setEffect(SafePostChain.get(shaders.get(getSetting(0).asMode().getMode()), LevelTargetBundle.MAIN_TARGETS));
 	}
 
 }

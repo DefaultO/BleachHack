@@ -16,6 +16,7 @@ import net.minecraft.client.renderer.ShaderManager;
 import net.minecraft.resources.Identifier;
 import org.bleachhack.module.ModuleManager;
 import org.bleachhack.module.mods.ESP;
+import org.bleachhack.util.shader.SafePostChain;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -42,7 +43,9 @@ public class MixinWorldRenderer {
 	@Redirect(method = "render", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/ShaderManager;getPostChain(Lnet/minecraft/resources/Identifier;Ljava/util/Set;)Lnet/minecraft/client/renderer/PostChain;"))
 	private @Nullable PostChain render_getPostChain(ShaderManager shaderManager, Identifier id, Set<Identifier> allowedTargets) {
 		if (ESP.isShaderModeActive()) {
-			PostChain custom = shaderManager.getPostChain(BLEACHHACK_OUTLINE, allowedTargets);
+			// Must go through SafePostChain: asking the ShaderManager for a chain that isn't
+			// installed crashes the game instead of returning null.
+			PostChain custom = SafePostChain.get(BLEACHHACK_OUTLINE, allowedTargets);
 
 			if (custom != null) {
 				return custom;
