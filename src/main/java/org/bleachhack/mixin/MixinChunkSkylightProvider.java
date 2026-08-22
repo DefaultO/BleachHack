@@ -20,7 +20,7 @@ import net.minecraft.world.level.lighting.SkyLightEngine;
 @Mixin(SkyLightEngine.class)
 public class MixinChunkSkylightProvider {
 
-	@Inject(at = @At("HEAD"), method = "method_51531", cancellable = true)
+	@Inject(at = @At("HEAD"), method = "propagateIncrease", cancellable = true)
 	private void recalculateLevel(long blockPos, long l, int lightLevel, CallbackInfo ci) {
 		if (ModuleManager.getModule(NoRender.class).isWorldToggled(4)) {
 			ci.cancel();

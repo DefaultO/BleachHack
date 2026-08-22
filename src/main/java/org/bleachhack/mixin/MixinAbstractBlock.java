@@ -22,8 +22,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(BlockBehaviour.class)
 public class MixinAbstractBlock {
 
-	@Inject(method = "getAmbientOcclusionLightLevel", at = @At("HEAD"), cancellable = true)
-	private void getAmbientOcclusionLightLevel(BlockState state, BlockGetter world, BlockPos pos, CallbackInfoReturnable<Float> callback) {
+	@Inject(method = "getShadeBrightness", at = @At("HEAD"), cancellable = true)
+	private void getShadeBrightness(BlockState state, BlockGetter world, BlockPos pos, CallbackInfoReturnable<Float> callback) {
 		EventRenderBlock.Light event = new EventRenderBlock.Light(state);
 		BleachHack.eventBus.post(event);
 

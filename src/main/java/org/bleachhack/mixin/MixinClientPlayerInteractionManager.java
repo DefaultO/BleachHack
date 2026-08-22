@@ -31,36 +31,36 @@ import net.minecraft.core.Direction;
 @Mixin(MultiPlayerGameMode.class)
 public class MixinClientPlayerInteractionManager {
 
-	@Shadow private int blockBreakingCooldown;
+	@Shadow private int destroyDelay;
 
-	@Redirect(method = "updateBlockBreakingProgress", at = @At(value = "FIELD", target = "Lnet/minecraft/client/network/MultiPlayerGameMode;blockBreakingCooldown:I", ordinal = 3),
+	@Redirect(method = "continueDestroyBlock", at = @At(value = "FIELD", target = "Lnet/minecraft/client/multiplayer/MultiPlayerGameMode;destroyDelay:I", ordinal = 3),
 			require = 0 /* TODO: meteor compatibility */)
 	private void updateBlockBreakingProgress(MultiPlayerGameMode clientPlayerInteractionManager, int newCooldown) {
 		EventBlockBreakCooldown event = new EventBlockBreakCooldown(newCooldown);
 		BleachHack.eventBus.post(event);
 
-		this.blockBreakingCooldown = event.getCooldown();
+		this.destroyDelay = event.getCooldown();
 	}
 
-	@Redirect(method = "updateBlockBreakingProgress", at = @At(value = "FIELD", target = "Lnet/minecraft/client/network/MultiPlayerGameMode;blockBreakingCooldown:I", ordinal = 4),
+	@Redirect(method = "continueDestroyBlock", at = @At(value = "FIELD", target = "Lnet/minecraft/client/multiplayer/MultiPlayerGameMode;destroyDelay:I", ordinal = 4),
 			require = 0 /* TODO: meteor compatibility */)
 	private void updateBlockBreakingProgress2(MultiPlayerGameMode clientPlayerInteractionManager, int newCooldown) {
 		EventBlockBreakCooldown event = new EventBlockBreakCooldown(newCooldown);
 		BleachHack.eventBus.post(event);
 
-		this.blockBreakingCooldown = event.getCooldown();
+		this.destroyDelay = event.getCooldown();
 	}
 
-	@Redirect(method = "attackBlock", at = @At(value = "FIELD", target = "Lnet/minecraft/client/network/MultiPlayerGameMode;blockBreakingCooldown:I"),
+	@Redirect(method = "startDestroyBlock", at = @At(value = "FIELD", target = "Lnet/minecraft/client/multiplayer/MultiPlayerGameMode;destroyDelay:I"),
 			require = 0 /* TODO: meteor compatibility */)
 	private void attackBlock(MultiPlayerGameMode clientPlayerInteractionManager, int newCooldown) {
 		EventBlockBreakCooldown event = new EventBlockBreakCooldown(newCooldown);
 		BleachHack.eventBus.post(event);
 
-		this.blockBreakingCooldown = event.getCooldown();
+		this.destroyDelay = event.getCooldown();
 	}
 
-	@Inject(method = "breakBlock", at = @At("HEAD"), cancellable = true)
+	@Inject(method = "destroyBlock", at = @At("HEAD"), cancellable = true)
 	private void breakBlock(BlockPos pos, CallbackInfoReturnable<Boolean> callback) {
 		EventInteract.BreakBlock event = new EventInteract.BreakBlock(pos);
 		BleachHack.eventBus.post(event);
@@ -70,7 +70,7 @@ public class MixinClientPlayerInteractionManager {
 		}
 	}
 
-	@Inject(method = { "attackBlock", "updateBlockBreakingProgress" }, at = @At("HEAD"), cancellable = true)
+	@Inject(method = { "startDestroyBlock", "continueDestroyBlock" }, at = @At("HEAD"), cancellable = true)
 	private void attackBlock(BlockPos pos, Direction direction, CallbackInfoReturnable<Boolean> callback) {
 		EventInteract.AttackBlock event = new EventInteract.AttackBlock(pos, direction);
 		BleachHack.eventBus.post(event);
@@ -80,7 +80,7 @@ public class MixinClientPlayerInteractionManager {
 		}
 	}
 
-	@Inject(method = "interactBlock", at = @At("HEAD"), cancellable = true)
+	@Inject(method = "useItemOn", at = @At("HEAD"), cancellable = true)
 	private void interactBlock(LocalPlayer player, InteractionHand hand, BlockHitResult hitResult, CallbackInfoReturnable<InteractionResult> callback) {
 		EventInteract.InteractBlock event = new EventInteract.InteractBlock(hand, hitResult);
 		BleachHack.eventBus.post(event);
@@ -90,7 +90,7 @@ public class MixinClientPlayerInteractionManager {
 		}
 	}
 
-	@Inject(method = "interactItem", at = @At("HEAD"), cancellable = true)
+	@Inject(method = "useItem", at = @At("HEAD"), cancellable = true)
 	private void interactItem(Player player, InteractionHand hand, CallbackInfoReturnable<InteractionResult> callback) {
 		EventInteract.InteractItem event = new EventInteract.InteractItem(hand);
 		BleachHack.eventBus.post(event);
@@ -100,11 +100,13 @@ public class MixinClientPlayerInteractionManager {
 		}
 	}
 
-	@Inject(method = "getReachDistance", at = @At("RETURN"), cancellable = true)
-	private void getReachDistance(CallbackInfoReturnable<Float> callback) {
-		EventReach event = new EventReach(callback.getReturnValueF());
-		BleachHack.eventBus.post(event);
-
-		callback.setReturnValue(event.getReach());
-	}
+	// TODO(26.2): MultiPlayerGameMode#getReachDistance was removed; reach is now a Player attribute
+	// (Attributes.BLOCK_INTERACTION_RANGE / ENTITY_INTERACTION_RANGE). EventReach must hook there instead.
+	// @Inject(method = "getReachDistance", at = @At("RETURN"), cancellable = true)
+	// private void getReachDistance(CallbackInfoReturnable<Float> callback) {
+	// 	EventReach event = new EventReach(callback.getReturnValueF());
+	// 	BleachHack.eventBus.post(event);
+	//
+	// 	callback.setReturnValue(event.getReach());
+	// }
 }

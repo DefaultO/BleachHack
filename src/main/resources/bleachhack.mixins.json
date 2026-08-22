@@ -53,7 +53,7 @@
     "MixinScreen",
     "MixinServerScreen",
     "MixinShader",
-    "MixinSharedConstants",
+    "MixinStringUtil",
     "MixinSoundSystem",
     "MixinTitleScreen",
     "MixinWorldRenderer"

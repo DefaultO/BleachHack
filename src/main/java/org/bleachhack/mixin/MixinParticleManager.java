@@ -22,7 +22,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(ParticleEngine.class)
 public class MixinParticleManager {
 
-	@Inject(method = "addParticle(Lnet/minecraft/client/particle/Particle;)V", at = @At("HEAD"), cancellable = true)
+	@Inject(method = "add(Lnet/minecraft/client/particle/Particle;)V", at = @At("HEAD"), cancellable = true)
 	private void addParticle(Particle particle, CallbackInfo callback) {
 		EventParticle.Normal event = new EventParticle.Normal(particle);
 		BleachHack.eventBus.post(event);
@@ -32,7 +32,7 @@ public class MixinParticleManager {
 		}
 	}
 
-	@Inject(method = "addEmitter(Lnet/minecraft/entity/Entity;Lnet/minecraft/particle/ParticleOptions;)V", at = @At("HEAD"), cancellable = true)
+	@Inject(method = "createTrackingEmitter(Lnet/minecraft/world/entity/Entity;Lnet/minecraft/core/particles/ParticleOptions;)V", at = @At("HEAD"), cancellable = true)
 	private void addEmitter(Entity entity, ParticleOptions particleEffect, CallbackInfo callback) {
 		EventParticle.Emitter event = new EventParticle.Emitter(particleEffect);
 		BleachHack.eventBus.post(event);
@@ -42,7 +42,7 @@ public class MixinParticleManager {
 		}
 	}
 
-	@Inject(method = "addEmitter(Lnet/minecraft/entity/Entity;Lnet/minecraft/particle/ParticleOptions;I)V", at = @At("HEAD"), cancellable = true)
+	@Inject(method = "createTrackingEmitter(Lnet/minecraft/world/entity/Entity;Lnet/minecraft/core/particles/ParticleOptions;I)V", at = @At("HEAD"), cancellable = true)
 	private void addEmitter_(Entity entity, ParticleOptions particleEffect, int maxAge, CallbackInfo callback) {
 		EventParticle.Emitter event = new EventParticle.Emitter(particleEffect);
 		BleachHack.eventBus.post(event);

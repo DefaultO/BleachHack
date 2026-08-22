@@ -8,18 +8,19 @@
  */
 package org.bleachhack.mixin;
 
-import net.minecraft.SharedConstants;
+import net.minecraft.util.StringUtil;
 import org.bleachhack.module.Module;
 import org.bleachhack.module.ModuleManager;
 import org.bleachhack.module.mods.NoKeyBlock;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 
-@Mixin(SharedConstants.class)
-public class MixinSharedConstants {
+// 26.2: SharedConstants.isValidChar(char) -> StringUtil.isAllowedChatCharacter(int)
+@Mixin(StringUtil.class)
+public class MixinStringUtil {
 
 	@Overwrite
-	public static boolean isValidChar(char chr) {
+	public static boolean isAllowedChatCharacter(int chr) {
 		Module noKeyBlock = ModuleManager.getModule(NoKeyBlock.class);
 
 		if (!noKeyBlock.isEnabled()) {

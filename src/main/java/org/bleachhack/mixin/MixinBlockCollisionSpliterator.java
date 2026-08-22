@@ -20,15 +20,16 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.level.BlockCollisions;
-import net.minecraft.world.level.BlockGetter;
+import net.minecraft.world.level.CollisionGetter;
 
 @Mixin(BlockCollisions.class)
 public class MixinBlockCollisionSpliterator {
 
-	@Redirect(method = "computeNext", at = @At(value = "INVOKE", target = "Lnet/minecraft/block/BlockState;getCollisionShape(Lnet/minecraft/world/BlockGetter;Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/block/CollisionContext;)Lnet/minecraft/util/shape/VoxelShape;"))
-	private VoxelShape computeNext_getCollisionShape(BlockState blockState, BlockGetter world, BlockPos pos, CollisionContext context) {
-		VoxelShape shape = blockState.getCollisionShape(world, pos, context);
-		EventBlockShape event = new EventBlockShape((BlockState) blockState, pos, shape);
+	// 26.2: collision shape now fetched via context.getCollisionShape(state, getter, pos).
+	@Redirect(method = "computeNext", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/phys/shapes/CollisionContext;getCollisionShape(Lnet/minecraft/world/level/block/state/BlockState;Lnet/minecraft/world/level/CollisionGetter;Lnet/minecraft/core/BlockPos;)Lnet/minecraft/world/phys/shapes/VoxelShape;"))
+	private VoxelShape computeNext_getCollisionShape(CollisionContext context, BlockState blockState, CollisionGetter getter, BlockPos pos) {
+		VoxelShape shape = context.getCollisionShape(blockState, getter, pos);
+		EventBlockShape event = new EventBlockShape(blockState, pos, shape);
 		BleachHack.eventBus.post(event);
 
 		if (event.isCancelled()) {

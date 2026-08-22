@@ -18,21 +18,24 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(SoundEngine.class)
 public class MixinSoundSystem {
 
-	@Inject(method = "play(Lnet/minecraft/client/sound/SoundInstance;)V", at = @At("HEAD"), cancellable = true)
-	private void play(SoundInstance soundInstance, CallbackInfo ci) {
+	// 26.2: play(SoundInstance) now returns SoundEngine.PlayResult, so cancel via setReturnValue(NOT_STARTED).
+	@Inject(method = "play", at = @At("HEAD"), cancellable = true)
+	private void play(SoundInstance soundInstance, CallbackInfoReturnable<SoundEngine.PlayResult> cir) {
 		EventSoundPlay.Normal event = new EventSoundPlay.Normal(soundInstance);
 		BleachHack.eventBus.post(event);
 
 		if (event.isCancelled()) {
-			ci.cancel();
+			cir.setReturnValue(SoundEngine.PlayResult.NOT_STARTED);
 		}
 	}
 
-	@Inject(method = "play(Lnet/minecraft/client/sound/SoundInstance;I)V", at = @At("HEAD"), cancellable = true)
+	// 26.2: Yarn play(SoundInstance, int) renamed to playDelayed(SoundInstance, int).
+	@Inject(method = "playDelayed", at = @At("HEAD"), cancellable = true)
 	private void play(SoundInstance soundInstance, int delay, CallbackInfo ci) {
 		EventSoundPlay.Normal event = new EventSoundPlay.Normal(soundInstance);
 		BleachHack.eventBus.post(event);
@@ -42,7 +45,8 @@ public class MixinSoundSystem {
 		}
 	}
 
-	@Inject(method = "playNextTick", at = @At("HEAD"), cancellable = true)
+	// 26.2: Yarn playNextTick(TickableSoundInstance) renamed to queueTickingSound(TickableSoundInstance).
+	@Inject(method = "queueTickingSound", at = @At("HEAD"), cancellable = true)
 	private void playNextTick(TickableSoundInstance sound, CallbackInfo ci) {
 		EventSoundPlay.Normal event = new EventSoundPlay.Normal(sound);
 		BleachHack.eventBus.post(event);
@@ -52,7 +56,8 @@ public class MixinSoundSystem {
 		}
 	}
 
-	@Inject(method = "addPreloadedSound", at = @At("HEAD"), cancellable = true)
+	// 26.2: Yarn addPreloadedSound(Sound) renamed to requestPreload(Sound).
+	@Inject(method = "requestPreload", at = @At("HEAD"), cancellable = true)
 	private void addPreloadedSound(Sound sound, CallbackInfo ci) {
 		EventSoundPlay.Preloaded event = new EventSoundPlay.Preloaded(sound);
 		BleachHack.eventBus.post(event);

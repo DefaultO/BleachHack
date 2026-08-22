@@ -20,7 +20,7 @@ import org.spongepowered.asm.mixin.injection.invoke.arg.Args;
 @Mixin(Entity.class)
 public class MixinEntity {
 
-	@ModifyArgs(method = "pushAwayFrom", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/Entity;addVelocity(DDD)V"))
+	@ModifyArgs(method = "push(Lnet/minecraft/world/entity/Entity;)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/Entity;push(DDD)V"))
 	private void pushAwayFrom_addVelocity(Args args) {
 		if ((Object) this == Minecraft.getInstance().player) {
 			EventPlayerPushed event = new EventPlayerPushed(args.get(0), args.get(1), args.get(2));

@@ -15,22 +15,22 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.ScreenEffectRenderer;
-import com.mojang.blaze3d.vertex.PoseStack;
 
 @Mixin(ScreenEffectRenderer.class)
 public class MixinInGameOverlayRenderer {
 
-	@Inject(method = "renderFireOverlay", at = @At("HEAD"), cancellable = true)
-	private static void onRenderFireOverlay(Minecraft minecraftClient, PoseStack matrixStack, CallbackInfo ci) {
+	// 26.2: renderFireOverlay -> submitFire (deferred-submit pipeline)
+	@Inject(method = "submitFire", at = @At("HEAD"), cancellable = true)
+	private static void onRenderFireOverlay(CallbackInfo ci) {
 		if (ModuleManager.getModule(NoRender.class).isOverlayToggled(1)) {
 			ci.cancel();
 		}
 	}
 
-	@Inject(method = "renderUnderwaterOverlay", at = @At("HEAD"), cancellable = true)
-	private static void onRenderUnderwaterOverlay(Minecraft minecraftClient, PoseStack matrixStack, CallbackInfo ci) {
+	// 26.2: renderUnderwaterOverlay -> submitWater
+	@Inject(method = "submitWater", at = @At("HEAD"), cancellable = true)
+	private static void onRenderUnderwaterOverlay(CallbackInfo ci) {
 		if (ModuleManager.getModule(NoRender.class).isOverlayToggled(3)) {
 			ci.cancel();
 		}

@@ -8,36 +8,38 @@
  */
 package org.bleachhack.mixin;
 
+import it.unimi.dsi.fastutil.floats.FloatUnaryOperator;
+import net.minecraft.client.DeltaTracker;
 import org.bleachhack.module.ModuleManager;
 import org.bleachhack.module.mods.Timer;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-import net.minecraft.client.DeltaTracker;
-
-@Mixin(DeltaTracker.class)
+// 26.2: RenderTickCounter -> DeltaTracker interface; the timing logic lives in the Timer impl.
+@Mixin(DeltaTracker.Timer.class)
 public class MixinRenderTickCounter {
 
-	@Shadow private float lastFrameDuration;
-	@Shadow private float tickDelta;
-	@Shadow private long prevTimeMillis;
-	@Shadow private float tickTime;
+	@Shadow private float deltaTicks;
+	@Shadow private float deltaTickResidual;
+	@Shadow private long lastMs;
+	@Shadow @Final private float msPerTick;
+	@Shadow @Final private FloatUnaryOperator targetMsptProvider;
 
-	@Inject(method = "beginRenderTick", at = @At("HEAD"), cancellable = true)
-	private void beginRenderTick(long timeMillis, CallbackInfoReturnable<Integer> ci) {
+	@Inject(method = "advanceGameTime", at = @At("HEAD"), cancellable = true)
+	private void advanceGameTime(long currentMs, CallbackInfoReturnable<Integer> ci) {
 		if (ModuleManager.getModule(Timer.class).isEnabled()) {
-			this.lastFrameDuration = (float) (((timeMillis - this.prevTimeMillis) / this.tickTime)
+			this.deltaTicks = (float) ((currentMs - this.lastMs) / this.targetMsptProvider.apply(this.msPerTick)
 					* ModuleManager.getModule(Timer.class).getSetting(0).asSlider().getValue());
-			this.prevTimeMillis = timeMillis;
-			this.tickDelta += this.lastFrameDuration;
-			int i = (int) this.tickDelta;
-			this.tickDelta -= i;
+			this.lastMs = currentMs;
+			this.deltaTickResidual += this.deltaTicks;
+			int ticks = (int) this.deltaTickResidual;
+			this.deltaTickResidual -= ticks;
 
-			ci.setReturnValue(i);
+			ci.setReturnValue(ticks);
 		}
 	}
-
 }
