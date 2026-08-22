@@ -55,4 +55,17 @@ public class MixinCamera {
 			}
 		}
 	}
+
+	/**
+	 * Zoom by dividing the camera's own field of view. options.fov() clamps to the
+	 * 30-110 slider range, which would cap zoom at roughly 2.3x.
+	 */
+	@Inject(method = "calculateFov", at = @At("RETURN"), cancellable = true)
+	private void calculateFov(float partialTicks, CallbackInfoReturnable<Float> callback) {
+		float divisor = org.bleachhack.module.mods.Zoom.fovDivisor();
+
+		if (divisor > 1f) {
+			callback.setReturnValue(callback.getReturnValue() / divisor);
+		}
+	}
 }

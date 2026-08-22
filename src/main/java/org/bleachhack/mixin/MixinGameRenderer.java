@@ -51,6 +51,13 @@ public class MixinGameRenderer {
 		}
 	}
 
+	@Inject(method = "bobView", at = @At("HEAD"), cancellable = true)
+	private void onBobView(CameraRenderState cameraState, PoseStack poseStack, CallbackInfo ci) {
+		if (ModuleManager.getModule(NoRender.class).isOverlayToggled(9)) {
+			ci.cancel();
+		}
+	}
+
 	@Inject(method = "displayItemActivation", at = @At("HEAD"), cancellable = true)
 	private void displayItemActivation(ItemStack floatingItem, CallbackInfo ci) {
 		if (ModuleManager.getModule(NoRender.class).isWorldToggled(1) && floatingItem.getItem() == Items.TOTEM_OF_UNDYING) {
