@@ -35,6 +35,10 @@ public abstract class ClickGuiWindow extends Window {
 		super(x1, y1, x2, y2, title, icon);
 	}
 
+	public ClickGuiWindow(int x1, int y1, int x2, int y2, String title, java.util.function.Supplier<ItemStack> icon) {
+		super(x1, y1, x2, y2, title, icon);
+	}
+
 	public boolean shouldClose(int mouseX, int mouseY) {
 		return false;
 	}

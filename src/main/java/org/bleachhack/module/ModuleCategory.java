@@ -8,25 +8,32 @@
  */
 package org.bleachhack.module;
 
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 
 public enum ModuleCategory {
-	PLAYER(new ItemStack(Items.ARMOR_STAND)),
-	RENDER(new ItemStack(Items.STAINED_GLASS.yellow())),
-	COMBAT(new ItemStack(Items.TOTEM_OF_UNDYING)),
-	MOVEMENT(new ItemStack(Items.POTION)),
-	EXPLOITS(new ItemStack(Items.REPEATING_COMMAND_BLOCK)),
-	MISC(new ItemStack(Items.NAUTILUS_SHELL)),
-	WORLD(new ItemStack(Items.GRASS_BLOCK));
-	
-	private final ItemStack item;
-	
-	ModuleCategory(ItemStack item) {
+	PLAYER(Items.ARMOR_STAND),
+	RENDER(Items.STAINED_GLASS.yellow()),
+	COMBAT(Items.TOTEM_OF_UNDYING),
+	MOVEMENT(Items.POTION),
+	EXPLOITS(Items.REPEATING_COMMAND_BLOCK),
+	MISC(Items.NAUTILUS_SHELL),
+	WORLD(Items.GRASS_BLOCK);
+
+	private final Item item;
+	// ponytail: 26.2 forbids building an ItemStack before the data-component registry is bound
+	// (this enum loads early), so defer construction to first use.
+	private ItemStack stack;
+
+	ModuleCategory(Item item) {
 		this.item = item;
 	}
-	
+
 	public ItemStack getItem() {
-		return item;
+		if (stack == null || stack.isEmpty()) {
+			stack = org.bleachhack.util.SafeItem.of(item);
+		}
+		return stack;
 	}
 }

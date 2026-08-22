@@ -14,6 +14,7 @@ import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.network.chat.Component;
+import java.util.function.Supplier;
 import org.apache.commons.lang3.tuple.Triple;
 import org.bleachhack.gui.window.widget.WindowButtonWidget;
 
@@ -23,11 +24,11 @@ import java.util.List;
 public class WindowManagerScreen extends WindowScreen {
 
 	/** [Window Screen, Name, Icon] **/
-	public Triple<WindowScreen, String, ItemStack>[] windows;
+	public Triple<WindowScreen, String, Supplier<ItemStack>>[] windows;
 	private int selected;
 
 	@SafeVarargs
-	public WindowManagerScreen(Triple<WindowScreen, String, ItemStack>... windows) {
+	public WindowManagerScreen(Triple<WindowScreen, String, Supplier<ItemStack>>... windows) {
 		super(Component.empty(), false);
 		this.windows = windows;
 	}
@@ -50,7 +51,7 @@ public class WindowManagerScreen extends WindowScreen {
 	@SuppressWarnings("unchecked")
 	public void selectWindow(int s) {
 		selected = s;
-		for (Triple<WindowScreen, String, ItemStack> t: windows) {
+		for (Triple<WindowScreen, String, Supplier<ItemStack>> t: windows) {
 			removeWidget(t.getLeft());
 		}
 
@@ -68,7 +69,7 @@ public class WindowManagerScreen extends WindowScreen {
 	}
 
 	public ItemStack getSelectedIcon() {
-		return windows[selected].getRight();
+		return org.bleachhack.util.SafeItem.resolve(windows[selected].getRight());
 	}
 
 	// Children don't tick brue
@@ -99,9 +100,9 @@ public class WindowManagerScreen extends WindowScreen {
 
 	private static class WindowTabButtonWidget extends WindowButtonWidget {
 
-		private ItemStack item;
+		private Supplier<ItemStack> item;
 
-		public WindowTabButtonWidget(int x1, int y1, int x2, int y2, String text, ItemStack item, Runnable action) {
+		public WindowTabButtonWidget(int x1, int y1, int x2, int y2, String text, Supplier<ItemStack> item, Runnable action) {
 			super(x1, y1, x2, y2, 0xff6060b0, 0xff8070b0, 0x40606090, 0x4fb070f0, text, action);
 			this.item = item;
 		}
@@ -121,7 +122,7 @@ public class WindowManagerScreen extends WindowScreen {
 			drawContext.pose().pushMatrix();
 			drawContext.pose().scale(0.7f, 0.7f);
 
-			drawContext.item(item, (int) ((bx1 + 2) / 0.7), (int) ((by1 - 6 + (by2 - by1) / 2.0) / 0.7));
+			drawContext.item(org.bleachhack.util.SafeItem.resolve(item), (int) ((bx1 + 2) / 0.7), (int) ((by1 - 6 + (by2 - by1) / 2.0) / 0.7));
 
 			drawContext.pose().popMatrix();
 

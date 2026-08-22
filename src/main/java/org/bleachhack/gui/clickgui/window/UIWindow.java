@@ -17,6 +17,7 @@ import org.apache.logging.log4j.util.TriConsumer;
 import java.util.Map.Entry;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
+import net.minecraft.world.item.ItemStack;
 
 // this is worse than dispenser32k
 // gonna have no idea what any of this does in 2 weeks
@@ -31,7 +32,7 @@ public class UIWindow extends ClickGuiWindow {
 	private UIContainer parentContainer;
 
 	public UIWindow(Position pos, UIContainer parentContainer, BooleanSupplier enabledSupplier, Supplier<int[]> sizeSupplier, TriConsumer<GuiGraphicsExtractor, Integer, Integer> renderConsumer) {
-		super(0, 0, 0, 0, "", null);
+		super(0, 0, 0, 0, "", (ItemStack) null);
 
 		this.position = pos;
 		this.parentContainer = parentContainer;

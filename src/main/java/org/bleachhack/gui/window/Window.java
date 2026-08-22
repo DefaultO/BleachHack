@@ -17,6 +17,7 @@ import net.minecraft.world.item.Items;
 import org.bleachhack.gui.window.widget.WindowWidget;
 
 import java.util.ArrayList;
+import java.util.function.Supplier;
 import java.util.ConcurrentModificationException;
 import java.util.List;
 
@@ -29,6 +30,9 @@ public class Window {
 
 	public String title;
 	public ItemStack icon;
+	// ponytail: 26.2 can't build an ItemStack before item components bind (e.g. clickgui windows
+	// created in postInit during Minecraft.<init>), so allow a lazy supplier resolved at render time.
+	private Supplier<ItemStack> iconSupplier;
 
 	public boolean closed;
 	public boolean selected = false;
@@ -53,6 +57,20 @@ public class Window {
 		this.closed = closed;
 	}
 
+	public Window(int x1, int y1, int x2, int y2, String title, Supplier<ItemStack> icon) {
+		this(x1, y1, x2, y2, title, icon, false);
+	}
+
+	public Window(int x1, int y1, int x2, int y2, String title, Supplier<ItemStack> icon, boolean closed) {
+		this.x1 = x1;
+		this.y1 = y1;
+		this.x2 = x2;
+		this.y2 = y2;
+		this.title = title;
+		this.iconSupplier = icon;
+		this.closed = closed;
+	}
+
 	public List<WindowWidget> getWidgets() {
 		return widgets;
 	}
@@ -64,6 +82,10 @@ public class Window {
 
 	public void render(GuiGraphicsExtractor drawContext, int mouseX, int mouseY) {
 		Font textRend = Minecraft.getInstance().font;
+
+		if ((icon == null || icon.isEmpty()) && iconSupplier != null) {
+			icon = org.bleachhack.util.SafeItem.resolve(iconSupplier);
+		}
 
 		if (dragging) {
 			x2 = (x2 - x1) + mouseX - dragOffX - Math.min(0, mouseX - dragOffX);
