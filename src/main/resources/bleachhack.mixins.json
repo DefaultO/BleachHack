@@ -20,7 +20,7 @@
     "MixinBufferBuilder",
     "MixinCamera",
     "MixinChatScreen",
-    "MixinChunkRebuildTask",
+    "MixinSectionCompiler",
     "MixinChunkSkylightProvider",
     "MixinClientBrandRetriever",
     "MixinClientConnection",

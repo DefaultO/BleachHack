@@ -8,40 +8,38 @@
  */
 package org.bleachhack.mixin;
 
+import net.minecraft.client.renderer.blockentity.BlockEntityRenderDispatcher;
+import net.minecraft.client.renderer.blockentity.BlockEntityRenderState;
+import net.minecraft.client.renderer.feature.ModelFeatureRenderer;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import org.bleachhack.BleachHack;
 import org.bleachhack.event.events.EventBlockEntityRender;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.Redirect;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-
-import net.minecraft.world.level.block.entity.BlockEntity;
-import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.render.block.entity.BlockEntityRenderDispatcher;
-import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
-import com.mojang.blaze3d.vertex.PoseStack;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(BlockEntityRenderDispatcher.class)
 public class MixinBlockEntityRenderDispatcher {
 
-	@Shadow private static <T extends BlockEntity> void render(BlockEntityRenderer<T> renderer, T blockEntity, float tickDelta, PoseStack matrices, MultiBufferSource vertexConsumers) {}
-
-	@SuppressWarnings("unchecked")
-	@Redirect(method = "*" /* lambda moment*/, at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/block/entity/BlockEntityRenderDispatcher;render(Lnet/minecraft/client/render/block/entity/BlockEntityRenderer;Lnet/minecraft/block/entity/BlockEntity;FLnet/minecraft/client/util/math/PoseStack;Lnet/minecraft/client/render/MultiBufferSource;)V"))
-	private static <T extends BlockEntity> void render_render(BlockEntityRenderer<T> renderer, T blockEntity, float tickDelta, PoseStack matrices, MultiBufferSource vertexConsumers) {
-		EventBlockEntityRender.Single.Pre event = new EventBlockEntityRender.Single.Pre(blockEntity, matrices, vertexConsumers);
+	// 26.2: block entities render via extract->submit; cancelling extraction (return null)
+	// suppresses the block entity entirely. PoseStack/vertex no longer exist at this point.
+	@Inject(method = "tryExtractRenderState", at = @At("HEAD"), cancellable = true)
+	private <E extends BlockEntity, S extends BlockEntityRenderState> void tryExtractRenderState(E blockEntity, float partialTicks,
+			ModelFeatureRenderer.CrumblingOverlay breakProgress, boolean isGloballyRendered, CallbackInfoReturnable<S> cir) {
+		EventBlockEntityRender.Single.Pre event = new EventBlockEntityRender.Single.Pre(blockEntity, null, null);
 		BleachHack.eventBus.post(event);
 
-		if (!event.isCancelled()) {
-			render(renderer, (T) event.getBlockEntity(), tickDelta, event.getMatrices(), event.getVertex());
+		if (event.isCancelled()) {
+			cir.setReturnValue(null);
 		}
 	}
-	
-	@Inject(method = "render(Lnet/minecraft/client/render/block/entity/BlockEntityRenderer;Lnet/minecraft/block/entity/BlockEntity;FLnet/minecraft/client/util/math/PoseStack;Lnet/minecraft/client/render/MultiBufferSource;)V", at = @At("RETURN"))
-	private static <T extends BlockEntity> void render(BlockEntityRenderer<T> renderer, T blockEntity, float tickDelta, PoseStack matrices, MultiBufferSource vertexConsumers, CallbackInfo ci) {
-		EventBlockEntityRender.Single.Post event = new EventBlockEntityRender.Single.Post(blockEntity, matrices, vertexConsumers);
-		BleachHack.eventBus.post(event);
+
+	@Inject(method = "tryExtractRenderState", at = @At("RETURN"))
+	private <E extends BlockEntity, S extends BlockEntityRenderState> void tryExtractRenderState_return(E blockEntity, float partialTicks,
+			ModelFeatureRenderer.CrumblingOverlay breakProgress, boolean isGloballyRendered, CallbackInfoReturnable<S> cir) {
+		if (cir.getReturnValue() != null) {
+			BleachHack.eventBus.post(new EventBlockEntityRender.Single.Post(blockEntity, null, null));
+		}
 	}
 }

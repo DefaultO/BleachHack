@@ -8,32 +8,26 @@
  */
 package org.bleachhack.event.events;
 
-import com.mojang.blaze3d.vertex.VertexConsumer;
-import net.minecraft.world.level.material.FluidState;
 import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.material.FluidState;
 import org.bleachhack.event.Event;
 
 public class EventRenderFluid extends Event {
 
 	private FluidState state;
 	private BlockPos pos;
-	private VertexConsumer vertexConsumer;
 
-	public EventRenderFluid(FluidState state, BlockPos pos, VertexConsumer vertexConsumer) {
+	// 26.2: cancellation skips the FluidRenderer.tesselate call; no VertexConsumer flows here anymore.
+	public EventRenderFluid(FluidState state, BlockPos pos) {
 		this.state = state;
 		this.pos = pos;
-		this.vertexConsumer = vertexConsumer;
 	}
 
 	public FluidState getState() {
 		return state;
 	}
-	
+
 	public BlockPos getPos() {
 		return pos;
-	}
-
-	public VertexConsumer getVertexConsumer() {
-		return vertexConsumer;
 	}
 }

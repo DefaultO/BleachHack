@@ -10,8 +10,6 @@ package org.bleachhack.event.events;
 
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.client.renderer.rendertype.RenderType;
-import com.mojang.blaze3d.vertex.VertexConsumer;
-import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.core.BlockPos;
 import org.bleachhack.event.Event;
 
@@ -81,26 +79,15 @@ public class EventRenderBlock extends Event {
 	public static class Tesselate extends EventRenderBlock {
 
 		private BlockPos pos;
-		private PoseStack matrices;
-		private VertexConsumer vertexConsumer;
 
-		public Tesselate(BlockState state, BlockPos pos, PoseStack matrices, VertexConsumer vertexConsumer) {
+		// 26.2: tesselation is cancelled by skipping the tesselateBlock call; no PoseStack/VertexConsumer flows here anymore.
+		public Tesselate(BlockState state, BlockPos pos) {
 			super(state);
 			this.pos = pos;
-			this.matrices = matrices;
-			this.vertexConsumer = vertexConsumer;
 		}
-		
+
 		public BlockPos getPos() {
 			return pos;
-		}
-
-		public PoseStack getMatrices() {
-			return matrices;
-		}
-
-		public VertexConsumer getVertexConsumer() {
-			return vertexConsumer;
 		}
 	}
 
