@@ -157,3 +157,9 @@ mutable	field	net/minecraft/network/protocol/game/ServerboundMoveVehiclePacket	x
 
 
 
+
+# ShaderManager$ShaderSourceKey
+# - So MixinShaderManager can register BleachHack's own shader sources.
+#   BleachHack ships without Fabric API, so its assets/ are never mounted as a
+#   resource pack and the ShaderManager can't discover them on its own.
+accessible	class	net/minecraft/client/renderer/ShaderManager$ShaderSourceKey

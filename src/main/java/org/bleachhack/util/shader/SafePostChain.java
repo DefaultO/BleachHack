@@ -40,6 +40,13 @@ public class SafePostChain {
 		}
 
 		Minecraft mc = Minecraft.getInstance();
+
+		// BleachHack's own chains are injected straight into the ShaderManager config
+		// (see MixinShaderManager), so they're absent from the resource manager.
+		if (BleachShaders.isRegistered(id)) {
+			return mc.getShaderManager().getPostChain(id, allowedTargets);
+		}
+
 		Identifier file = id.withPath("post_effect/" + id.getPath() + ".json");
 
 		if (mc.getResourceManager().getResource(file).isEmpty()) {

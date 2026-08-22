@@ -54,6 +54,7 @@
     "MixinScreen",
     "MixinServerScreen",
     "MixinShader",
+    "MixinShaderManager",
     "MixinStringUtil",
     "MixinSoundSystem",
     "MixinTitleScreen",

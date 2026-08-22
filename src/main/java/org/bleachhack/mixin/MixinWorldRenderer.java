@@ -33,7 +33,7 @@ import org.jspecify.annotations.Nullable;
 public class MixinWorldRenderer {
 
 	@Unique
-	private static final Identifier BLEACHHACK_OUTLINE = Identifier.fromNamespaceAndPath("bleachhack", "entity_outline");
+	private static final Identifier BLEACHHACK_OUTLINE = org.bleachhack.util.shader.BleachShaders.ENTITY_OUTLINE;
 
 	/**
 	 * Swap vanilla's entity-outline post chain (edge-only glow) for BleachHack's own
