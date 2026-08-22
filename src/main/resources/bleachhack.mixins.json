@@ -8,6 +8,7 @@
     "AccessorHeldItemRenderer",
     "AccessorMinecraftClient",
     "AccessorScreen",
+    "InvokerItemStack",
     "MixinAbstractBlock",
     "MixinAbstractBlockState",
     "MixinBackgroundRenderer",

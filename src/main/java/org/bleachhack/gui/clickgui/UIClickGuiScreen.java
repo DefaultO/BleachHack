@@ -44,7 +44,7 @@ public class UIClickGuiScreen extends ClickGuiScreen {
 		uiContainer.windows.values().forEach(this::addWindow);
 
 		addWindow(new ModuleWindow(List.of(ModuleManager.getModule(UI.class)),
-				200, 200, 75, "Render", () -> new ItemStack(Items.STAINED_GLASS.yellow())));
+				200, 200, 75, "Render", () -> org.bleachhack.util.SafeItem.of(Items.STAINED_GLASS.yellow())));
 	}
 
 	public void extractRenderState(GuiGraphicsExtractor drawContext, int mouseX, int mouseY, float delta) {

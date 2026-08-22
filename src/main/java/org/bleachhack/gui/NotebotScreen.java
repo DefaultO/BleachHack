@@ -60,7 +60,7 @@ public class NotebotScreen extends WindowScreen {
 				height / 2 - wh / 2,
 				width / 2 + ww / 2,
 				height / 2 + wh / 2,
-				"Notebot Gui", (java.util.function.Supplier<ItemStack>) () -> new ItemStack(Items.NOTE_BLOCK)));
+				"Notebot Gui", (java.util.function.Supplier<ItemStack>) () -> org.bleachhack.util.SafeItem.of(Items.NOTE_BLOCK)));
 
 		getWindow(0).addWidget(new WindowButtonWidget(22, 14, 32, 24, "<", () -> page = page <= 0 ? 0 : page - 1));
 		getWindow(0).addWidget(new WindowButtonWidget(77, 14, 87, 24, ">", () -> page++));

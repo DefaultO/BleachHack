@@ -58,11 +58,11 @@ public class MixinTitleScreen extends Screen {
 		if (BleachTitleScreen.customTitleScreen) {
 			Minecraft.getInstance().gui.setScreen(
 					new WindowManagerScreen(
-							Triple.of(new BleachTitleScreen(), "BleachHack", (java.util.function.Supplier<ItemStack>) () -> new ItemStack(Items.MUSIC_DISC_CAT)),
-							Triple.of(new AccountManagerScreen(), "Accounts", (java.util.function.Supplier<ItemStack>) () -> new ItemStack(Items.PAPER)),
-							Triple.of(ModuleClickGuiScreen.INSTANCE, "ClickGui", (java.util.function.Supplier<ItemStack>) () -> new ItemStack(Items.TOTEM_OF_UNDYING)),
-							Triple.of(new BleachOptionsScreen(null), "Options", (java.util.function.Supplier<ItemStack>) () -> new ItemStack(Items.REDSTONE)),
-							Triple.of(new BleachCreditsScreen(), "Credits", (java.util.function.Supplier<ItemStack>) () -> new ItemStack(Items.DRAGON_HEAD))) {
+							Triple.of(new BleachTitleScreen(), "BleachHack", (java.util.function.Supplier<ItemStack>) () -> org.bleachhack.util.SafeItem.of(Items.MUSIC_DISC_CAT)),
+							Triple.of(new AccountManagerScreen(), "Accounts", (java.util.function.Supplier<ItemStack>) () -> org.bleachhack.util.SafeItem.of(Items.PAPER)),
+							Triple.of(ModuleClickGuiScreen.INSTANCE, "ClickGui", (java.util.function.Supplier<ItemStack>) () -> org.bleachhack.util.SafeItem.of(Items.TOTEM_OF_UNDYING)),
+							Triple.of(new BleachOptionsScreen(null), "Options", (java.util.function.Supplier<ItemStack>) () -> org.bleachhack.util.SafeItem.of(Items.REDSTONE)),
+							Triple.of(new BleachCreditsScreen(), "Credits", (java.util.function.Supplier<ItemStack>) () -> org.bleachhack.util.SafeItem.of(Items.DRAGON_HEAD))) {
 
 						public boolean keyPressed(KeyEvent event) {
 							if (event.key() == ModuleManager.getModule(ClickGui.class).getKey()) {

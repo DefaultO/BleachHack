@@ -42,7 +42,7 @@ public class BleachOptionsScreen extends WindowScreen {
 		addWindow(new Window(width / 8,
 				height / 8,
 				width - width / 8,
-				height - height / 8, "Options", (java.util.function.Supplier<ItemStack>) () -> new ItemStack(Items.REDSTONE)));
+				height - height / 8, "Options", (java.util.function.Supplier<ItemStack>) () -> org.bleachhack.util.SafeItem.of(Items.REDSTONE)));
 
 		int w = getWindow(0).x2 - getWindow(0).x1;
 		int h = getWindow(0).y2 - getWindow(0).y1;
