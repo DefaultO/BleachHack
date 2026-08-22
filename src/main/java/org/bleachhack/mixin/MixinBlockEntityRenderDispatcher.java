@@ -9,7 +9,7 @@
 package org.bleachhack.mixin;
 
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderDispatcher;
-import net.minecraft.client.renderer.blockentity.BlockEntityRenderState;
+import net.minecraft.client.renderer.blockentity.state.BlockEntityRenderState;
 import net.minecraft.client.renderer.feature.ModelFeatureRenderer;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import org.bleachhack.BleachHack;

@@ -1,88 +1,82 @@
+/*
+ * This file is part of the BleachHack distribution (https://github.com/BleachDev/BleachHack/).
+ * Copyright (c) 2021 Bleach and contributors.
+ *
+ * This source code is subject to the terms of the GNU General Public
+ * License, version 3. If a copy of the GPL was not distributed with this
+ * file, You can obtain one at: https://www.gnu.org/licenses/gpl-3.0.txt
+ */
 package org.bleachhack.util.shader;
-
-import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.client.Minecraft;
-import net.minecraft.server.packs.resources.Resource;
-import net.minecraft.server.packs.resources.ResourceManager;
-import net.minecraft.server.packs.PackResources;
-import net.minecraft.resources.Identifier;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
+import net.minecraft.resources.Identifier;
+import net.minecraft.server.packs.PackResources;
+import net.minecraft.server.packs.resources.Resource;
+import net.minecraft.server.packs.resources.ResourceManager;
+
 /**
- * A open resource manager that can get resources from Fabric mods using their namespace
- * or from a URL with the __url__ namespace and an encoded path.
- * 
- * USE WITH CAUTION!
+ * A resource manager wrapper that used to serve shader resources from Fabric
+ * mod namespaces and __url__-encoded URLs.
+ *
+ * TODO(26.2): the custom-namespace resolution (mod containers via FabricLoader
+ * + URL streams, see git history) needs re-plumbing when the shader system is
+ * rebuilt on ShaderManager - the Resource construction it relied on changed.
+ * Until then this is a pure delegate; only the dormant ShaderLoader used it.
  */
 public class OpenResourceManager implements ResourceManager {
 
-	private static Pattern DECODE_PATTERN = Pattern.compile("_([0-9]+)_");
+	@SuppressWarnings("unused")
+	private static final Pattern DECODE_PATTERN = Pattern.compile("_([0-9]+)_");
 
-	private ResourceManager parent;
+	private final ResourceManager parent;
 
 	public OpenResourceManager(ResourceManager parent) {
 		this.parent = parent;
 	}
 
-	public OpenResourceManager(ResourceManager parent, Function<Identifier, InputStream> customResources) {
-		this.parent = parent;
-	}
-
 	@Override
 	public Optional<Resource> getResource(Identifier id) {
-		if ("minecraft".equals(id.getNamespace()))
-			return parent.getResource(id);
-
-		if ("__url__".equals(id.getNamespace()))
-			return Optional.of(new Resource(Minecraft.getInstance().getDefaultResourcePack(), () -> parseURL(id.getPath())));
-
-		// Scuffed resource loader
-		Path path = FabricLoader.getInstance().getModContainer(id.getNamespace()).get().findPath("assets/" + id.getNamespace() + "/" + id.getPath()).get();
-		return Optional.of(new Resource(Minecraft.getInstance().getDefaultResourcePack(), () -> Files.newInputStream(path)));
+		return parent.getResource(id);
 	}
 
 	@Override
-	public Set<String> getAllNamespaces() {
-		return parent.getAllNamespaces();
+	public Set<String> getNamespaces() {
+		return parent.getNamespaces();
 	}
 
 	@Override
-	public List<Resource> getAllResources(Identifier id) {
-		return parent.getAllResources(id);
+	public List<Resource> getResourceStack(Identifier id) {
+		return parent.getResourceStack(id);
 	}
 
 	@Override
-	public Map<Identifier, Resource> findResources(String startingPath, Predicate<Identifier> allowedPathPredicate) {
-		return parent.findResources(startingPath, allowedPathPredicate);
+	public Map<Identifier, Resource> listResources(String directory, Predicate<Identifier> filter) {
+		return parent.listResources(directory, filter);
 	}
 
 	@Override
-	public Stream<PackResources> streamResourcePacks() {
-		return parent.streamResourcePacks();
+	public Map<Identifier, List<Resource>> listResourceStacks(String directory, Predicate<Identifier> filter) {
+		return parent.listResourceStacks(directory, filter);
 	}
 
+	@Override
+	public Stream<PackResources> listPacks() {
+		return parent.listPacks();
+	}
+
+	@SuppressWarnings("unused")
 	private InputStream parseURL(String path) throws IOException {
 		String decoded = DECODE_PATTERN.matcher(path).replaceAll(m -> Character.toString(Integer.parseInt(m.group(1))));
 		return new URL(decoded).openStream();
 	}
-
-	@Override
-	public Map<Identifier, List<Resource>> findAllResources(String startingPath,
-			Predicate<Identifier> allowedPathPredicate) {
-		return null;
-	}
-
 }

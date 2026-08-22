@@ -178,7 +178,7 @@ public class NotebotScreen extends WindowScreen {
 				/* Pfft why use buttons when you can use meaningless rectangles with messy code */
 				if (mouseX > x + w - w / 2 + 10 && mouseX < x + w - w / 4 && mouseY > y + h - 15 && mouseY < y + h - 5) {
 					BleachFileMang.deleteFile("notebot/" + entry.filename);
-					minecraft.setScreen(this);
+					minecraft.gui.setScreen(this);
 				}
 				if (mouseX > x + w - w / 4 + 5 && mouseX < x + w - 5 && mouseY > y + h - 15 && mouseY < y + h - 5) {
 					ModuleManager.getModule(Notebot.class).song = entry;

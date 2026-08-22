@@ -47,10 +47,10 @@ public class MixinCamera {
 			if (betterCamera.isEnabled()) {
 				if (betterCamera.getSetting(0).asToggle().getState()) {
 					info.setReturnValue(betterCamera.getSetting(1).asToggle().getState()
-							? (float) betterCamera.getSetting(1).asToggle().getChild(0).asSlider().getValue() : desiredCameraDistance);
+							? betterCamera.getSetting(1).asToggle().getChild(0).asSlider().getValue().floatValue() : desiredCameraDistance);
 				} else if (betterCamera.getSetting(1).asToggle().getState()) {
 					bypassCameraClip = true;
-					info.setReturnValue(getMaxZoom((float) betterCamera.getSetting(1).asToggle().getChild(0).asSlider().getValue()));
+					info.setReturnValue(getMaxZoom(betterCamera.getSetting(1).asToggle().getChild(0).asSlider().getValue().floatValue()));
 				}
 			}
 		}

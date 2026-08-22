@@ -44,22 +44,14 @@ public class WorldUtils {
 
 	public static final Set<Block> RIGHTCLICKABLE_BLOCKS = Sets.newHashSet(
 			Blocks.CHEST, Blocks.TRAPPED_CHEST, Blocks.ENDER_CHEST,
-			Blocks.WHITE_SHULKER_BOX, Blocks.ORANGE_SHULKER_BOX, Blocks.MAGENTA_SHULKER_BOX,
-			Blocks.LIGHT_BLUE_SHULKER_BOX, Blocks.YELLOW_SHULKER_BOX, Blocks.LIME_SHULKER_BOX,
-			Blocks.PINK_SHULKER_BOX, Blocks.GRAY_SHULKER_BOX, Blocks.LIGHT_GRAY_SHULKER_BOX,
-			Blocks.CYAN_SHULKER_BOX, Blocks.PURPLE_SHULKER_BOX, Blocks.BLUE_SHULKER_BOX,
-			Blocks.BROWN_SHULKER_BOX, Blocks.GREEN_SHULKER_BOX, Blocks.RED_SHULKER_BOX,
-			Blocks.BLACK_SHULKER_BOX, Blocks.ANVIL, Blocks.BELL,
+			Blocks.SHULKER_BOX, Blocks.ANVIL, Blocks.BELL,
 			Blocks.OAK_BUTTON, Blocks.ACACIA_BUTTON, Blocks.BIRCH_BUTTON, Blocks.DARK_OAK_BUTTON,
 			Blocks.JUNGLE_BUTTON, Blocks.SPRUCE_BUTTON, Blocks.STONE_BUTTON, Blocks.COMPARATOR,
 			Blocks.REPEATER, Blocks.OAK_FENCE_GATE, Blocks.SPRUCE_FENCE_GATE, Blocks.BIRCH_FENCE_GATE,
 			Blocks.JUNGLE_FENCE_GATE, Blocks.DARK_OAK_FENCE_GATE, Blocks.ACACIA_FENCE_GATE,
 			Blocks.BREWING_STAND, Blocks.DISPENSER, Blocks.DROPPER,
 			Blocks.LEVER, Blocks.NOTE_BLOCK, Blocks.JUKEBOX,
-			Blocks.BEACON, Blocks.BLACK_BED, Blocks.BLUE_BED, Blocks.BROWN_BED, Blocks.CYAN_BED, Blocks.GRAY_BED,
-			Blocks.GREEN_BED, Blocks.LIGHT_BLUE_BED, Blocks.LIGHT_GRAY_BED, Blocks.LIME_BED, Blocks.MAGENTA_BED,
-			Blocks.ORANGE_BED, Blocks.PINK_BED, Blocks.PURPLE_BED, Blocks.RED_BED, Blocks.WHITE_BED,
-			Blocks.YELLOW_BED, Blocks.FURNACE, Blocks.OAK_DOOR, Blocks.SPRUCE_DOOR,
+			Blocks.BEACON, Blocks.FURNACE, Blocks.OAK_DOOR, Blocks.SPRUCE_DOOR,
 			Blocks.BIRCH_DOOR, Blocks.JUNGLE_DOOR, Blocks.ACACIA_DOOR,
 			Blocks.DARK_OAK_DOOR, Blocks.CAKE, Blocks.ENCHANTING_TABLE,
 			Blocks.DRAGON_EGG, Blocks.HOPPER, Blocks.REPEATING_COMMAND_BLOCK,
@@ -74,6 +66,12 @@ public class WorldUtils {
 			Blocks.WARPED_SIGN, Blocks.WARPED_WALL_SIGN, Blocks.BLAST_FURNACE, Blocks.SMOKER,
 			Blocks.CARTOGRAPHY_TABLE, Blocks.GRINDSTONE, Blocks.LECTERN, Blocks.LOOM,
 			Blocks.STONECUTTER, Blocks.SMITHING_TABLE);
+
+	static {
+		// 26.2: colored block variants live in ColorCollections now.
+		RIGHTCLICKABLE_BLOCKS.addAll(Blocks.DYED_SHULKER_BOX.asList());
+		RIGHTCLICKABLE_BLOCKS.addAll(Blocks.BED.asList());
+	}
 
 	public static List<LevelChunk> getLoadedChunks() {
 		List<LevelChunk> chunks = new ArrayList<>();

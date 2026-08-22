@@ -119,7 +119,7 @@ public class CrystalAura extends Module {
 			boolean end = false;
 			for (EndCrystal c : nearestCrystals) {
 				if (mc.player.distanceTo(c) > getSetting(7).asSlider().getValue()
-						|| mc.level.getEntities(null, new AABB(c.position(), c.position()).inflate(7), targets::contains).isEmpty())
+						|| mc.level.getEntities((net.minecraft.world.entity.Entity) null, new AABB(c.position(), c.position()).inflate(7), targets::contains).isEmpty())
 					continue;
 
 				float damage = DamageUtils.getExplosionDamage(c.position(), 6f, mc.player);
