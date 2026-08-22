@@ -185,12 +185,14 @@ public abstract class WindowScreen extends Screen {
 		int button = event.button();
 
 		/* Handle what window will be selected when clicking */
+		boolean handled = false;
 		for (int wi: getWindowsFrontToBack()) {
 			Window w = getWindow(wi);
 
 			if (mouseX >= w.x1 && mouseX <= w.x2 && mouseY >= w.y1 && mouseY <= w.y2 && !w.closed) {
 				if (w.shouldClose((int) mouseX, (int) mouseY)) {
 					w.closed = true;
+					handled = true;
 					break;
 				}
 
@@ -198,6 +200,7 @@ public abstract class WindowScreen extends Screen {
 					selectWindow(wi);
 
 				w.mouseClicked(mouseX, mouseY, button);
+				handled = true;
 				break;
 			}
 		}
@@ -208,7 +211,10 @@ public abstract class WindowScreen extends Screen {
 			}
 		} catch (ConcurrentModificationException ignored) {}
 
-		return super.mouseClicked(event, doubleClick);
+		// 26.2: report the click as handled when a window consumed it, so a parent container
+		// (e.g. WindowManagerScreen on the title screen) sets focus + dragging on this screen
+		// and vanilla routes the matching mouseReleased back here - otherwise drags never end.
+		return super.mouseClicked(event, doubleClick) || handled;
 	}
 
 	@Override

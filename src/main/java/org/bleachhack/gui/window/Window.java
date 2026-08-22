@@ -145,7 +145,8 @@ public class Window {
 	}
 
 	public void mouseClicked(double mouseX, double mouseY, int button) {
-		if (mouseX >= x1 && mouseX <= x2 - 2 && mouseY >= y1 && mouseY <= y1 + 11) {
+		// 26.2: vanilla only routes mouseReleased back to us for the left button, so only left-drag.
+		if (button == 0 && mouseX >= x1 && mouseX <= x2 - 2 && mouseY >= y1 && mouseY <= y1 + 11) {
 			dragging = true;
 			dragOffX = (int) mouseX - x1;
 			dragOffY = (int) mouseY - y1;
