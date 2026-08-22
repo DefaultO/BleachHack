@@ -174,7 +174,7 @@ public class DevBridge {
 			}
 
 			case "settings": {
-				Module module = ModuleManager.getModule(rest);
+				Module module = ModuleManager.getModule(rest.replace(" -a", "").trim());
 				if (module == null) {
 					return "ERR no module named '" + rest + "'";
 				}
@@ -253,6 +253,46 @@ public class DevBridge {
 				return "OK";
 			}
 
+			case "expand": {
+				String[] args = rest.split(" ");
+				if (args.length < 2) {
+					return "ERR usage: expand <module> <index[.child]> [false]";
+				}
+
+				Module module = ModuleManager.getModule(args[0]);
+				if (module == null) {
+					return "ERR no module named '" + args[0] + "'";
+				}
+
+				ModuleSetting<?> setting = resolve(module, args[1]);
+				if (!(setting instanceof SettingToggle toggle)) {
+					return "ERR setting at '" + args[1] + "' has no children";
+				}
+
+				toggle.setExpanded(args.length < 3 || !args[2].equalsIgnoreCase("false"));
+				return "OK " + toggle.getName() + " expanded=" + toggle.isExpanded();
+			}
+
+			case "openmodule": {
+				String[] args = rest.split(" ");
+				Module target = ModuleManager.getModule(args[0]);
+
+				if (target == null) {
+					return "ERR no module named '" + args[0] + "'";
+				}
+
+				boolean open = args.length < 2 || !args[1].equalsIgnoreCase("false");
+
+				for (org.bleachhack.gui.window.Window w : org.bleachhack.gui.clickgui.ModuleClickGuiScreen.INSTANCE.getWindows()) {
+					if (w instanceof org.bleachhack.gui.clickgui.window.ModuleWindow mw && mw.mods.containsKey(target)) {
+						mw.mods.replace(target, open);
+						return "OK " + target.getName() + " settings open=" + open;
+					}
+				}
+
+				return "ERR module not in any clickgui window";
+			}
+
 			case "clearchat": {
 				mc.gui.hud.getChat().clearMessages(true);
 				return "OK";
@@ -266,6 +306,17 @@ public class DevBridge {
 			default:
 				return "ERR unknown command '" + command + "'. Try: ping, state, modules, enable, disable, toggle, "
 						+ "settings, set, cmd, chat, look, connect, disconnect, clearchat, hidegui, screenshot";
+		}
+	}
+
+	/** Lists a setting and its children; depth 2 keeps huge per-entity lists readable. */
+	private static void describeTree(StringBuilder sb, String index, ModuleSetting<?> setting, int depth) {
+		describe(sb, index, setting);
+
+		if (depth > 1 && setting instanceof SettingToggle toggle) {
+			for (int c = 0; c < toggle.getChildren().size(); c++) {
+				describeTree(sb, index + "." + c, toggle.getChild(c), depth - 1);
+			}
 		}
 	}
 
@@ -300,8 +351,13 @@ public class DevBridge {
 			String[] parts = path.split("\\.");
 			ModuleSetting<?> setting = module.getSetting(Integer.parseInt(parts[0]));
 
-			if (parts.length > 1 && setting instanceof SettingToggle toggle) {
-				setting = toggle.getChild(Integer.parseInt(parts[1]));
+			// walks any depth, e.g. "11.7.0" = group 11 -> entity row 7 -> its colour
+			for (int i = 1; i < parts.length; i++) {
+				if (!(setting instanceof SettingToggle toggle)) {
+					return null;
+				}
+
+				setting = toggle.getChild(Integer.parseInt(parts[i]));
 			}
 
 			return setting;

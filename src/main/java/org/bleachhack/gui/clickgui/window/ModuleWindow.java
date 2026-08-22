@@ -9,6 +9,7 @@
 package org.bleachhack.gui.clickgui.window;
 
 import net.minecraft.client.gui.Font;
+import net.minecraft.util.Mth;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.world.item.ItemStack;
@@ -35,6 +36,9 @@ public class ModuleWindow extends ClickGuiWindow {
 
 	private Tooltip tooltip = null;
 
+	/** How far the module list is scrolled, in pixels, when it doesn't fit on screen. */
+	private int scroll;
+
 	public ModuleWindow(List<Module> mods, int x1, int y1, int len, String title, java.util.function.Supplier<ItemStack> icon) {
 		super(x1, y1, x1 + len, 0, title, icon);
 
@@ -52,7 +56,25 @@ public class ModuleWindow extends ClickGuiWindow {
 		int x = x1 + 1;
 		int y = y1 + 13;
 		x2 = x + len + 1;
-		y2 = hiding ? y1 + 13 : y1 + 13 + getHeight();
+
+		// Expanded groups can be far taller than the screen, so cap the window at the
+		// space below its title bar and scroll the contents inside that.
+		int contentHeight = getHeight();
+		int available = Math.max(24, mc.getWindow().getGuiScaledHeight() - y - 2);
+		boolean scrollable = contentHeight > available;
+		int visibleHeight = scrollable ? available : contentHeight;
+
+		if (scrollable) {
+			if (mouseOver(x1, y1, x2, y1 + 13 + visibleHeight) && mwScroll != 0) {
+				scroll -= mwScroll * 12;
+			}
+
+			scroll = Mth.clamp(scroll, 0, contentHeight - visibleHeight);
+		} else {
+			scroll = 0;
+		}
+
+		y2 = hiding ? y1 + 13 : y1 + 13 + visibleHeight;
 
 		super.render(drawContext, mouseX, mouseY);
 
@@ -60,7 +82,11 @@ public class ModuleWindow extends ClickGuiWindow {
 
 		Font textRend = mc.font;
 
-		int curY = 0;
+		if (scrollable) {
+			drawContext.enableScissor(x1, y, x2, y + visibleHeight);
+		}
+
+		int curY = -scroll;
 		for (Entry<Module, Boolean> m : mods.entrySet()) {
 			if (mouseOver(x, y + curY, x + len, y + 12 + curY)) {
 				drawContext.fill(x, y + curY, x + len, y + 12 + curY, 0x70303070);
@@ -107,6 +133,18 @@ public class ModuleWindow extends ClickGuiWindow {
 					curY += s.getHeight(len);
 				}
 			}
+		}
+
+		if (scrollable) {
+			drawContext.disableScissor();
+
+			// slim scrollbar so it's obvious there's more below
+			int trackHeight = visibleHeight - 2;
+			int thumbHeight = Math.max(8, trackHeight * visibleHeight / contentHeight);
+			int thumbY = y + 1 + (trackHeight - thumbHeight) * scroll / Math.max(1, contentHeight - visibleHeight);
+
+			drawContext.fill(x2 - 2, y + 1, x2 - 1, y + trackHeight + 1, 0x40000000);
+			drawContext.fill(x2 - 2, thumbY, x2 - 1, thumbY + thumbHeight, 0xff8070b0);
 		}
 	}
 

@@ -8,6 +8,14 @@
  */
 package org.bleachhack.module.mods;
 
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.EnumMap;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.logging.log4j.Level;
 import org.bleachhack.BleachHack;
 import org.bleachhack.event.events.EventEntityRender;
 import org.bleachhack.event.events.EventWorldRender;
@@ -15,6 +23,9 @@ import org.bleachhack.eventbus.BleachSubscribe;
 import org.bleachhack.module.Module;
 import org.bleachhack.module.ModuleCategory;
 import org.bleachhack.module.ModuleManager;
+import org.bleachhack.module.mods.esp.EspGroup;
+import org.bleachhack.setting.module.ModuleSetting;
+import org.bleachhack.util.BleachLogger;
 import org.bleachhack.setting.module.SettingColor;
 import org.bleachhack.setting.module.SettingMode;
 import org.bleachhack.setting.module.SettingSlider;
@@ -22,21 +33,14 @@ import org.bleachhack.setting.module.SettingToggle;
 import org.bleachhack.util.render.Renderer;
 import org.bleachhack.util.render.color.QuadColor;
 import org.bleachhack.util.shader.BleachShaders;
-import org.bleachhack.util.world.EntityUtils;
 import org.jspecify.annotations.Nullable;
 
 import net.minecraft.resources.Identifier;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.util.ARGB;
+import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.item.ItemEntity;
-import net.minecraft.world.entity.decoration.ArmorStand;
-import net.minecraft.world.entity.boss.enderdragon.EndCrystal;
-import net.minecraft.world.entity.monster.Enemy;
-import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.entity.projectile.Projectile;
-import net.minecraft.world.entity.vehicle.minecart.AbstractMinecart;
-import net.minecraft.world.entity.vehicle.boat.Boat;
 
 public class ESP extends Module {
 
@@ -48,20 +52,38 @@ public class ESP extends Module {
 	private static final int MAX_DISTANCE = 5;
 	private static final int INVISIBLES = 6;
 	private static final int HEALTH_TINT = 7;
-	private static final int PLAYERS = 8;
-	private static final int MOBS = 9;
-	private static final int ANIMALS = 10;
-	private static final int ITEMS = 11;
-	private static final int CRYSTALS = 12;
-	private static final int VEHICLES = 13;
-	private static final int ARMORSTANDS = 14;
-	private static final int PROJECTILES = 15;
-	private static final int OTHER = 16;
-	private static final int THROUGH_WALLS = 17;
-	private static final int SHADER_STYLE = 18;
+	private static final int THROUGH_WALLS = 8;
+	private static final int SHADER_STYLE = 9;
+	/** Colour groups start here; everything after is generated from the entity registry. */
+	private static final int GROUPS_START = 10;
+
+	/** Players get a second colour before the per-entity rows, for friends. */
+	private static final int FRIEND_COLOR_CHILD = 1;
+
+	/** For each group: where its per-entity override rows live inside the group toggle. */
+	private static final Map<EntityType<?>, Integer> ENTITY_CHILD_INDEX = new HashMap<>();
+	private static final Map<EspGroup, Integer> GROUP_SETTING_INDEX = new EnumMap<>(EspGroup.class);
 
 	public ESP() {
-		super("ESP", KEY_UNBOUND, ModuleCategory.RENDER, "Highlights Entities in the world.",
+		super("ESP", KEY_UNBOUND, ModuleCategory.RENDER, "Highlights Entities in the world.", buildSettings());
+
+		// Only show the options that apply to the selected render mode.
+		getSetting(SHADER_FILL).visibleWhen(this::isShaderMode);
+		getSetting(SHADER_OUTLINE).visibleWhen(this::isShaderMode);
+		getSetting(SHADER_STYLE).visibleWhen(this::isShaderMode);
+		getSetting(BOX).visibleWhen(() -> !isShaderMode());
+		getSetting(BOX_FILL).visibleWhen(() -> !isShaderMode());
+		getSetting(THROUGH_WALLS).visibleWhen(() -> !isShaderMode());
+	}
+
+	/**
+	 * Base options, then one toggle per colour group. Each group holds its own colour
+	 * plus a row per entity type in it, so a whole family can share a colour or any
+	 * single entity can override it. The per-entity rows come from the registry, so
+	 * nothing is missing and modded entities show up too.
+	 */
+	private static ModuleSetting<?>[] buildSettings() {
+		List<ModuleSetting<?>> settings = new ArrayList<>(List.of(
 				new SettingMode("Render", "Shader", "Box").withDesc("The Render mode."),
 				new SettingSlider("ShaderFill", 0, 255, 50, 0).withDesc("How opaque the fill on shader mode should be."),
 				new SettingSlider("ShaderOutline", 1, 5, 1, 0).withDesc("How thick the outline on shader mode should be."),
@@ -70,47 +92,51 @@ public class ESP extends Module {
 				new SettingSlider("MaxDistance", 0, 256, 0, 0).withDesc("Only highlight entities within this many blocks, 0 = no limit."),
 				new SettingToggle("Invisibles", true).withDesc("Also highlight invisible entities."),
 				new SettingToggle("HealthTint", false).withDesc("Fade living entities from their color to red as they lose health."),
-
-				new SettingToggle("Players", true).withDesc("Highlights Players.").withChildren(
-						new SettingColor("Player Color", 255, 75, 75).withDesc("Outline color for players."),
-						new SettingColor("Friend Color", 0, 255, 255).withDesc("Outline color for friends.")),
-
-				new SettingToggle("Mobs", false).withDesc("Highlights Mobs.").withChildren(
-						new SettingColor("Color", 128, 25, 128).withDesc("Outline color for mobs.")),
-
-				new SettingToggle("Animals", false).withDesc("Highlights Animals").withChildren(
-						new SettingColor("Color", 75, 255, 75).withDesc("Outline color for animals.")),
-
-				new SettingToggle("Items", true).withDesc("Highlights Items.").withChildren(
-						new SettingColor("Color", 255, 200, 50).withDesc("Outline color for items.")),
-
-				new SettingToggle("Crystals", true).withDesc("Highlights End Crystals.").withChildren(
-						new SettingColor("Color", 255, 50, 255).withDesc("Outline color for crystals.")),
-
-				new SettingToggle("Vehicles", false).withDesc("Highlights Vehicles.").withChildren(
-						new SettingColor("Color", 150, 150, 150).withDesc("Outline color for vehicles (minecarts/boats).")),
-
-				new SettingToggle("Armorstands", false).withDesc("Highlights armor stands.").withChildren(
-						new SettingColor("Color", 160, 150, 50).withDesc("Outline color for armor stands.")),
-
-				new SettingToggle("Projectiles", false).withDesc("Highlights arrows, fireballs and thrown items.").withChildren(
-						new SettingColor("Color", 255, 255, 255).withDesc("Outline color for projectiles.")),
-
-				new SettingToggle("Other", false).withDesc("Highlights anything the categories above miss (tnt, falling blocks, item frames, xp...).").withChildren(
-						new SettingColor("Color", 200, 200, 200).withDesc("Outline color for everything else.")),
-
 				new SettingToggle("ThroughWalls", true).withDesc("Draw box mode over terrain and fluids instead of hiding behind them."),
-
 				new SettingMode("ShaderStyle", "Solid", "Inline", "Gradient")
-						.withDesc("How the shader outline is shaded across its width. Inline puts a dark band against the entity."));
+						.withDesc("How the shader outline is shaded across its width. Inline puts a dark band against the entity.")));
 
-		// Only show the options that apply to the selected render mode.
-		getSetting(SHADER_FILL).visibleWhen(this::isShaderMode);
-		getSetting(SHADER_OUTLINE).visibleWhen(this::isShaderMode);
-		getSetting(BOX).visibleWhen(() -> !isShaderMode());
-		getSetting(BOX_FILL).visibleWhen(() -> !isShaderMode());
-		getSetting(THROUGH_WALLS).visibleWhen(() -> !isShaderMode());
-		getSetting(SHADER_STYLE).visibleWhen(this::isShaderMode);
+		// group -> its entity types, sorted so the rows read alphabetically
+		Map<EspGroup, List<EntityType<?>>> byGroup = new EnumMap<>(EspGroup.class);
+
+		for (EspGroup group : EspGroup.values()) {
+			byGroup.put(group, new ArrayList<>());
+		}
+
+		try {
+			for (EntityType<?> type : BuiltInRegistries.ENTITY_TYPE) {
+				byGroup.get(EspGroup.of(type)).add(type);
+			}
+		} catch (Throwable t) {
+			BleachLogger.logger.log(Level.WARN, "ESP could not enumerate entity types, per-entity colors unavailable: %s", t);
+		}
+
+		for (EspGroup group : EspGroup.values()) {
+			List<EntityType<?>> types = byGroup.get(group);
+			types.sort(Comparator.comparing(EspGroup::prettyName));
+
+			List<ModuleSetting<?>> children = new ArrayList<>();
+			children.add(new SettingColor("Color", group.red, group.green, group.blue)
+					.withDesc("Color for every " + group.displayName.toLowerCase() + " entity without its own override."));
+
+			if (group == EspGroup.PLAYERS) {
+				children.add(new SettingColor("Friend Color", 0, 255, 255).withDesc("Color for players on your friends list."));
+			}
+
+			for (EntityType<?> type : types) {
+				ENTITY_CHILD_INDEX.put(type, children.size());
+				children.add(new SettingToggle(EspGroup.prettyName(type), false)
+						.withDesc("Use a custom color for this entity instead of the group color.")
+						.withChildren(new SettingColor("Color", group.red, group.green, group.blue)));
+			}
+
+			GROUP_SETTING_INDEX.put(group, settings.size());
+			settings.add(new SettingToggle(group.displayName, group.enabledByDefault)
+					.withDesc("Highlights " + group.displayName.toLowerCase() + " entities.")
+					.withChildren(children.toArray(new ModuleSetting<?>[0])));
+		}
+
+		return settings.toArray(new ModuleSetting<?>[0]);
 	}
 
 	private boolean isShaderMode() {
@@ -208,28 +234,33 @@ public class ESP extends Module {
 	}
 
 	private int[] getCategoryColor(Entity e) {
-		if (e instanceof Player && getSetting(PLAYERS).asToggle().getState()) {
-			return getSetting(PLAYERS).asToggle().getChild(BleachHack.friendMang.has(e) ? 1 : 0).asColor().getRGBArray();
-		} else if (e instanceof Enemy && getSetting(MOBS).asToggle().getState()) {
-			return getSetting(MOBS).asToggle().getChild(0).asColor().getRGBArray();
-		} else if (EntityUtils.isAnimal(e) && getSetting(ANIMALS).asToggle().getState()) {
-			return getSetting(ANIMALS).asToggle().getChild(0).asColor().getRGBArray();
-		} else if (e instanceof ItemEntity && getSetting(ITEMS).asToggle().getState()) {
-			return getSetting(ITEMS).asToggle().getChild(0).asColor().getRGBArray();
-		} else if (e instanceof EndCrystal && getSetting(CRYSTALS).asToggle().getState()) {
-			return getSetting(CRYSTALS).asToggle().getChild(0).asColor().getRGBArray();
-		} else if ((e instanceof Boat || e instanceof AbstractMinecart) && getSetting(VEHICLES).asToggle().getState()) {
-			return getSetting(VEHICLES).asToggle().getChild(0).asColor().getRGBArray();
-		} else if (e instanceof ArmorStand && getSetting(ARMORSTANDS).asToggle().getState()) {
-			return getSetting(ARMORSTANDS).asToggle().getChild(0).asColor().getRGBArray();
-		} else if (e instanceof Projectile && getSetting(PROJECTILES).asToggle().getState()) {
-			return getSetting(PROJECTILES).asToggle().getChild(0).asColor().getRGBArray();
-		} else if (getSetting(OTHER).asToggle().getState()) {
-			// catch-all so nothing is silently skipped - tnt, falling blocks, item frames,
-			// xp orbs, and any mob that fits none of the categories above
-			return getSetting(OTHER).asToggle().getChild(0).asColor().getRGBArray();
+		EspGroup group = EspGroup.of(e.getType());
+		Integer groupIndex = GROUP_SETTING_INDEX.get(group);
+
+		if (groupIndex == null) {
+			return null;
 		}
 
-		return null;
+		SettingToggle groupToggle = getSetting(groupIndex).asToggle();
+
+		if (!groupToggle.getState()) {
+			return null;
+		}
+
+		if (group == EspGroup.PLAYERS && BleachHack.friendMang.has(e)) {
+			return groupToggle.getChild(FRIEND_COLOR_CHILD).asColor().getRGBArray();
+		}
+
+		Integer childIndex = ENTITY_CHILD_INDEX.get(e.getType());
+
+		if (childIndex != null && childIndex < groupToggle.getChildren().size()) {
+			SettingToggle override = groupToggle.getChild(childIndex).asToggle();
+
+			if (override.getState()) {
+				return override.getChild(0).asColor().getRGBArray();
+			}
+		}
+
+		return groupToggle.getChild(0).asColor().getRGBArray();
 	}
 }

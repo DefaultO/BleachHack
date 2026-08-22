@@ -102,6 +102,14 @@ public class SettingToggle extends ModuleSetting<Boolean> {
 		return h;
 	}
 
+	public boolean isExpanded() {
+		return expanded;
+	}
+
+	public void setExpanded(boolean expanded) {
+		this.expanded = expanded;
+	}
+
 	public List<ModuleSetting<?>> getChildren() {
 		return children;
 	}
