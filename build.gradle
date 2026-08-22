@@ -12,6 +12,14 @@ group = project.maven_group
 
 loom {
 	accessWidenerPath = file("src/main/resources/bleachhack.accesswidener")
+
+	runs {
+		// Fixed dev username so the offline profile is stable across launches
+		// (op it once on the dev server; no more random Player#### each run).
+		client {
+			programArgs("--username", "DefaultO")
+		}
+	}
 }
 
 repositories {
@@ -46,7 +54,6 @@ processResources {
 tasks.withType(JavaCompile).configureEach {
 	// ponytail: 21 is MC 26.2's runtime floor and the max-compatibility target; bump to 25 if a dependency needs it.
 	it.options.release = 21
-	it.options.compilerArgs += ['-Xmaxerrs','20000','-Xmaxwarns','20000']
 }
 
 java {
