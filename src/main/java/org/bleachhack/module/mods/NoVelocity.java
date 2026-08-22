@@ -16,8 +16,8 @@ import org.bleachhack.module.ModuleCategory;
 import org.bleachhack.setting.module.SettingSlider;
 import org.bleachhack.setting.module.SettingToggle;
 
-import net.minecraft.network.packet.s2c.play.EntityVelocityUpdateS2CPacket;
-import net.minecraft.network.packet.s2c.play.ExplosionS2CPacket;
+import net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket;
+import net.minecraft.network.protocol.game.ClientboundExplodePacket;
 
 /**
  * @author sl First Module utilizing EventBus!
@@ -52,8 +52,8 @@ public class NoVelocity extends Module {
 		if (mc.player == null)
 			return;
 
-		if (event.getPacket() instanceof EntityVelocityUpdateS2CPacket && getSetting(0).asToggle().getState()) {
-			EntityVelocityUpdateS2CPacket packet = (EntityVelocityUpdateS2CPacket) event.getPacket();
+		if (event.getPacket() instanceof ClientboundSetEntityMotionPacket && getSetting(0).asToggle().getState()) {
+			ClientboundSetEntityMotionPacket packet = (ClientboundSetEntityMotionPacket) event.getPacket();
 			if (packet.getId() == mc.player.getId()) {
 				double velXZ = getSetting(0).asToggle().getChild(0).asSlider().getValue() / 100;
 				double velY = getSetting(0).asToggle().getChild(1).asSlider().getValue() / 100;
@@ -66,8 +66,8 @@ public class NoVelocity extends Module {
 				packet.velocityY = (int) (pvelY * 8000 + mc.player.getVelocity().y * 8000);
 				packet.velocityZ = (int) (pvelZ * 8000 + mc.player.getVelocity().z * 8000);
 			}
-		} else if (event.getPacket() instanceof ExplosionS2CPacket && getSetting(1).asToggle().getState()) {
-			ExplosionS2CPacket packet = (ExplosionS2CPacket) event.getPacket();
+		} else if (event.getPacket() instanceof ClientboundExplodePacket && getSetting(1).asToggle().getState()) {
+			ClientboundExplodePacket packet = (ClientboundExplodePacket) event.getPacket();
 
 			double velXZ = getSetting(1).asToggle().getChild(0).asSlider().getValue() / 100;
 			double velY = getSetting(1).asToggle().getChild(1).asSlider().getValue() / 100;

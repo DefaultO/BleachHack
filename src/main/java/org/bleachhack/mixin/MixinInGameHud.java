@@ -8,9 +8,9 @@
  */
 package org.bleachhack.mixin;
 
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.hud.InGameHud;
-import net.minecraft.util.Identifier;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.Gui;
+import net.minecraft.resources.Identifier;
 import org.bleachhack.BleachHack;
 import org.bleachhack.event.events.EventRenderCrosshair;
 import org.bleachhack.event.events.EventRenderInGameHud;
@@ -22,17 +22,17 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-@Mixin(InGameHud.class)
+@Mixin(Gui.class)
 public class MixinInGameHud {
 
 	@Unique private boolean bypassRenderOverlay = false;
 	@Unique private boolean bypassRenderCrosshair = false;
 
-	@Shadow private void renderOverlay(DrawContext context, Identifier texture, float opacity) {}
-	@Shadow private void renderCrosshair(DrawContext context) {}
+	@Shadow private void renderOverlay(GuiGraphics context, Identifier texture, float opacity) {}
+	@Shadow private void renderCrosshair(GuiGraphics context) {}
 
 	@Inject(method = "render", at = @At("RETURN"), cancellable = true)
-	private void render(DrawContext context, float tickDelta, CallbackInfo ci) {
+	private void render(GuiGraphics context, float tickDelta, CallbackInfo ci) {
 		EventRenderInGameHud event = new EventRenderInGameHud(context);
 		BleachHack.eventBus.post(event);
 
@@ -42,7 +42,7 @@ public class MixinInGameHud {
 	}
 
 	@Inject(method = "renderOverlay", at = @At("HEAD"), cancellable = true)
-	private void renderOverlay(DrawContext context, Identifier texture, float opacity, CallbackInfo ci) {
+	private void renderOverlay(GuiGraphics context, Identifier texture, float opacity, CallbackInfo ci) {
 		if (!bypassRenderOverlay) {
 			EventRenderOverlay event = new EventRenderOverlay(context, texture, opacity);
 			BleachHack.eventBus.post(event);
@@ -59,7 +59,7 @@ public class MixinInGameHud {
 
 
 	@Inject(method = "renderCrosshair", at = @At("HEAD"), cancellable = true)
-	private void renderCrosshair(DrawContext context, CallbackInfo ci) {
+	private void renderCrosshair(GuiGraphics context, CallbackInfo ci) {
 		if (!bypassRenderCrosshair) {
 			EventRenderCrosshair event = new EventRenderCrosshair(context);
 			BleachHack.eventBus.post(event);

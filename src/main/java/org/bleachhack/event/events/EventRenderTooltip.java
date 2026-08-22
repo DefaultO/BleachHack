@@ -8,9 +8,9 @@
  */
 package org.bleachhack.event.events;
 
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.tooltip.TooltipComponent;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.inventory.tooltip.ClientTooltipComponent;
 import org.bleachhack.event.Event;
 
 import java.util.List;
@@ -18,15 +18,15 @@ import java.util.List;
 public class EventRenderTooltip extends Event {
 
 	private Screen screen;
-	private DrawContext context;
-	private List<TooltipComponent> components;
+	private GuiGraphicsExtractor context;
+	private List<ClientTooltipComponent> components;
 	private int x;
 	private int y;
 	private int mouseX;
 	private int mouseY;
 	private float delta;
 
-	public EventRenderTooltip(Screen screen, DrawContext context, int mouseX, int mouseY, float delta) {
+	public EventRenderTooltip(Screen screen, GuiGraphicsExtractor context, int mouseX, int mouseY, float delta) {
 		this.context = context;
 		this.screen = screen;
 		this.mouseX = mouseX;
@@ -38,19 +38,19 @@ public class EventRenderTooltip extends Event {
 		return screen;
 	}
 
-	public DrawContext drawContext() {
+	public GuiGraphicsExtractor drawContext() {
 		return context;
 	}
 
-	public void setMatrix(DrawContext context) {
+	public void setMatrix(GuiGraphicsExtractor context) {
 		this.context = context;
 	}
 
-	public List<TooltipComponent> getComponents() {
+	public List<ClientTooltipComponent> getComponents() {
 		return components;
 	}
 
-	public void setComponents(List<TooltipComponent> components) {
+	public void setComponents(List<ClientTooltipComponent> components) {
 		this.components = components;
 	}
 

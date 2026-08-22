@@ -21,7 +21,7 @@ import org.bleachhack.util.io.BleachFileHelper;
 
 import com.google.gson.JsonArray;
 
-import net.minecraft.text.Text;
+import net.minecraft.network.chat.Component;
 
 public class CmdCustomSign extends Command {
 
@@ -38,8 +38,8 @@ public class CmdCustomSign extends Command {
 		NoRender noRender = ModuleManager.getModule(NoRender.class);
 
 		if (args[0].equalsIgnoreCase("list")) {
-			String s = "Sign Text:";
-			for (Text text: noRender.signText) {
+			String s = "Sign Component:";
+			for (Component text: noRender.signText) {
 				s += "\n§7" + text.getString();
 			}
 
@@ -50,7 +50,7 @@ public class CmdCustomSign extends Command {
 		String arg = args[0].toLowerCase(Locale.ENGLISH);
 		boolean all = arg.equals("all");
 
-		Text text = Text.literal(String.join(" ", Arrays.asList(args).subList(1, args.length)));
+		Component text = Component.literal(String.join(" ", Arrays.asList(args).subList(1, args.length)));
 
 		boolean[] linesToChange = new boolean[] {
 				arg.equals("line1") || all,

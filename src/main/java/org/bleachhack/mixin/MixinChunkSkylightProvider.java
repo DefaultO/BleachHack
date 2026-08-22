@@ -15,9 +15,9 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-import net.minecraft.world.chunk.light.ChunkSkyLightProvider;
+import net.minecraft.world.level.lighting.SkyLightEngine;
 
-@Mixin(ChunkSkyLightProvider.class)
+@Mixin(SkyLightEngine.class)
 public class MixinChunkSkylightProvider {
 
 	@Inject(at = @At("HEAD"), method = "method_51531", cancellable = true)

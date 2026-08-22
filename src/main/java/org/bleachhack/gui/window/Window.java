@@ -9,13 +9,13 @@
 package org.bleachhack.gui.window;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.render.*;
-import net.minecraft.item.BlockItem;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
+import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import org.bleachhack.gui.window.widget.WindowWidget;
 
 import java.util.ArrayList;
@@ -64,8 +64,8 @@ public class Window {
 		return widget;
 	}
 
-	public void render(DrawContext drawContext, int mouseX, int mouseY) {
-		TextRenderer textRend = MinecraftClient.getInstance().textRenderer;
+	public void render(GuiGraphics drawContext, int mouseX, int mouseY) {
+		Font textRend = Minecraft.getInstance().textRenderer;
 
 		if (dragging) {
 			x2 = (x2 - x1) + mouseX - dragOffX - Math.min(0, mouseX - dragOffX);
@@ -101,7 +101,7 @@ public class Window {
 				x1 + (icon == null || icon.getItem() == Items.AIR ? 4 : (blockItem ? 15 : 14)), y1 + 3, -1);
 	}
 
-	protected void drawBackground(DrawContext drawContext, int mouseX, int mouseY, TextRenderer textRend) {
+	protected void drawBackground(GuiGraphics drawContext, int mouseX, int mouseY, Font textRend) {
 		/* background */
 		drawContext.fill(x1, y1 + 1, x1 + 1, y2 - 1, 0xff6060b0);
 		horizontalGradient(x1 + 1, y1, x2 - 1, y1 + 1, 0xff6060b0, 0xff8070b0);
@@ -177,15 +177,15 @@ public class Window {
 		}
 	}
 
-	public static void fill(DrawContext drawContext, int x1, int y1, int x2, int y2) {
+	public static void fill(GuiGraphics drawContext, int x1, int y1, int x2, int y2) {
 		fill(drawContext, x1, y1, x2, y2, 0xff6060b0, 0xff8070b0, 0x00000000);
 	}
 
-	public static void fill(DrawContext drawContext, int x1, int y1, int x2, int y2, int fill) {
+	public static void fill(GuiGraphics drawContext, int x1, int y1, int x2, int y2, int fill) {
 		fill(drawContext, x1, y1, x2, y2, 0xff6060b0, 0xff8070b0, fill);
 	}
 
-	public static void fill(DrawContext drawContext, int x1, int y1, int x2, int y2, int colTop, int colBot, int colFill) {
+	public static void fill(GuiGraphics drawContext, int x1, int y1, int x2, int y2, int colTop, int colBot, int colFill) {
 		drawContext.fill(x1, y1 + 1, x1 + 1, y2 - 1, colTop);
 		drawContext.fill(x1 + 1, y1, x2 - 1, y1 + 1, colTop);
 		drawContext.fill(x2 - 1, y1 + 1, x2, y2 - 1, colBot);
@@ -216,7 +216,7 @@ public class Window {
 		RenderSystem.disableBlend();
 	}
 
-	public static void verticalGradient(DrawContext context, int x1, int y1, int x2, int y2, int color1, int color2) {
+	public static void verticalGradient(GuiGraphics context, int x1, int y1, int x2, int y2, int color1, int color2) {
 		float alpha1 = (color1 >> 24 & 255) / 255.0F;
 		float red1   = (color1 >> 16 & 255) / 255.0F;
 		float green1 = (color1 >> 8 & 255) / 255.0F;

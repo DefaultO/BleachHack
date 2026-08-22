@@ -8,9 +8,9 @@
  */
 package org.bleachhack.mixin;
 
-import net.minecraft.client.gl.ShaderProgram;
+import com.mojang.blaze3d.opengl.GlProgram;
 import net.minecraft.client.gl.ShaderStage;
-import net.minecraft.resource.ResourceFactory;
+import net.minecraft.server.packs.resources.ResourceProvider;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -19,7 +19,7 @@ import org.spongepowered.asm.mixin.injection.ModifyArg;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
 
 // Tweaks to the shader class to make it compatible with OpenResourceManager
-@Mixin(value = ShaderProgram.class, priority = 1100)
+@Mixin(value = GlProgram.class, priority = 1100)
 public class MixinShader {
 
 	@Shadow @Final private String name;
@@ -30,7 +30,7 @@ public class MixinShader {
 	}
 
 	@ModifyVariable(method = "loadShader", at = @At("STORE"), ordinal = 1)
-	private static String modifyStageId(String id, ResourceFactory factory, ShaderStage.Type type, String name) {
+	private static String modifyStageId(String id, ResourceProvider factory, ShaderStage.Type type, String name) {
 		return replaceIdentifier(id, name);
 	}
 	

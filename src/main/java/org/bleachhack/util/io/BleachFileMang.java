@@ -8,7 +8,7 @@
  */
 package org.bleachhack.util.io;
 
-import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.Minecraft;
 import org.bleachhack.util.BleachLogger;
 
 import java.io.FileWriter;
@@ -24,7 +24,7 @@ public class BleachFileMang {
 	private static Path dir;
 
 	public static void init() {
-		dir = Paths.get(MinecraftClient.getInstance().runDirectory.getPath(), "bleach/");
+		dir = Paths.get(Minecraft.getInstance().gameDirectory.getPath(), "bleach/");
 		if (!dir.toFile().exists()) {
 			dir.toFile().mkdirs();
 		}

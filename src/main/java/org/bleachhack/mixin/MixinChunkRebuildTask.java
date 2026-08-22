@@ -23,60 +23,60 @@ import org.spongepowered.asm.mixin.injection.Coerce;
 import org.spongepowered.asm.mixin.injection.Redirect;
 
 import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.block.BlockRenderType;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.render.BufferBuilder;
-import net.minecraft.client.render.RenderLayer;
-import net.minecraft.client.render.RenderLayers;
+import net.minecraft.world.level.block.RenderShape;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.client.Minecraft;
+import com.mojang.blaze3d.vertex.BufferBuilder;
+import net.minecraft.client.renderer.rendertype.RenderType;
+import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.client.render.VertexFormat;
-import net.minecraft.client.render.VertexFormats;
-import net.minecraft.client.render.block.BlockModelRenderer;
-import net.minecraft.client.render.block.BlockRenderManager;
+import com.mojang.blaze3d.vertex.DefaultVertexFormat;
+import net.minecraft.client.renderer.block.ModelBlockRenderer;
+import net.minecraft.client.renderer.block.BlockRenderDispatcher;
 import net.minecraft.client.render.chunk.BlockBufferBuilderStorage;
-import net.minecraft.client.render.chunk.ChunkBuilder;
-import net.minecraft.client.render.chunk.ChunkOcclusionDataBuilder;
-import net.minecraft.client.render.chunk.ChunkRendererRegion;
-import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.fluid.FluidState;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.client.renderer.chunk.SectionRenderDispatcher;
+import net.minecraft.client.renderer.chunk.VisGraph;
+import net.minecraft.client.renderer.chunk.RenderSectionRegion;
+import com.mojang.blaze3d.vertex.PoseStack;
+import net.minecraft.world.level.material.FluidState;
+import net.minecraft.core.BlockPos;
 
 /**
  * Blocks are still tesselated even if they're transparent because Minecraft's
  * rendering engine is poop.
  */
-@Mixin(ChunkBuilder.BuiltChunk.RebuildTask.class)
+@Mixin(SectionRenderDispatcher.BuiltChunk.RebuildTask.class)
 public class MixinChunkRebuildTask {
 
 	@Unique private static boolean OPTIFABRIC_INSTALLED = FabricLoader.getInstance().isModLoaded("optifabric");
 
-	@Shadow private /* outer */ ChunkBuilder.BuiltChunk field_20839;
-	@Shadow private ChunkRendererRegion region;
+	@Shadow private /* outer */ SectionRenderDispatcher.BuiltChunk field_20839;
+	@Shadow private RenderSectionRegion region;
 
-	@Shadow private <E extends BlockEntity> void addBlockEntity(ChunkBuilder.BuiltChunk.RebuildTask.RenderData renderData, E blockEntity) {}
-	@Shadow private ChunkBuilder.BuiltChunk.RebuildTask.RenderData render(float cameraX, float cameraY, float cameraZ, BlockBufferBuilderStorage buffers) { return null; }
+	@Shadow private <E extends BlockEntity> void addBlockEntity(SectionRenderDispatcher.BuiltChunk.RebuildTask.RenderData renderData, E blockEntity) {}
+	@Shadow private SectionRenderDispatcher.BuiltChunk.RebuildTask.RenderData render(float cameraX, float cameraY, float cameraZ, BlockBufferBuilderStorage buffers) { return null; }
 
 	// i have gone past the point of insanity
-	@Redirect(method = "run", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/chunk/ChunkBuilder$BuiltChunk$RebuildTask;render(FFFLnet/minecraft/client/render/chunk/BlockBufferBuilderStorage;)Lnet/minecraft/client/render/chunk/ChunkBuilder$BuiltChunk$RebuildTask$RenderData;"))
-	private ChunkBuilder.BuiltChunk.RebuildTask.RenderData run_render(@Coerce Object thisObject, float cameraX, float cameraY, float cameraZ, BlockBufferBuilderStorage buffers) {
+	@Redirect(method = "run", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/chunk/SectionRenderDispatcher$BuiltChunk$RebuildTask;render(FFFLnet/minecraft/client/render/chunk/BlockBufferBuilderStorage;)Lnet/minecraft/client/render/chunk/SectionRenderDispatcher$BuiltChunk$RebuildTask$RenderData;"))
+	private SectionRenderDispatcher.BuiltChunk.RebuildTask.RenderData run_render(@Coerce Object thisObject, float cameraX, float cameraY, float cameraZ, BlockBufferBuilderStorage buffers) {
 		return OPTIFABRIC_INSTALLED 
 				? render(cameraX, cameraY, cameraZ, buffers) : newRender(cameraX, cameraY, cameraZ, buffers);
 	}
 
-	private ChunkBuilder.BuiltChunk.RebuildTask.RenderData newRender(float cameraX, float cameraY, float cameraZ, BlockBufferBuilderStorage buffers) {
-		ChunkBuilder.BuiltChunk.RebuildTask.RenderData renderData = new ChunkBuilder.BuiltChunk.RebuildTask.RenderData();
+	private SectionRenderDispatcher.BuiltChunk.RebuildTask.RenderData newRender(float cameraX, float cameraY, float cameraZ, BlockBufferBuilderStorage buffers) {
+		SectionRenderDispatcher.BuiltChunk.RebuildTask.RenderData renderData = new SectionRenderDispatcher.BuiltChunk.RebuildTask.RenderData();
 		BlockPos blockPos = field_20839.getOrigin().toImmutable();
 		BlockPos blockPos2 = blockPos.add(15, 15, 15);
-		ChunkOcclusionDataBuilder chunkOcclusionDataBuilder = new ChunkOcclusionDataBuilder();
-		ChunkRendererRegion chunkRendererRegion = this.region;
+		VisGraph chunkOcclusionDataBuilder = new VisGraph();
+		RenderSectionRegion chunkRendererRegion = this.region;
 		this.region = null;
-		MatrixStack matrixStack = new MatrixStack();
+		PoseStack matrixStack = new PoseStack();
 		if (chunkRendererRegion != null) {
-			BlockModelRenderer.enableBrightnessCache();
-			Set<RenderLayer> set = new ReferenceArraySet(RenderLayer.getBlockLayers().size());
+			ModelBlockRenderer.enableBrightnessCache();
+			Set<RenderType> set = new ReferenceArraySet(RenderType.getBlockLayers().size());
 			net.minecraft.util.math.random.Random random = net.minecraft.util.math.random.Random.create();
-			BlockRenderManager blockRenderManager = MinecraftClient.getInstance().getBlockRenderManager();
+			BlockRenderDispatcher blockRenderManager = Minecraft.getInstance().getBlockRenderManager();
 			Iterator var15 = BlockPos.iterate(blockPos, blockPos2).iterator();
 
 			while(var15.hasNext()) {
@@ -95,10 +95,10 @@ public class MixinChunkRebuildTask {
 
 				BlockState blockState2 = chunkRendererRegion.getBlockState(blockPos3);
 				FluidState fluidState = blockState2.getFluidState();
-				RenderLayer renderLayer;
+				RenderType renderLayer;
 				BufferBuilder bufferBuilder;
 				if (!fluidState.isEmpty()) {
-					renderLayer = RenderLayers.getFluidLayer(fluidState);
+					renderLayer = RenderTypes.getFluidLayer(fluidState);
 					bufferBuilder = buffers.get(renderLayer);
 
 					EventRenderFluid event = new EventRenderFluid(fluidState, blockPos3, bufferBuilder);
@@ -108,17 +108,17 @@ public class MixinChunkRebuildTask {
 						continue;
 
 					if (set.add(renderLayer)) {
-						bufferBuilder.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_COLOR_TEXTURE_LIGHT_NORMAL);
+						bufferBuilder.begin(VertexFormat.DrawMode.QUADS, DefaultVertexFormat.POSITION_COLOR_TEXTURE_LIGHT_NORMAL);
 					}
 
 					blockRenderManager.renderFluid(blockPos3, chunkRendererRegion, bufferBuilder, blockState2, fluidState);
 				}
 
-				if (blockState.getRenderType() != BlockRenderType.INVISIBLE) {
-					renderLayer = RenderLayers.getBlockLayer(blockState);
+				if (blockState.getRenderType() != RenderShape.INVISIBLE) {
+					renderLayer = RenderTypes.getBlockLayer(blockState);
 					bufferBuilder = buffers.get(renderLayer);
 					if (set.add(renderLayer)) {
-						bufferBuilder.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_COLOR_TEXTURE_LIGHT_NORMAL);
+						bufferBuilder.begin(VertexFormat.DrawMode.QUADS, DefaultVertexFormat.POSITION_COLOR_TEXTURE_LIGHT_NORMAL);
 					}
 
 					EventRenderBlock.Tesselate event = new EventRenderBlock.Tesselate(blockState, blockPos3, matrixStack, bufferBuilder);
@@ -134,8 +134,8 @@ public class MixinChunkRebuildTask {
 				}
 			}
 
-			if (set.contains(RenderLayer.getTranslucent())) {
-				BufferBuilder bufferBuilder2 = buffers.get(RenderLayer.getTranslucent());
+			if (set.contains(RenderType.getTranslucent())) {
+				BufferBuilder bufferBuilder2 = buffers.get(RenderType.getTranslucent());
 				if (!bufferBuilder2.isBatchEmpty()) {
 					//bufferBuilder2.sortFrom(cameraX - (float)blockPos.getX(), cameraY - (float)blockPos.getY(), cameraZ - (float)blockPos.getZ());
 					renderData.translucencySortingData = bufferBuilder2.getSortingData();
@@ -145,14 +145,14 @@ public class MixinChunkRebuildTask {
 			var15 = set.iterator();
 
 			while(var15.hasNext()) {
-				RenderLayer renderLayer2 = (RenderLayer)var15.next();
+				RenderType renderLayer2 = (RenderType)var15.next();
 				BufferBuilder.BuiltBuffer builtBuffer = buffers.get(renderLayer2).endNullable();
 				if (builtBuffer != null) {
 					renderData.buffers.put(renderLayer2, builtBuffer);
 				}
 			}
 
-			BlockModelRenderer.disableBrightnessCache();
+			ModelBlockRenderer.disableBrightnessCache();
 		}
 
 		renderData.chunkOcclusionData = chunkOcclusionDataBuilder.build();

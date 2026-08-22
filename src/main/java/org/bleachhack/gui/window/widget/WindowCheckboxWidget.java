@@ -1,33 +1,33 @@
 package org.bleachhack.gui.window.widget;
 
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.sound.PositionedSoundInstance;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.text.Text;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.resources.sounds.SimpleSoundInstance;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.network.chat.Component;
 import org.bleachhack.gui.window.Window;
 
 public class WindowCheckboxWidget extends WindowWidget {
 
 	public boolean checked;
-	public Text text;
+	public Component text;
 	
 	public WindowCheckboxWidget(int x, int y, String text, boolean pressed) {
-		this(x, y, Text.literal(text), pressed);
+		this(x, y, Component.literal(text), pressed);
 	}
 
-	public WindowCheckboxWidget(int x, int y, Text text, boolean pressed) {
-		super(x, y, 10 + MinecraftClient.getInstance().textRenderer.getWidth(text), 10);
+	public WindowCheckboxWidget(int x, int y, Component text, boolean pressed) {
+		super(x, y, 10 + Minecraft.getInstance().textRenderer.getWidth(text), 10);
 		this.checked = pressed;
 		this.text = text;
 	}
 
 	@Override
-	public void render(DrawContext drawContext, int windowX, int windowY, int mouseX, int mouseY) {
+	public void render(GuiGraphics drawContext, int windowX, int windowY, int mouseX, int mouseY) {
 		super.render(drawContext, windowX, windowY, mouseX, mouseY);
 
-		TextRenderer textRenderer = MinecraftClient.getInstance().textRenderer;
+		Font textRenderer = Minecraft.getInstance().textRenderer;
 
 		int x = windowX + x1;
 		int y = windowY + y1;
@@ -48,7 +48,7 @@ public class WindowCheckboxWidget extends WindowWidget {
 
 		if (mouseX >= windowX + x1 && mouseX <= windowX + x1 + 10 && mouseY >= windowY + y1 && mouseY <= windowY + y1 + 10) {
 			checked = !checked;
-			MinecraftClient.getInstance().getSoundManager().play(PositionedSoundInstance.master(SoundEvents.UI_BUTTON_CLICK, 1.0F));
+			Minecraft.getInstance().getSoundManager().play(SimpleSoundInstance.master(SoundEvents.UI_BUTTON_CLICK, 1.0F));
 		}
 	}
 }

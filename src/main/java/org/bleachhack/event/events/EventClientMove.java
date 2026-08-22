@@ -8,33 +8,33 @@
  */
 package org.bleachhack.event.events;
 
-import net.minecraft.entity.MovementType;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.entity.MoverType;
+import net.minecraft.world.phys.Vec3;
 import org.bleachhack.event.Event;
 
 public class EventClientMove extends Event {
 
-	private MovementType type;
-	private Vec3d vec;
+	private MoverType type;
+	private Vec3 vec;
 
-	public EventClientMove(MovementType type, Vec3d vec) {
+	public EventClientMove(MoverType type, Vec3 vec) {
 		this.type = type;
 		this.vec = vec;
 	}
 
-	public MovementType getType() {
+	public MoverType getType() {
 		return type;
 	}
 
-	public void setType(MovementType type) {
+	public void setType(MoverType type) {
 		this.type = type;
 	}
 
-	public Vec3d getVec() {
+	public Vec3 getVec() {
 		return vec;
 	}
 
-	public void setVec(Vec3d vec) {
+	public void setVec(Vec3 vec) {
 		this.vec = vec;
 	}
 

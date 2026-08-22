@@ -20,11 +20,11 @@ import org.bleachhack.setting.module.SettingMode;
 import org.bleachhack.setting.module.SettingSlider;
 import org.bleachhack.setting.module.SettingToggle;
 
-import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
+import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
 
 public class FakeLag extends Module {
 
-	public List<PlayerMoveC2SPacket> queue = new ArrayList<>();
+	public List<ServerboundMovePlayerPacket> queue = new ArrayList<>();
 	public long startTime = 0;
 
 	public FakeLag() {
@@ -53,8 +53,8 @@ public class FakeLag extends Module {
 
 	@BleachSubscribe
 	public void sendPacket(EventPacket.Send event) {
-		if (event.getPacket() instanceof PlayerMoveC2SPacket) {
-			queue.add((PlayerMoveC2SPacket) event.getPacket());
+		if (event.getPacket() instanceof ServerboundMovePlayerPacket) {
+			queue.add((ServerboundMovePlayerPacket) event.getPacket());
 			event.setCancelled(true);
 		}
 	}
@@ -74,8 +74,8 @@ public class FakeLag extends Module {
 	}
 
 	public void sendPackets() {
-		for (PlayerMoveC2SPacket p : new ArrayList<>(queue)) {
-			if (!(p instanceof PlayerMoveC2SPacket.LookAndOnGround)) {
+		for (ServerboundMovePlayerPacket p : new ArrayList<>(queue)) {
+			if (!(p instanceof ServerboundMovePlayerPacket.LookAndOnGround)) {
 				mc.player.networkHandler.sendPacket(p);
 			}
 		}

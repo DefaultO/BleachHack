@@ -8,13 +8,13 @@
  */
 package org.bleachhack.util.operation;
 
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
+import net.minecraft.client.Minecraft;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 
 public abstract class Operation {
 
-	protected static final MinecraftClient mc = MinecraftClient.getInstance();
+	protected static final Minecraft mc = Minecraft.getInstance();
 
 	public BlockPos pos;
 	public abstract boolean canExecute();

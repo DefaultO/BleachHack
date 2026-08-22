@@ -8,16 +8,16 @@
  */
 package org.bleachhack.setting.module;
 
-import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import org.bleachhack.gui.clickgui.window.ModuleWindow;
 import org.bleachhack.setting.SettingDataHandlers;
 
 import com.google.gson.JsonElement;
 
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.sound.PositionedSoundInstance;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.util.math.MathHelper;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.resources.sounds.SimpleSoundInstance;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.util.Mth;
 
 public class SettingMode extends ModuleSetting<Integer> {
 
@@ -32,16 +32,16 @@ public class SettingMode extends ModuleSetting<Integer> {
 		return getValue().intValue();
 	}
 
-	public void render(ModuleWindow window, DrawContext drawContext, int x, int y, int len) {
+	public void render(ModuleWindow window, GuiGraphicsExtractor drawContext, int x, int y, int len) {
 		if (window.mouseOver(x, y, x + len, y + 12)) {
 			drawContext.fill(x + 1, y, x + len, y + 12, 0x70303070);
 		}
 
-		drawContext.drawTextWithShadow(MinecraftClient.getInstance().textRenderer, getName() + ": " + modes[getValue()], x + 3, y + 2, 0xcfe0cf);
+		drawContext.text(Minecraft.getInstance().font, getName() + ": " + modes[getValue()], x + 3, y + 2, 0xffcfe0cf);
 
 		if (window.mouseOver(x, y, x + len, y + 12) && window.lmDown) {
 			setValue(getValue() >= modes.length - 1 ? 0 : getValue() + 1);
-			MinecraftClient.getInstance().getSoundManager().play(PositionedSoundInstance.master(SoundEvents.UI_BUTTON_CLICK.value(), 1.0F, 0.3F));
+			Minecraft.getInstance().getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK.value(), 1.0F, 0.3F));
 		}
 	}
 
@@ -58,6 +58,6 @@ public class SettingMode extends ModuleSetting<Integer> {
 	public void read(JsonElement json) {
 		Integer val = getHandler().readOrNull(json);
 		if (val != null)
-			setValue(MathHelper.clamp(val, 0, modes.length - 1));
+			setValue(Mth.clamp(val, 0, modes.length - 1));
 	}
 }

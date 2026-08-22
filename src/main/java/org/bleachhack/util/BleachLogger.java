@@ -8,10 +8,10 @@
  */
 package org.bleachhack.util;
 
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
+import net.minecraft.client.Minecraft;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.TextColor;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -22,21 +22,21 @@ public class BleachLogger {
 	public static final Logger logger = LogManager.getFormatterLogger("BleachHack");
 
 	public static int INFO_COLOR = 0x64b9fa;
-	public static int WARN_COLOR = Formatting.YELLOW.getColorValue();
-	public static int ERROR_COLOR = Formatting.RED.getColorValue();
+	public static int WARN_COLOR = TextColor.YELLOW.getValue();
+	public static int ERROR_COLOR = TextColor.RED.getValue();
 	
 	// Info
 	
 	public static void info(String s) {
-		info(Text.literal(s));
+		info(Component.literal(s));
 	}
 
-	public static void info(Text t) {
+	public static void info(Component t) {
 		try {
-			MinecraftClient.getInstance().inGameHud.getChatHud()
-			.addMessage(getBHText(INFO_COLOR)
+			Minecraft.getInstance().gui.hud.getChat()
+			.addClientSystemMessage(getBHText(INFO_COLOR)
 					//.append("§3§lINFO: §3")
-					.append(((MutableText) t).styled(s -> s.withColor(INFO_COLOR))));
+					.append(((MutableComponent) t).withStyle(s -> s.withColor(INFO_COLOR))));
 		} catch (Exception e) {
 			logger.log(Level.INFO, t.getString());
 		}
@@ -45,15 +45,15 @@ public class BleachLogger {
 	// Warn
 	
 	public static void warn(String s) {
-		warn(Text.literal(s));
+		warn(Component.literal(s));
 	}
 
-	public static void warn(Text t) {
+	public static void warn(Component t) {
 		try {
-			MinecraftClient.getInstance().inGameHud.getChatHud()
-			.addMessage(getBHText(WARN_COLOR)
+			Minecraft.getInstance().gui.hud.getChat()
+			.addClientSystemMessage(getBHText(WARN_COLOR)
 					//.append("§e§lWARN: §e")
-					.append(((MutableText) t).styled(s -> s.withColor(WARN_COLOR))));
+					.append(((MutableComponent) t).withStyle(s -> s.withColor(WARN_COLOR))));
 		} catch (Exception e) {
 			logger.log(Level.WARN, t.getString());
 		}
@@ -62,35 +62,35 @@ public class BleachLogger {
 	// Error
 	
 	public static void error(String s) {
-		error(Text.literal(s));
+		error(Component.literal(s));
 	}
 
-	public static void error(Text t) {
+	public static void error(Component t) {
 		try {
-			MinecraftClient.getInstance().inGameHud.getChatHud()
-			.addMessage(getBHText(ERROR_COLOR)
+			Minecraft.getInstance().gui.hud.getChat()
+			.addClientSystemMessage(getBHText(ERROR_COLOR)
 					//.append("§c§lERROR: §c")
-					.append(((MutableText) t).styled(s -> s.withColor(ERROR_COLOR))));
+					.append(((MutableComponent) t).withStyle(s -> s.withColor(ERROR_COLOR))));
 		} catch (Exception e) {
 			logger.log(Level.ERROR, t.getString());
 		}
 	}
 
 	public static void noPrefix(String s) {
-		noPrefix(Text.literal(s));
+		noPrefix(Component.literal(s));
 	}
 
-	public static void noPrefix(Text text) {
+	public static void noPrefix(Component text) {
 		try {
-			MinecraftClient.getInstance().inGameHud.getChatHud().addMessage(text);
+			Minecraft.getInstance().gui.hud.getChat().addClientSystemMessage(text);
 		} catch (Exception e) {
 			logger.log(Level.INFO, text.getString());
 		}
 	}
 
-	private static MutableText getBHText(int color) {
-		return Text.literal("[").styled(s -> s.withColor(color))
+	private static MutableComponent getBHText(int color) {
+		return Component.literal("[").withStyle(s -> s.withColor(color))
 				.append(BleachHack.watermark.getText())
-				.append(Text.literal("] ").styled(s -> s.withColor(color)));
+				.append(Component.literal("] ").withStyle(s -> s.withColor(color)));
 	}
 }

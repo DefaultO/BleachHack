@@ -9,9 +9,9 @@
 package org.bleachhack.gui.clickgui;
 
 import net.minecraft.SharedConstants;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.widget.TextFieldWidget;
-import net.minecraft.text.Text;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.network.chat.Component;
 import org.apache.commons.lang3.StringUtils;
 import org.bleachhack.BleachHack;
 import org.bleachhack.command.Command;
@@ -33,16 +33,16 @@ public class ModuleClickGuiScreen extends ClickGuiScreen {
 	
 	public static ModuleClickGuiScreen INSTANCE = new ModuleClickGuiScreen();
 
-	private TextFieldWidget searchField;
+	private EditBox searchField;
 
 	public ModuleClickGuiScreen() {
-		super(Text.literal("ClickGui"));
+		super(Component.literal("ClickGui"));
 	}
 
 	public void init() {
 		super.init();
 
-		searchField = new TextFieldWidget(textRenderer, 2, 14, 100, 12, Text.empty() /* @LasnikProgram is author lol */);
+		searchField = new EditBox(textRenderer, 2, 14, 100, 12, Component.empty() /* @LasnikProgram is author lol */);
 		searchField.visible = false;
 		searchField.setMaxLength(20);
 		searchField.setSuggestion("Search here");
@@ -65,7 +65,7 @@ public class ModuleClickGuiScreen extends ClickGuiScreen {
 		}
 	}
 
-	public void render(DrawContext drawContext, int mouseX, int mouseY, float delta) {
+	public void render(GuiGraphics drawContext, int mouseX, int mouseY, float delta) {
 		BleachFileHelper.SCHEDULE_SAVE_CLICKGUI.set(true);
 		ClickGui clickGui = ModuleManager.getModule(ClickGui.class);
 

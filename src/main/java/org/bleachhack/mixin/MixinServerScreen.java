@@ -8,27 +8,27 @@
  */
 package org.bleachhack.mixin;
 
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.screen.multiplayer.MultiplayerScreen;
-import net.minecraft.client.gui.widget.ButtonWidget;
-import net.minecraft.text.Text;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.multiplayer.JoinMultiplayerScreen;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.network.chat.Component;
 import org.bleachhack.gui.ProtocolScreen;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-@Mixin(MultiplayerScreen.class)
+@Mixin(JoinMultiplayerScreen.class)
 public class MixinServerScreen extends Screen {
 
-	private MixinServerScreen(Text title) {
+	private MixinServerScreen(Component title) {
 		super(title);
 	}
 
 	@Inject(method = "init()V", at = @At("HEAD"))
 	private void init(CallbackInfo info) {
-		addDrawableChild(ButtonWidget.builder(Text.literal("Protocol"), button -> {
-			client.setScreen(new ProtocolScreen((MultiplayerScreen) client.currentScreen));
+		addDrawableChild(Button.builder(Component.literal("Protocol"), button -> {
+			client.setScreen(new ProtocolScreen((JoinMultiplayerScreen) client.currentScreen));
 		}).position(5, 7).size(50, 20).build());
 	}
 }

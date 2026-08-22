@@ -9,11 +9,11 @@
 package org.bleachhack.module.mods;
 
 import com.google.common.collect.Sets;
-import net.minecraft.client.util.InputUtil;
-import net.minecraft.item.BlockItem;
-import net.minecraft.item.Item;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3d;
+import com.mojang.blaze3d.platform.InputConstants;
+import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.item.Item;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.phys.Vec3;
 import org.bleachhack.event.events.EventTick;
 import org.bleachhack.event.events.EventWorldRender;
 import org.bleachhack.eventbus.BleachSubscribe;
@@ -90,7 +90,7 @@ public class Scaffold extends Module {
 		double range = getSetting(2).asSlider().getValue();
 		int mode = getSetting(0).asMode().getMode();
 
-		Vec3d placeVec = mc.player.getPos().add(0, -0.85, 0);
+		Vec3 placeVec = mc.player.getPos().add(0, -0.85, 0);
 		Set<BlockPos> blocks = mode == 0
 				? Sets.newHashSet(
 						BlockPos.ofFloored(placeVec),
@@ -101,7 +101,7 @@ public class Scaffold extends Module {
 						: getSpiral(mode, BlockPos.ofFloored(placeVec));
 
 		if (getSetting(6).asToggle().getState()
-				&& InputUtil.isKeyPressed(mc.getWindow().getHandle(), InputUtil.fromTranslationKey(mc.options.jumpKey.getBoundKeyTranslationKey()).getCode())) {
+				&& InputConstants.isKeyPressed(mc.getWindow().getHandle(), InputConstants.fromTranslationKey(mc.options.jumpKey.getBoundKeyTranslationKey()).getCode())) {
 
 			if (mc.world.getBlockState(mc.player.getBlockPos().down()).isReplaceable()
 					&& !mc.world.getBlockState(mc.player.getBlockPos().down(2)).isReplaceable()

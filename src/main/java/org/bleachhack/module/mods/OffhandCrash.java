@@ -15,11 +15,11 @@ import org.bleachhack.module.ModuleCategory;
 import org.bleachhack.setting.module.SettingSlider;
 import org.bleachhack.setting.module.SettingToggle;
 
-import net.minecraft.network.packet.c2s.play.PlayerActionC2SPacket;
-import net.minecraft.network.packet.c2s.play.PlayerActionC2SPacket.Action;
-import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
+import net.minecraft.network.protocol.game.ServerboundPlayerActionPacket;
+import net.minecraft.network.protocol.game.ServerboundPlayerActionPacket.Action;
+import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 
 public class OffhandCrash extends Module {
 
@@ -32,9 +32,9 @@ public class OffhandCrash extends Module {
 	@BleachSubscribe
 	public void onTick(EventTick event) {
 		for (int i = 0; i < getSetting(0).asSlider().getValue(); i++) {
-			mc.player.networkHandler.sendPacket(new PlayerActionC2SPacket(Action.SWAP_ITEM_WITH_OFFHAND, BlockPos.ORIGIN, Direction.DOWN));
+			mc.player.networkHandler.sendPacket(new ServerboundPlayerActionPacket(Action.SWAP_ITEM_WITH_OFFHAND, BlockPos.ORIGIN, Direction.DOWN));
 			if (getSetting(1).asToggle().getState())
-				mc.player.networkHandler.sendPacket(new PlayerMoveC2SPacket.OnGroundOnly(true));
+				mc.player.networkHandler.sendPacket(new ServerboundMovePlayerPacket.OnGroundOnly(true));
 		}
 	}
 }

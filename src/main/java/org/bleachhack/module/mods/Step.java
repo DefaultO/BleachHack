@@ -19,8 +19,8 @@ import org.bleachhack.setting.module.SettingMode;
 import org.bleachhack.setting.module.SettingSlider;
 import org.bleachhack.setting.module.SettingToggle;
 
-import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
-import net.minecraft.util.math.Box;
+import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
+import net.minecraft.world.phys.AABB;
 
 public class Step extends Module {
 
@@ -71,20 +71,20 @@ public class Step extends Module {
 
 		if (getSetting(0).asMode().getMode() == 0 && mc.player.horizontalCollision && mc.player.isOnGround()) {
 			if (!isTouchingWall(mc.player.getBoundingBox().offset(0, 1, 0)) || !isTouchingWall(mc.player.getBoundingBox().offset(0, 1.5, 0))) {
-				mc.player.networkHandler.sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(mc.player.getX(), mc.player.getY() + 0.42, mc.player.getZ(), false));
-				mc.player.networkHandler.sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(mc.player.getX(), mc.player.getY() + 0.75, mc.player.getZ(), false));
+				mc.player.networkHandler.sendPacket(new ServerboundMovePlayerPacket.PositionAndOnGround(mc.player.getX(), mc.player.getY() + 0.42, mc.player.getZ(), false));
+				mc.player.networkHandler.sendPacket(new ServerboundMovePlayerPacket.PositionAndOnGround(mc.player.getX(), mc.player.getY() + 0.75, mc.player.getZ(), false));
 
 				if (isTouchingWall(mc.player.getBoundingBox().offset(0, 1, 0)) && !isTouchingWall(mc.player.getBoundingBox().offset(0, 1.5, 0))) {
-					mc.player.networkHandler.sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(mc.player.getX(), mc.player.getY() + 1, mc.player.getZ(), false));
-					mc.player.networkHandler.sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(mc.player.getX(), mc.player.getY() + 1.15, mc.player.getZ(), false));
-					mc.player.networkHandler.sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(mc.player.getX(), mc.player.getY() + 1.24, mc.player.getZ(), false));
-					mc.player.networkHandler.sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(mc.player.getX(), mc.player.getY() + 1.15, mc.player.getZ(), true));
+					mc.player.networkHandler.sendPacket(new ServerboundMovePlayerPacket.PositionAndOnGround(mc.player.getX(), mc.player.getY() + 1, mc.player.getZ(), false));
+					mc.player.networkHandler.sendPacket(new ServerboundMovePlayerPacket.PositionAndOnGround(mc.player.getX(), mc.player.getY() + 1.15, mc.player.getZ(), false));
+					mc.player.networkHandler.sendPacket(new ServerboundMovePlayerPacket.PositionAndOnGround(mc.player.getX(), mc.player.getY() + 1.24, mc.player.getZ(), false));
+					mc.player.networkHandler.sendPacket(new ServerboundMovePlayerPacket.PositionAndOnGround(mc.player.getX(), mc.player.getY() + 1.15, mc.player.getZ(), true));
 					mc.player.updatePosition(mc.player.getX(), mc.player.getY() + 1.0, mc.player.getZ());
 				} else {
 					mc.player.updatePosition(mc.player.getX(), mc.player.getY() + 1, mc.player.getZ());
 				}
 
-				mc.player.networkHandler.sendPacket(new PlayerMoveC2SPacket.OnGroundOnly(true));
+				mc.player.networkHandler.sendPacket(new ServerboundMovePlayerPacket.OnGroundOnly(true));
 				lastStep = mc.player.age;
 			}
 		} else if (getSetting(0).asMode().getMode() == 2) {
@@ -110,7 +110,7 @@ public class Step extends Module {
 		}
 	}
 
-	private boolean isTouchingWall(Box box) {
+	private boolean isTouchingWall(AABB box) {
 		// Check in 2 calls instead of just box.expand(0.01, 0, 0.01) to prevent it getting stuck in corners
 		return !mc.world.isSpaceEmpty(box.expand(0.01, 0, 0)) || !mc.world.isSpaceEmpty(box.expand(0, 0, 0.01));
 	}

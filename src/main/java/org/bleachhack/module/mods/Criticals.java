@@ -16,12 +16,12 @@ import org.bleachhack.setting.module.SettingMode;
 import org.bleachhack.util.PlayerInteractEntityC2SUtils;
 import org.bleachhack.util.PlayerInteractEntityC2SUtils.InteractType;
 
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.effect.StatusEffects;
-import net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket;
-import net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket.Mode;
-import net.minecraft.network.packet.c2s.play.PlayerInteractEntityC2SPacket;
-import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.effect.MobEffects;
+import net.minecraft.network.protocol.game.ServerboundPlayerCommandPacket;
+import net.minecraft.network.protocol.game.ServerboundPlayerCommandPacket.Mode;
+import net.minecraft.network.protocol.game.ServerboundInteractPacket;
+import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
 
 /**
  * @author sl, Bleach
@@ -35,8 +35,8 @@ public class Criticals extends Module {
 
 	@BleachSubscribe
 	public void sendPacket(EventPacket.Send event) {
-		if (event.getPacket() instanceof PlayerInteractEntityC2SPacket) {
-			PlayerInteractEntityC2SPacket packet = (PlayerInteractEntityC2SPacket) event.getPacket();
+		if (event.getPacket() instanceof ServerboundInteractPacket) {
+			ServerboundInteractPacket packet = (ServerboundInteractPacket) event.getPacket();
 			if (PlayerInteractEntityC2SUtils.getInteractType(packet) == InteractType.ATTACK
 					&& PlayerInteractEntityC2SUtils.getEntity(packet) instanceof LivingEntity) {
 				sendCritPackets();
@@ -46,14 +46,14 @@ public class Criticals extends Module {
 
 	private void sendCritPackets() {
 		if (mc.player.isClimbing() || mc.player.isTouchingWater()
-				|| mc.player.hasStatusEffect(StatusEffects.BLINDNESS) || mc.player.hasVehicle()) {
+				|| mc.player.hasStatusEffect(MobEffects.BLINDNESS) || mc.player.hasVehicle()) {
 			return;
 		}
 
 		boolean sprinting = mc.player.isSprinting();
 		if (sprinting) {
 			mc.player.setSprinting(false);
-			mc.player.networkHandler.sendPacket(new ClientCommandC2SPacket(mc.player, Mode.STOP_SPRINTING));
+			mc.player.networkHandler.sendPacket(new ServerboundPlayerCommandPacket(mc.player, Mode.STOP_SPRINTING));
 		}
 
 		if (mc.player.isOnGround()) {
@@ -61,20 +61,20 @@ public class Criticals extends Module {
 			double y = mc.player.getY();
 			double z = mc.player.getZ();
 			if (getSetting(0).asMode().getMode() == 0) {
-				mc.player.networkHandler.sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(x, y + 0.0633, z, false));
-				mc.player.networkHandler.sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(x, y, z, false));
+				mc.player.networkHandler.sendPacket(new ServerboundMovePlayerPacket.PositionAndOnGround(x, y + 0.0633, z, false));
+				mc.player.networkHandler.sendPacket(new ServerboundMovePlayerPacket.PositionAndOnGround(x, y, z, false));
 			} else {
-				mc.player.networkHandler.sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(x, y + 0.42, z, false));
-				mc.player.networkHandler.sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(x, y + 0.65, z, false));
-				mc.player.networkHandler.sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(x, y + 0.72, z, false));
-				mc.player.networkHandler.sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(x, y + 0.53, z, false));
-				mc.player.networkHandler.sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(x, y + 0.32, z, false));
+				mc.player.networkHandler.sendPacket(new ServerboundMovePlayerPacket.PositionAndOnGround(x, y + 0.42, z, false));
+				mc.player.networkHandler.sendPacket(new ServerboundMovePlayerPacket.PositionAndOnGround(x, y + 0.65, z, false));
+				mc.player.networkHandler.sendPacket(new ServerboundMovePlayerPacket.PositionAndOnGround(x, y + 0.72, z, false));
+				mc.player.networkHandler.sendPacket(new ServerboundMovePlayerPacket.PositionAndOnGround(x, y + 0.53, z, false));
+				mc.player.networkHandler.sendPacket(new ServerboundMovePlayerPacket.PositionAndOnGround(x, y + 0.32, z, false));
 			}
 		}
 
 		if (sprinting) {
 			mc.player.setSprinting(true);
-			mc.player.networkHandler.sendPacket(new ClientCommandC2SPacket(mc.player, Mode.START_SPRINTING));
+			mc.player.networkHandler.sendPacket(new ServerboundPlayerCommandPacket(mc.player, Mode.START_SPRINTING));
 		}
 	}
 }

@@ -18,16 +18,16 @@ import org.bleachhack.setting.module.SettingSlider;
 import org.bleachhack.setting.module.SettingToggle;
 import org.bleachhack.util.world.WorldUtils;
 
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.ItemSteerable;
-import net.minecraft.entity.passive.LlamaEntity;
-import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
-import net.minecraft.network.packet.c2s.play.VehicleMoveC2SPacket;
-import net.minecraft.network.packet.s2c.play.EntityPassengersSetS2CPacket;
-import net.minecraft.network.packet.s2c.play.PlayerPositionLookS2CPacket;
-import net.minecraft.util.Hand;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.ItemSteerable;
+import net.minecraft.world.entity.animal.equine.Llama;
+import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
+import net.minecraft.network.protocol.game.ServerboundMoveVehiclePacket;
+import net.minecraft.network.protocol.game.ClientboundSetPassengersPacket;
+import net.minecraft.network.protocol.game.ClientboundPlayerPositionPacket;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.phys.Vec3;
 
 public class EntityControl extends Module {
 
@@ -62,12 +62,12 @@ public class EntityControl extends Module {
 		float yaw = mc.player.getYaw();
 
 		e.setYaw(yaw);
-		if (e instanceof LlamaEntity) {
-			((LlamaEntity) e).headYaw = mc.player.headYaw;
+		if (e instanceof Llama) {
+			((Llama) e).headYaw = mc.player.headYaw;
 		}
 
 		if (getSetting(5).asToggle().getState() && forward == 0 && strafe == 0) {
-			e.setVelocity(new Vec3d(0, e.getVelocity().y, 0));
+			e.setVelocity(new Vec3(0, e.getVelocity().y, 0));
 		}
 
 		if (getSetting(0).asToggle().getState()) {
@@ -108,7 +108,7 @@ public class EntityControl extends Module {
 		}
 
 		if (getSetting(4).asToggle().getState()) {
-			Vec3d vel = e.getVelocity().multiply(2);
+			Vec3 vel = e.getVelocity().multiply(2);
 			if (WorldUtils.doesBoxCollide(e.getBoundingBox().offset(vel.x, 0, vel.z))) {
 				for (int i = 2; i < 10; i++) {
 					if (!WorldUtils.doesBoxCollide(e.getBoundingBox().offset(vel.x / i, 0, vel.z / i))) {
@@ -123,28 +123,28 @@ public class EntityControl extends Module {
 	@BleachSubscribe
 	public void onSendPacket(EventPacket.Send event) {
 		if (getSetting(6).asToggle().getState()) {
-			if (event.getPacket() instanceof VehicleMoveC2SPacket) {
-				VehicleMoveC2SPacket packet = (VehicleMoveC2SPacket) event.getPacket();
+			if (event.getPacket() instanceof ServerboundMoveVehiclePacket) {
+				ServerboundMoveVehiclePacket packet = (ServerboundMoveVehiclePacket) event.getPacket();
 				packet.yaw = getSetting(6).asToggle().getChild(0).asSlider().getValueFloat();
 				packet.pitch = getSetting(6).asToggle().getChild(1).asSlider().getValueFloat();
-			} else if (event.getPacket() instanceof PlayerMoveC2SPacket
+			} else if (event.getPacket() instanceof ServerboundMovePlayerPacket
 					&& mc.player.hasVehicle()
 					&& getSetting(6).asToggle().getChild(2).asToggle().getState()) {
-				PlayerMoveC2SPacket packet = (PlayerMoveC2SPacket) event.getPacket();
+				ServerboundMovePlayerPacket packet = (ServerboundMovePlayerPacket) event.getPacket();
 				packet.yaw = getSetting(6).asToggle().getChild(0).asSlider().getValueFloat();
 				packet.pitch = getSetting(6).asToggle().getChild(1).asSlider().getValueFloat();
 			}
 		}
 
-		if (getSetting(7).asToggle().getState() && event.getPacket() instanceof VehicleMoveC2SPacket && mc.player.hasVehicle()) {
-			mc.interactionManager.interactEntity(mc.player, mc.player.getVehicle(), Hand.MAIN_HAND);
+		if (getSetting(7).asToggle().getState() && event.getPacket() instanceof ServerboundMoveVehiclePacket && mc.player.hasVehicle()) {
+			mc.interactionManager.interactEntity(mc.player, mc.player.getVehicle(), InteractionHand.MAIN_HAND);
 		}
 	}
 
 	@BleachSubscribe
 	public void onReadPacket(EventPacket.Read event) {
 		if (getSetting(7).asToggle().getState() && mc.player != null && mc.player.hasVehicle() && !mc.player.input.sneaking
-				&& (event.getPacket() instanceof PlayerPositionLookS2CPacket || event.getPacket() instanceof EntityPassengersSetS2CPacket)) {
+				&& (event.getPacket() instanceof ClientboundPlayerPositionPacket || event.getPacket() instanceof ClientboundSetPassengersPacket)) {
 			event.setCancelled(true);
 		}
 	}

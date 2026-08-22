@@ -8,10 +8,10 @@
  */
 package org.bleachhack.mixin;
 
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.screen.option.OptionsScreen;
-import net.minecraft.client.gui.widget.ButtonWidget;
-import net.minecraft.text.Text;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.options.OptionsScreen;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.network.chat.Component;
 import org.bleachhack.gui.BleachOptionsScreen;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -21,13 +21,13 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(OptionsScreen.class)
 public abstract class MixinOptionsScreen extends Screen {
 
-	private MixinOptionsScreen(Text title) {
+	private MixinOptionsScreen(Component title) {
 		super(title);
 	}
 
 	@Inject(method = "init", at = @At("RETURN"))
 	private void init(CallbackInfo callback) {
-		addDrawableChild(ButtonWidget.builder(Text.literal("BH"), button -> {
+		addDrawableChild(Button.builder(Component.literal("BH"), button -> {
 			client.setScreen(new BleachOptionsScreen(this));
 		}).position(this.width / 2 - 180, this.height / 6 + 120 - 6).size(20, 20).build());
 	}

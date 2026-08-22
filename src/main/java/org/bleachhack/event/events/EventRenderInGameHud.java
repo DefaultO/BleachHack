@@ -8,18 +8,18 @@
  */
 package org.bleachhack.event.events;
 
-import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import org.bleachhack.event.Event;
 
 public class EventRenderInGameHud extends Event {
 
-	private DrawContext context;
+	private GuiGraphicsExtractor context;
 
-	public EventRenderInGameHud(DrawContext context) {
+	public EventRenderInGameHud(GuiGraphicsExtractor context) {
 		this.context = context;
 	}
 
-	public DrawContext getContext() {
+	public GuiGraphicsExtractor getContext() {
 		return context;
 	}
 }

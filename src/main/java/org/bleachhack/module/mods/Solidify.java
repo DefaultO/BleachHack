@@ -16,16 +16,16 @@ import org.bleachhack.module.Module;
 import org.bleachhack.module.ModuleCategory;
 import org.bleachhack.setting.module.SettingToggle;
 
-import net.minecraft.block.CactusBlock;
-import net.minecraft.block.CobwebBlock;
-import net.minecraft.block.FireBlock;
-import net.minecraft.block.HoneyBlock;
-import net.minecraft.block.PowderSnowBlock;
-import net.minecraft.block.SweetBerryBushBlock;
-import net.minecraft.fluid.LavaFluid;
-import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
-import net.minecraft.network.packet.c2s.play.VehicleMoveC2SPacket;
-import net.minecraft.util.shape.VoxelShapes;
+import net.minecraft.world.level.block.CactusBlock;
+import net.minecraft.world.level.block.WebBlock;
+import net.minecraft.world.level.block.FireBlock;
+import net.minecraft.world.level.block.HoneyBlock;
+import net.minecraft.world.level.block.PowderSnowBlock;
+import net.minecraft.world.level.block.SweetBerryBushBlock;
+import net.minecraft.world.level.material.LavaFluid;
+import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
+import net.minecraft.network.protocol.game.ServerboundMoveVehiclePacket;
+import net.minecraft.world.phys.shapes.Shapes;
 
 public class Solidify extends Module {
 
@@ -46,11 +46,11 @@ public class Solidify extends Module {
 		if ((getSetting(0).asToggle().getState() && event.getState().getBlock() instanceof CactusBlock)
 				|| (getSetting(1).asToggle().getState() && event.getState().getBlock() instanceof FireBlock)
 				|| (getSetting(2).asToggle().getState() && event.getState().getFluidState().getFluid() instanceof LavaFluid)
-				|| (getSetting(3).asToggle().getState() && event.getState().getBlock() instanceof CobwebBlock)
+				|| (getSetting(3).asToggle().getState() && event.getState().getBlock() instanceof WebBlock)
 				|| (getSetting(4).asToggle().getState() && event.getState().getBlock() instanceof SweetBerryBushBlock)
 				|| (getSetting(5).asToggle().getState() && event.getState().getBlock() instanceof HoneyBlock)
 				|| (getSetting(6).asToggle().getState() && event.getState().getBlock() instanceof PowderSnowBlock)) {
-			event.setShape(VoxelShapes.fullCube());
+			event.setShape(Shapes.fullCube());
 		}
 	}
 
@@ -66,14 +66,14 @@ public class Solidify extends Module {
 	@BleachSubscribe
 	public void onSendPacket(EventPacket.Send event) {
 		if (getSetting(7).asToggle().getState()) {
-			if (event.getPacket() instanceof VehicleMoveC2SPacket) {
-				VehicleMoveC2SPacket packet = (VehicleMoveC2SPacket) event.getPacket();
+			if (event.getPacket() instanceof ServerboundMoveVehiclePacket) {
+				ServerboundMoveVehiclePacket packet = (ServerboundMoveVehiclePacket) event.getPacket();
 				if (!mc.world.getChunkManager().isChunkLoaded((int) packet.getX() >> 4, (int) packet.getZ() >> 4)) {
 					mc.player.getVehicle().updatePosition(mc.player.getVehicle().prevX, mc.player.getVehicle().prevY, mc.player.getVehicle().prevZ);
 					event.setCancelled(true);
 				}
-			} else if (event.getPacket() instanceof PlayerMoveC2SPacket) {
-				PlayerMoveC2SPacket packet = (PlayerMoveC2SPacket) event.getPacket();
+			} else if (event.getPacket() instanceof ServerboundMovePlayerPacket) {
+				ServerboundMovePlayerPacket packet = (ServerboundMovePlayerPacket) event.getPacket();
 				if (!mc.world.getChunkManager().isChunkLoaded((int) packet.getX(mc.player.getX()) >> 4, (int) packet.getZ(mc.player.getZ()) >> 4)) {
 					event.setCancelled(true);
 				}

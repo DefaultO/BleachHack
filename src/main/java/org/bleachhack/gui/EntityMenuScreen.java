@@ -10,19 +10,19 @@ package org.bleachhack.gui;
 
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.ChatScreen;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.screen.ingame.InventoryScreen;
-import net.minecraft.client.option.KeyBinding;
-import net.minecraft.client.render.GameRenderer;
-import net.minecraft.client.util.InputUtil;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.text.Text;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.screens.ChatScreen;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.inventory.InventoryScreen;
+import net.minecraft.client.KeyMapping;
+import net.minecraft.client.renderer.GameRenderer;
+import com.mojang.blaze3d.platform.InputConstants;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.network.chat.Component;
 import net.minecraft.util.Util;
-import net.minecraft.util.math.Direction.Axis;
-import net.minecraft.util.math.MathHelper;
+import net.minecraft.core.Direction.Axis;
+import net.minecraft.util.Mth;
 import org.bleachhack.module.ModuleManager;
 import org.bleachhack.module.mods.EntityMenu;
 import org.bleachhack.util.BleachLogger;
@@ -46,7 +46,7 @@ public class EntityMenuScreen extends Screen {
 	private float yaw, pitch;
 
 	public EntityMenuScreen(LivingEntity entity) {
-		super(Text.literal("Interaction Screen"));
+		super(Component.literal("Interaction Screen"));
 		this.entity = entity;
 	}
 
@@ -61,12 +61,12 @@ public class EntityMenuScreen extends Screen {
 		double x = this.client.getWindow().getWidth() / 2d;
 		double y = this.client.getWindow().getHeight() / 2d;
 
-		KeyBinding.unpressAll();
-		InputUtil.setCursorParameters(this.client.getWindow().getHandle(), GLFW.GLFW_CURSOR_HIDDEN, x, y);
+		KeyMapping.unpressAll();
+		InputConstants.setCursorParameters(this.client.getWindow().getHandle(), GLFW.GLFW_CURSOR_HIDDEN, x, y);
 	}
 
 	public void tick() {
-		if (GLFW.glfwGetMouseButton(MinecraftClient.getInstance().getWindow().getHandle(),
+		if (GLFW.glfwGetMouseButton(Minecraft.getInstance().getWindow().getHandle(),
 				GLFW.GLFW_MOUSE_BUTTON_MIDDLE) == GLFW.GLFW_RELEASE) {
 			close();
 		}
@@ -112,7 +112,7 @@ public class EntityMenuScreen extends Screen {
 		return false;
 	}
 
-	public void render(DrawContext drawContext, int mouseX, int mouseY, float delta) {
+	public void render(GuiGraphics drawContext, int mouseX, int mouseY, float delta) {
 		// Draw entity
 		RenderSystem.setShader(GameRenderer::getPositionTexProgram);
 		RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
@@ -157,11 +157,11 @@ public class EntityMenuScreen extends Screen {
 		this.crosshairY = (int) mouse.y + height / 2;
 
 		client.player.setYaw(yaw + mouse.x / 3);
-		client.player.setPitch(MathHelper.clamp(pitch + mouse.y / 3, -90f, 90f));
+		client.player.setPitch(Mth.clamp(pitch + mouse.y / 3, -90f, 90f));
 		super.render(drawContext, mouseX, mouseY, delta);
 	}
 
-	private void drawDots(DrawContext drawContext, int radius, int mouseX, int mouseY) {
+	private void drawDots(GuiGraphics drawContext, int radius, int mouseX, int mouseY) {
 		MutablePairList<String, String> map = ModuleManager.getModule(EntityMenu.class).interactions;
 		List<Vector2> pointList = new ArrayList<>();
 		String[] cache = new String[map.size()];
@@ -197,7 +197,7 @@ public class EntityMenuScreen extends Screen {
 		}
 	}
 
-	private void drawRect(DrawContext drawContext, int startX, int startY, int width, int height, int colorInner,int colorOuter) {
+	private void drawRect(GuiGraphics drawContext, int startX, int startY, int width, int height, int colorInner,int colorOuter) {
 		drawContext.drawHorizontalLine(startX, startX + width, startY, colorOuter);
 		drawContext.drawHorizontalLine(startX, startX + width, startY + height, colorOuter);
 		drawContext.drawVerticalLine(startX, startY, startY + height, colorOuter);
@@ -205,7 +205,7 @@ public class EntityMenuScreen extends Screen {
 		drawContext.fill(startX + 1, startY + 1, startX + width, startY + height, colorInner);
 	}
 
-	private void drawTextField(DrawContext drawContext, int x, int y, String text) {
+	private void drawTextField(GuiGraphics drawContext, int x, int y, String text) {
 		if (x >= width / 2) {
 			drawRect(drawContext, x + 10, y - 8, textRenderer.getWidth(text) + 3, 15, 0x80808080, 0xFF000000);
 			drawContext.drawTextWithShadow(textRenderer, text, x + 12, y - 4, 0xFFFFFFFF);
@@ -216,7 +216,7 @@ public class EntityMenuScreen extends Screen {
 	}
 
 	// Literally drawing it in code
-	private void drawDot(DrawContext drawContext, int centerX, int centerY, int colorInner) {
+	private void drawDot(GuiGraphics drawContext, int centerX, int centerY, int colorInner) {
 		// Black background
 		drawContext.fill(centerX - 1, centerY - 5, centerX + 2, centerY + 6, 0xff000000);
 		drawContext.fill(centerX - 3, centerY - 4, centerX + 4, centerY + 5, 0xff000000);

@@ -10,7 +10,7 @@ package org.bleachhack.setting.module;
 
 import java.util.function.UnaryOperator;
 
-import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import org.bleachhack.gui.clickgui.window.ClickGuiWindow.Tooltip;
 import org.bleachhack.setting.Setting;
 import org.bleachhack.setting.SettingDataHandler;
@@ -102,7 +102,7 @@ public abstract class ModuleSetting<T> extends Setting<T> {
 		BleachFileHelper.SCHEDULE_SAVE_MODULES.set(true);
 	}
 
-	public abstract void render(ModuleWindow window, DrawContext drawContext, int x, int y, int len);
+	public abstract void render(ModuleWindow window, GuiGraphicsExtractor drawContext, int x, int y, int len);
 
 	public abstract int getHeight(int len);
 }

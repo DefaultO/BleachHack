@@ -21,17 +21,17 @@ import org.bleachhack.util.world.WorldUtils;
 
 import com.google.common.collect.Streams;
 
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.item.BowItem;
-import net.minecraft.item.CrossbowItem;
-import net.minecraft.item.Items;
-import net.minecraft.item.RangedWeaponItem;
-import net.minecraft.network.packet.c2s.play.PlayerActionC2SPacket;
-import net.minecraft.network.packet.c2s.play.PlayerActionC2SPacket.Action;
-import net.minecraft.util.Hand;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.item.BowItem;
+import net.minecraft.world.item.CrossbowItem;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.item.ProjectileWeaponItem;
+import net.minecraft.network.protocol.game.ServerboundPlayerActionPacket;
+import net.minecraft.network.protocol.game.ServerboundPlayerActionPacket.Action;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.world.phys.Vec3;
 
 public class BowBot extends Module {
 
@@ -48,19 +48,19 @@ public class BowBot extends Module {
 
 	@BleachSubscribe
 	public void onTick(EventTick event) {
-		if (!(mc.player.getMainHandStack().getItem() instanceof RangedWeaponItem) || !mc.player.isUsingItem())
+		if (!(mc.player.getMainHandStack().getItem() instanceof ProjectileWeaponItem) || !mc.player.isUsingItem())
 			return;
 
 		if (getSetting(0).asToggle().getState()) {
 			if (mc.player.getMainHandStack().getItem() == Items.CROSSBOW
 					&& (float) mc.player.getItemUseTime() / (float) CrossbowItem.getPullTime(mc.player.getMainHandStack()) >= 1f) {
 				mc.player.stopUsingItem();
-				mc.player.networkHandler.sendPacket(new PlayerActionC2SPacket(Action.RELEASE_USE_ITEM, BlockPos.ORIGIN, Direction.UP));
-				mc.interactionManager.interactItem(mc.player, Hand.MAIN_HAND);
+				mc.player.networkHandler.sendPacket(new ServerboundPlayerActionPacket(Action.RELEASE_USE_ITEM, BlockPos.ORIGIN, Direction.UP));
+				mc.interactionManager.interactItem(mc.player, InteractionHand.MAIN_HAND);
 			} else if (mc.player.getMainHandStack().getItem() == Items.BOW
 					&& BowItem.getPullProgress(mc.player.getItemUseTime()) >= getSetting(0).asToggle().getChild(0).asSlider().getValueFloat()) {
 				mc.player.stopUsingItem();
-				mc.player.networkHandler.sendPacket(new PlayerActionC2SPacket(Action.RELEASE_USE_ITEM, BlockPos.ORIGIN, Direction.UP));
+				mc.player.networkHandler.sendPacket(new ServerboundPlayerActionPacket(Action.RELEASE_USE_ITEM, BlockPos.ORIGIN, Direction.UP));
 			}
 		}
 
@@ -85,7 +85,7 @@ public class BowBot extends Module {
 			velocity = Math.min(1f, (velocity * velocity + velocity * 2) / 3);
 
 			// set position to aim at
-			Vec3d newTargetVec = target.getPos().add(target.getVelocity());
+			Vec3 newTargetVec = target.getPos().add(target.getVelocity());
 			double d = mc.player.getEyePos().distanceTo(target.getBoundingBox().offset(target.getVelocity()).getCenter());
 			double x = newTargetVec.x + (newTargetVec.x - target.getX()) * d - mc.player.getX();
 			double y = newTargetVec.y + (newTargetVec.y - target.getY()) * d + target.getHeight() * 0.5 - mc.player.getY() - mc.player.getEyeHeight(mc.player.getPose());

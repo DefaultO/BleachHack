@@ -16,8 +16,8 @@ import org.bleachhack.module.ModuleCategory;
 import org.bleachhack.setting.module.SettingMode;
 import org.bleachhack.setting.module.SettingSlider;
 
-import net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.network.protocol.game.ServerboundPlayerCommandPacket;
+import net.minecraft.world.phys.Vec3;
 import org.bleachhack.setting.module.SettingToggle;
 
 public class Speed extends Module {
@@ -44,17 +44,17 @@ public class Speed extends Module {
 		if (getSetting(0).asMode().getMode() <= 1) {
 			if ((mc.player.forwardSpeed != 0 || mc.player.sidewaysSpeed != 0) /*&& mc.player.isOnGround()*/) {
 				if (!mc.player.isSprinting()) {
-					mc.player.networkHandler.sendPacket(new ClientCommandC2SPacket(mc.player, ClientCommandC2SPacket.Mode.START_SPRINTING));
+					mc.player.networkHandler.sendPacket(new ServerboundPlayerCommandPacket(mc.player, ServerboundPlayerCommandPacket.Mode.START_SPRINTING));
 				}
 
-				mc.player.setVelocity(new Vec3d(0, mc.player.getVelocity().y, 0));
+				mc.player.setVelocity(new Vec3(0, mc.player.getVelocity().y, 0));
 				mc.player.updateVelocity(getSetting(1).asSlider().getValueFloat(),
-						new Vec3d(mc.player.sidewaysSpeed, 0, mc.player.forwardSpeed));
+						new Vec3(mc.player.sidewaysSpeed, 0, mc.player.forwardSpeed));
 				
 				double vel = Math.abs(mc.player.getVelocity().getX()) + Math.abs(mc.player.getVelocity().getZ());
 				
 				if (getSetting(0).asMode().getMode() == 0 && vel >= 0.12 && mc.player.isOnGround()) {
-					mc.player.updateVelocity(vel >= 0.3 ? 0.0f : 0.15f, new Vec3d(mc.player.sidewaysSpeed, 0, mc.player.forwardSpeed));
+					mc.player.updateVelocity(vel >= 0.3 ? 0.0f : 0.15f, new Vec3(mc.player.sidewaysSpeed, 0, mc.player.forwardSpeed));
 					mc.player.jump();
 				}
 			}
@@ -118,7 +118,7 @@ public class Speed extends Module {
 	@BleachSubscribe
 	public void onMove(EventClientMove event) {
 		if (mc.player.forwardSpeed == 0 && mc.player.sidewaysSpeed == 0 && getSetting(5).asToggle().getState()) {
-			event.setVec(new Vec3d(0, event.getVec().y, 0));
+			event.setVec(new Vec3(0, event.getVec().y, 0));
 		}
 	}
 

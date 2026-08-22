@@ -9,10 +9,10 @@
 package org.bleachhack.gui.window;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.Element;
-import net.minecraft.item.ItemStack;
-import net.minecraft.text.Text;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.events.GuiEventListener;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.network.chat.Component;
 import org.apache.commons.lang3.tuple.Triple;
 import org.bleachhack.gui.window.widget.WindowButtonWidget;
 
@@ -27,7 +27,7 @@ public class WindowManagerScreen extends WindowScreen {
 
 	@SafeVarargs
 	public WindowManagerScreen(Triple<WindowScreen, String, ItemStack>... windows) {
-		super(Text.empty(), false);
+		super(Component.empty(), false);
 		this.windows = windows;
 	}
 
@@ -55,7 +55,7 @@ public class WindowManagerScreen extends WindowScreen {
 
 		getSelectedScreen().init(client, width, height - 16);
 		addDrawable(getSelectedScreen());
-		((List<Element>) children()).add(getSelectedScreen());
+		((List<GuiEventListener>) children()).add(getSelectedScreen());
 	}
 
 	public WindowScreen getSelectedScreen() {
@@ -106,7 +106,7 @@ public class WindowManagerScreen extends WindowScreen {
 		}
 
 		@Override
-		public void render(DrawContext drawContext, int windowX, int windowY, int mouseX, int mouseY) {
+		public void render(GuiGraphics drawContext, int windowX, int windowY, int mouseX, int mouseY) {
 			int bx1 = windowX + x1;
 			int by1 = windowY + y1;
 			int bx2 = windowX + x2;

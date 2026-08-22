@@ -9,18 +9,18 @@
 package org.bleachhack.module.mods;
 
 import com.google.common.collect.Streams;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.decoration.EndCrystalEntity;
-import net.minecraft.entity.effect.StatusEffects;
-import net.minecraft.item.Items;
-import net.minecraft.util.Hand;
-import net.minecraft.util.hit.BlockHitResult;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
-import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.boss.enderdragon.EndCrystal;
+import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.core.Direction;
+import net.minecraft.world.phys.Vec3;
 import org.bleachhack.event.events.EventTick;
 import org.bleachhack.event.events.EventWorldRender;
 import org.bleachhack.eventbus.BleachSubscribe;
@@ -107,18 +107,18 @@ public class CrystalAura extends Module {
 
 		// Explode
 		SettingToggle explodeToggle = getSetting(3).asToggle();
-		List<EndCrystalEntity> nearestCrystals = Streams.stream(mc.world.getEntities())
-				.filter(e -> e instanceof EndCrystalEntity)
-				.map(e -> (EndCrystalEntity) e)
+		List<EndCrystal> nearestCrystals = Streams.stream(mc.world.getEntities())
+				.filter(e -> e instanceof EndCrystal)
+				.map(e -> (EndCrystal) e)
 				.sorted(Comparator.comparing(mc.player::distanceTo))
 				.toList();
 
 		int breaks = 0;
 		if (explodeToggle.getState() && !nearestCrystals.isEmpty() && breakCooldown <= 0) {
 			boolean end = false;
-			for (EndCrystalEntity c : nearestCrystals) {
+			for (EndCrystal c : nearestCrystals) {
 				if (mc.player.distanceTo(c) > getSetting(7).asSlider().getValue()
-						|| mc.world.getOtherEntities(null, new Box(c.getPos(), c.getPos()).expand(7), targets::contains).isEmpty())
+						|| mc.world.getOtherEntities(null, new AABB(c.getPos(), c.getPos()).expand(7), targets::contains).isEmpty())
 					continue;
 
 				float damage = DamageUtils.getExplosionDamage(c.getPos(), 6f, mc.player);
@@ -126,15 +126,15 @@ public class CrystalAura extends Module {
 					continue;
 
 				int oldSlot = mc.player.getInventory().selectedSlot;
-				if (explodeToggle.getChild(0).asToggle().getState() && mc.player.hasStatusEffect(StatusEffects.WEAKNESS)) {
+				if (explodeToggle.getChild(0).asToggle().getState() && mc.player.hasStatusEffect(MobEffects.WEAKNESS)) {
 					InventoryUtils.selectSlot(false, true, Comparator.comparing(i -> DamageUtils.getItemAttackDamage(mc.player.getInventory().getStack(i))));
 				}
 
 				if (getSetting(6).asRotate().getState()) {
-					Vec3d eyeVec = mc.player.getEyePos();
-					Vec3d v = new Vec3d(c.getX(), c.getY() + 0.5, c.getZ());
+					Vec3 eyeVec = mc.player.getEyePos();
+					Vec3 v = new Vec3(c.getX(), c.getY() + 0.5, c.getZ());
 					for (Direction d : Direction.values()) {
-						Vec3d vd = WorldUtils.getLegitLookPos(c.getBoundingBox(), d, true, 5, -0.001);
+						Vec3 vd = WorldUtils.getLegitLookPos(c.getBoundingBox(), d, true, 5, -0.001);
 						if (vd != null && eyeVec.distanceTo(vd) <= eyeVec.distanceTo(v)) {
 							v = vd;
 						}
@@ -144,7 +144,7 @@ public class CrystalAura extends Module {
 				}
 
 				mc.interactionManager.attackEntity(mc.player, c);
-				mc.player.swingHand(Hand.MAIN_HAND);
+				mc.player.swingHand(InteractionHand.MAIN_HAND);
 				blacklist.remove(c.getBlockPos().down());
 
 				InventoryUtils.selectSlot(oldSlot);
@@ -178,7 +178,7 @@ public class CrystalAura extends Module {
 
 			Map<BlockPos, Float> placeBlocks = new LinkedHashMap<>();
 
-			for (Vec3d v : getCrystalPoses()) {
+			for (Vec3 v : getCrystalPoses()) {
 				float playerDamg = DamageUtils.getExplosionDamage(v, 6f, mc.player);
 
 				if (DamageUtils.willKill(mc.player, playerDamg))
@@ -209,12 +209,12 @@ public class CrystalAura extends Module {
 			for (Entry<BlockPos, Float> e : placeBlocks.entrySet()) {
 				BlockPos block = e.getKey();
 
-				Vec3d eyeVec = mc.player.getEyePos();
+				Vec3 eyeVec = mc.player.getEyePos();
 
-				Vec3d vec = Vec3d.ofCenter(block, 1);
+				Vec3 vec = Vec3.ofCenter(block, 1);
 				Direction dir = null;
 				for (Direction d : Direction.values()) {
-					Vec3d vd = WorldUtils.getLegitLookPos(block, d, true, 5);
+					Vec3 vd = WorldUtils.getLegitLookPos(block, d, true, 5);
 					if (vd != null && eyeVec.distanceTo(vd) <= eyeVec.distanceTo(vec)) {
 						vec = vd;
 						dir = d;
@@ -235,7 +235,7 @@ public class CrystalAura extends Module {
 					WorldUtils.facePosAuto(vec.x, vec.y, vec.z, getSetting(6).asRotate());
 				}
 
-				Hand hand = InventoryUtils.selectSlot(crystalSlot);
+				InteractionHand hand = InventoryUtils.selectSlot(crystalSlot);
 
 				render = block;
 				mc.interactionManager.interactBlock(mc.player, hand, new BlockHitResult(vec, dir, block, false));
@@ -265,8 +265,8 @@ public class CrystalAura extends Module {
 		}
 	}
 
-	public Set<Vec3d> getCrystalPoses() {
-		Set<Vec3d> poses = new HashSet<>();
+	public Set<Vec3> getCrystalPoses() {
+		Set<Vec3> poses = new HashSet<>();
 
 		int range = (int) Math.floor(getSetting(7).asSlider().getValue());
 		for (int x = -range; x <= range; x++) {
@@ -291,8 +291,8 @@ public class CrystalAura extends Module {
 						}
 					}
 
-					if (mc.player.getPos().distanceTo(Vec3d.of(basePos).add(0.5, 1, 0.5)) <= getSetting(7).asSlider().getValue() + 0.25)
-						poses.add(Vec3d.of(basePos).add(0.5, 1, 0.5));
+					if (mc.player.getPos().distanceTo(Vec3.of(basePos).add(0.5, 1, 0.5)) <= getSetting(7).asSlider().getValue() + 0.25)
+						poses.add(Vec3.of(basePos).add(0.5, 1, 0.5));
 				}
 			}
 		}
@@ -311,6 +311,6 @@ public class CrystalAura extends Module {
 		if (!mc.world.isAir(placePos) || (oldPlace && !mc.world.isAir(placePos.up())))
 			return false;
 
-		return mc.world.getOtherEntities(null, new Box(placePos.toCenterPos(), placePos.up(oldPlace ? 2 : 1).toCenterPos())).isEmpty();
+		return mc.world.getOtherEntities(null, new AABB(placePos.toCenterPos(), placePos.up(oldPlace ? 2 : 1).toCenterPos())).isEmpty();
 	}
 }

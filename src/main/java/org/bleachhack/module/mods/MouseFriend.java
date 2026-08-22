@@ -18,9 +18,9 @@ import org.bleachhack.module.ModuleCategory;
 import org.bleachhack.setting.module.SettingMode;
 import org.lwjgl.glfw.GLFW;
 
-import net.minecraft.client.render.debug.DebugRenderer;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.client.renderer.debug.DebugRenderer;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.player.Player;
 
 public class MouseFriend extends Module {
 
@@ -44,7 +44,7 @@ public class MouseFriend extends Module {
 			if (lookingAt.isPresent()) {
 				Entity e = lookingAt.get();
 
-				if (e instanceof PlayerEntity) {
+				if (e instanceof Player) {
 					if (BleachHack.friendMang.has(e)) {
 						BleachHack.friendMang.remove(e);
 					} else {

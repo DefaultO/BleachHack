@@ -19,19 +19,19 @@ import org.bleachhack.util.shader.ShaderEffectWrapper;
 
 import com.google.gson.JsonSyntaxException;
 
-import net.minecraft.block.BlockState;
-import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.client.render.LightmapTextureManager;
-import net.minecraft.client.render.OverlayTexture;
-import net.minecraft.client.render.RenderLayers;
-import net.minecraft.client.render.block.entity.BlockEntityRenderer;
-import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.hit.BlockHitResult;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.util.math.random.Random;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.client.renderer.LightTexture;
+import net.minecraft.client.renderer.texture.OverlayTexture;
+import net.minecraft.client.renderer.rendertype.RenderTypes;
+import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
+import com.mojang.blaze3d.vertex.PoseStack;
+import net.minecraft.resources.Identifier;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
+import net.minecraft.util.RandomSource;
 import org.bleachhack.util.shader.ShaderLoader;
 
 public class BlockHighlight extends Module {
@@ -41,9 +41,9 @@ public class BlockHighlight extends Module {
 
 	public BlockHighlight() {
 		super("BlockHighlight", KEY_UNBOUND, ModuleCategory.RENDER, "Highlights blocks that you're looking at.",
-				new SettingMode("Render", "Shader", "Box").withDesc("The Render mode."),
+				new SettingMode("Render", "Shader", "AABB").withDesc("The Render mode."),
 				new SettingSlider("ShaderFill", 1, 255, 50, 0).withDesc("How opaque the fill on shader mode should be."),
-				new SettingSlider("Box", 0, 5, 2, 1).withDesc("How thick the box outline should be."),
+				new SettingSlider("AABB", 0, 5, 2, 1).withDesc("How thick the box outline should be."),
 				new SettingSlider("BoxFill", 0, 255, 50, 0).withDesc("How opaque the fill on box mode should be."),
 				new SettingColor("Color", 0, 128, 128).withDesc("The color of the highlight."));
 	}
@@ -86,8 +86,8 @@ public class BlockHighlight extends Module {
 			shader.prepare();
 			shader.clearFramebuffer("main");
 
-			Vec3d offset = state.getModelOffset(mc.world, pos);
-			MatrixStack matrices = Renderer.matrixFrom(pos.getX() + offset.x, pos.getY() + offset.y, pos.getZ() + offset.z);
+			Vec3 offset = state.getModelOffset(mc.world, pos);
+			PoseStack matrices = Renderer.matrixFrom(pos.getX() + offset.x, pos.getY() + offset.y, pos.getZ() + offset.z);
 
 			BlockEntity be = mc.world.getBlockEntity(pos);
 			BlockEntityRenderer<BlockEntity> renderer = be != null ? mc.getBlockEntityRenderDispatcher().get(be) : null;
@@ -95,12 +95,12 @@ public class BlockHighlight extends Module {
 				if (renderer != null) {
 					renderer.render(be, mc.getTickDelta(), matrices,
 							colorVertexer.createSingleProvider(mc.getBufferBuilders().getEntityVertexConsumers(), color[0], color[1], color[2], getSetting(1).asSlider().getValueInt()),
-							LightmapTextureManager.MAX_LIGHT_COORDINATE, OverlayTexture.DEFAULT_UV);
+							LightTexture.MAX_LIGHT_COORDINATE, OverlayTexture.DEFAULT_UV);
 				} else {
 					mc.getBlockRenderManager().getModelRenderer().renderFlat(
 							mc.world, mc.getBlockRenderManager().getModel(state), state, pos, matrices,
-							colorVertexer.createSingleProvider(mc.getBufferBuilders().getEntityVertexConsumers(), color[0], color[1], color[2], getSetting(1).asSlider().getValueInt()).getBuffer(RenderLayers.getMovingBlockLayer(state)),
-							false, Random.create(0), 0L, OverlayTexture.DEFAULT_UV);
+							colorVertexer.createSingleProvider(mc.getBufferBuilders().getEntityVertexConsumers(), color[0], color[1], color[2], getSetting(1).asSlider().getValueInt()).getBuffer(RenderTypes.getMovingBlockLayer(state)),
+							false, RandomSource.create(0), 0L, OverlayTexture.DEFAULT_UV);
 				}
 			} catch (Exception e) {
 				BleachLogger.error("Disabling BlockHighlight, another mod conflicting with shader mode?");
@@ -113,7 +113,7 @@ public class BlockHighlight extends Module {
 			shader.render();
 			shader.drawFramebufferToMain("main");
 		} else {
-			Box box = state.getOutlineShape(mc.world, pos).getBoundingBox().offset(pos);
+			AABB box = state.getOutlineShape(mc.world, pos).getBoundingBox().offset(pos);
 			float width = getSetting(2).asSlider().getValueFloat();
 			int fill = getSetting(3).asSlider().getValueInt();
 

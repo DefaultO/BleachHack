@@ -15,8 +15,8 @@ import org.bleachhack.command.exception.CmdSyntaxException;
 import org.bleachhack.util.BleachLogger;
 import org.bleachhack.util.world.WorldUtils;
 
-import net.minecraft.util.math.Box;
-import net.minecraft.util.math.MathHelper;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.util.Mth;
 
 public class CmdClip extends Command {
 
@@ -33,13 +33,13 @@ public class CmdClip extends Command {
 		if (args[0].equalsIgnoreCase("up") || args[0].equalsIgnoreCase("down")) {
 			int moveStep = args[0].equalsIgnoreCase("up") ? 1 : -1;
 
-			Box box = mc.player.getBoundingBox();
+			AABB box = mc.player.getBoundingBox();
 			if (mc.player.hasVehicle()) {
 				box = box.union(mc.player.getVehicle().getBoundingBox());
 			}
 
-			for (int y = MathHelper.floor(box.minY) + moveStep; !mc.world.isOutOfHeightLimit(y - 1); y += moveStep) {
-				if (WorldUtils.doesBoxCollide(new Box(box.minX, y - 1, box.minZ, box.maxX, y - 0.01, box.maxZ))
+			for (int y = Mth.floor(box.minY) + moveStep; !mc.world.isOutOfHeightLimit(y - 1); y += moveStep) {
+				if (WorldUtils.doesBoxCollide(new AABB(box.minX, y - 1, box.minZ, box.maxX, y - 0.01, box.maxZ))
 						&& !WorldUtils.doesBoxCollide(box.offset(0, -box.minY + y, 0))) {
 					move(0, y - box.minY, 0);
 					return;

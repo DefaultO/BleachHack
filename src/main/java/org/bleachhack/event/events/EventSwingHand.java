@@ -8,22 +8,22 @@
  */
 package org.bleachhack.event.events;
 
-import net.minecraft.util.Hand;
+import net.minecraft.world.InteractionHand;
 import org.bleachhack.event.Event;
 
 public class EventSwingHand extends Event {
 
-	private Hand hand;
+	private InteractionHand hand;
 
-	public EventSwingHand(Hand hand) {
+	public EventSwingHand(InteractionHand hand) {
 		this.setHand(hand);
 	}
 
-	public Hand getHand() {
+	public InteractionHand getHand() {
 		return hand;
 	}
 
-	public void setHand(Hand hand) {
+	public void setHand(InteractionHand hand) {
 		this.hand = hand;
 	}
 }

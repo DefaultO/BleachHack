@@ -8,11 +8,11 @@
  */
 package org.bleachhack.util.operation;
 
-import net.minecraft.item.Item;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.Direction.Axis;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.item.Item;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.core.Direction.Axis;
+import net.minecraft.world.phys.Vec3;
 import org.apache.commons.lang3.ArrayUtils;
 import org.bleachhack.util.InventoryUtils;
 import org.bleachhack.util.world.WorldUtils;
@@ -32,21 +32,21 @@ public class PlaceDirOperation extends PlaceOperation {
 	}
 
 	public static OperationBlueprint blueprint(int localX, int localY, int localZ, Direction localDir, Item... items) {
-		int horizontal = (localDir.getHorizontal() + 1) % 4;
-		return (origin, dir) -> new PlaceDirOperation(origin.add(rotate(localX, localY, localZ, dir)),
-				localDir.getAxis() == Axis.Y ? localDir : Direction.fromHorizontal(Math.floorMod(dir.getHorizontal() - horizontal, 4)), items);
+		int horizontal = (localDir.get2DDataValue() + 1) % 4;
+		return (origin, dir) -> new PlaceDirOperation(origin.offset(rotate(localX, localY, localZ, dir)),
+				localDir.getAxis() == Axis.Y ? localDir : Direction.from2DDataValue(Math.floorMod(dir.get2DDataValue() - horizontal, 4)), items);
 	}
 
 	@Override
 	public boolean execute() {
 		if (faced) {
-			int slot = InventoryUtils.getSlot(true, i -> ArrayUtils.contains(items, mc.player.getInventory().getStack(i).getItem()));
+			int slot = InventoryUtils.getSlot(true, i -> ArrayUtils.contains(items, mc.player.getInventory().getItem(i).getItem()));
 
 			faced = false;
 			return slot != -1 && WorldUtils.placeBlock(pos, slot, 0, false, false, true);
 		} else {
-			Vec3d lookPos = mc.player.getEyePos().add(dir.getOffsetX(), dir.getOffsetY(), dir.getOffsetZ());
-			WorldUtils.facePosPacket(lookPos.getX(), lookPos.getY(), lookPos.getZ());
+			Vec3 lookPos = mc.player.getEyePosition().add(dir.getStepX(), dir.getStepY(), dir.getStepZ());
+			WorldUtils.facePosPacket(lookPos.x, lookPos.y, lookPos.z);
 
 			faced = true;
 			return false;

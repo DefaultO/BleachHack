@@ -11,15 +11,15 @@ package org.bleachhack.setting.module;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 
-import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import org.bleachhack.gui.clickgui.window.ModuleWindow;
 import org.bleachhack.gui.window.Window;
 import org.bleachhack.setting.SettingDataHandlers;
 
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.sound.PositionedSoundInstance;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.util.math.MathHelper;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.resources.sounds.SimpleSoundInstance;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.util.Mth;
 
 public class SettingSlider extends ModuleSetting<Double> {
 
@@ -46,18 +46,18 @@ public class SettingSlider extends ModuleSetting<Double> {
 		return getValue().longValue();
 	}
 
-	public void render(ModuleWindow window, DrawContext drawContext, int x, int y, int len) {
+	public void render(ModuleWindow window, GuiGraphicsExtractor drawContext, int x, int y, int len) {
 		boolean mo = window.mouseOver(x, y, x + len, y + 12);
 		if (mo) {
 			drawContext.fill(x + 1, y, x + len, y + 12, 0x70303070);
 		}
 
-		int pixels = (int) Math.round(MathHelper.clamp(len * ((getValue() - min) / (max - min)), 0, len));
+		int pixels = (int) Math.round(Mth.clamp(len * ((getValue() - min) / (max - min)), 0, len));
 		Window.horizontalGradient(x + 1, y, x + pixels, y + 12,
 				mo ? 0xf03078b0 : 0xf03080a0, mo ? 0xf02068c0 : 0xf02070b0);
 
-		drawContext.drawTextWithShadow(MinecraftClient.getInstance().textRenderer, getName() + ": " + (decimals == 0 ? Integer.toString(getValueInt()) : getValue()),
-				x + 3, y + 2, 0xcfe0cf);
+		drawContext.text(Minecraft.getInstance().font, getName() + ": " + (decimals == 0 ? Integer.toString(getValueInt()) : getValue()),
+				x + 3, y + 2, 0xffcfe0cf);
 
 		if (window.mouseOver(x + 1, y, x + len, y + 12)) {
 			if (window.lmHeld) {
@@ -69,8 +69,8 @@ public class SettingSlider extends ModuleSetting<Double> {
 			if (window.mwScroll != 0) {
 				double units = 1 / (Math.pow(10, decimals));
 
-				setValue(MathHelper.clamp(getValue() + units * window.mwScroll, min, max));
-				MinecraftClient.getInstance().getSoundManager().play(PositionedSoundInstance.master(SoundEvents.UI_BUTTON_CLICK.value(), 1.0F, 0.3F));
+				setValue(Mth.clamp(getValue() + units * window.mwScroll, min, max));
+				Minecraft.getInstance().getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK.value(), 1.0F, 0.3F));
 			}
 		}
 	}

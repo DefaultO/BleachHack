@@ -8,31 +8,31 @@
  */
 package org.bleachhack.event.events;
 
-import net.minecraft.block.BlockState;
-import net.minecraft.client.render.VertexConsumer;
-import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.level.block.state.BlockState;
+import com.mojang.blaze3d.vertex.VertexConsumer;
+import com.mojang.blaze3d.vertex.PoseStack;
+import net.minecraft.core.BlockPos;
 import org.bleachhack.event.Event;
 
 public class EventRenderBlockOutline extends Event {
 
-	private MatrixStack matrices;
+	private PoseStack matrices;
 	private VertexConsumer vertexConsumer;
 	private BlockPos pos;
 	private BlockState state;
 
-	public EventRenderBlockOutline(MatrixStack matrices, VertexConsumer vertexConsumer, BlockPos pos, BlockState state) {
+	public EventRenderBlockOutline(PoseStack matrices, VertexConsumer vertexConsumer, BlockPos pos, BlockState state) {
 		this.matrices = matrices;
 		this.vertexConsumer = vertexConsumer;
 		this.pos = pos;
 		this.state = state;
 	}
 
-	public MatrixStack getMatrices() {
+	public PoseStack getMatrices() {
 		return matrices;
 	}
 
-	public void setMatrices(MatrixStack matrices) {
+	public void setMatrices(PoseStack matrices) {
 		this.matrices = matrices;
 	}
 

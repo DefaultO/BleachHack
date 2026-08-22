@@ -26,19 +26,19 @@ import org.bleachhack.setting.module.SettingToggle;
 import org.bleachhack.util.world.EntityUtils;
 import org.bleachhack.util.world.WorldUtils;
 
-import net.minecraft.entity.projectile.AbstractFireballEntity;
-import net.minecraft.entity.projectile.ShulkerBulletEntity;
+import net.minecraft.world.entity.projectile.hurtingprojectile.Fireball;
+import net.minecraft.world.entity.projectile.ShulkerBullet;
 
 import com.google.common.collect.Streams;
 
-import net.minecraft.client.render.debug.DebugRenderer;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.decoration.ArmorStandEntity;
-import net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket;
-import net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket.Mode;
-import net.minecraft.util.Hand;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.client.renderer.debug.DebugRenderer;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.decoration.ArmorStand;
+import net.minecraft.network.protocol.game.ServerboundPlayerCommandPacket;
+import net.minecraft.network.protocol.game.ServerboundPlayerCommandPacket.Mode;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.util.Mth;
+import net.minecraft.world.phys.Vec3;
 
 public class Killaura extends Module {
 
@@ -86,13 +86,13 @@ public class Killaura extends Module {
 				boolean wasSprinting = mc.player.isSprinting();
 
 				if (wasSprinting)
-					mc.player.networkHandler.sendPacket(new ClientCommandC2SPacket(mc.player, Mode.STOP_SPRINTING));
+					mc.player.networkHandler.sendPacket(new ServerboundPlayerCommandPacket(mc.player, Mode.STOP_SPRINTING));
 
 				mc.interactionManager.attackEntity(mc.player, e);
-				mc.player.swingHand(Hand.MAIN_HAND);
+				mc.player.swingHand(InteractionHand.MAIN_HAND);
 
 				if (wasSprinting)
-					mc.player.networkHandler.sendPacket(new ClientCommandC2SPacket(mc.player, Mode.START_SPRINTING));
+					mc.player.networkHandler.sendPacket(new ServerboundPlayerCommandPacket(mc.player, Mode.START_SPRINTING));
 
 				delay = 0;
 			}
@@ -118,7 +118,7 @@ public class Killaura extends Module {
 
 		if (getSetting(0).asMode().getMode() == 0) {
 			comparator = Comparator.comparing(e -> {
-				Vec3d center = e.getBoundingBox().getCenter();
+				Vec3 center = e.getBoundingBox().getCenter();
 
 				double diffX = center.x - mc.player.getX();
 				double diffY = center.y - mc.player.getEyeY();
@@ -129,7 +129,7 @@ public class Killaura extends Module {
 				float yaw = (float) Math.toDegrees(Math.atan2(diffZ, diffX)) - 90F;
 				float pitch = (float) -Math.toDegrees(Math.atan2(diffY, diffXZ));
 
-				return Math.abs(MathHelper.wrapDegrees(yaw - mc.player.getYaw())) + Math.abs(MathHelper.wrapDegrees(pitch - mc.player.getPitch()));
+				return Math.abs(Mth.wrapDegrees(yaw - mc.player.getYaw())) + Math.abs(Mth.wrapDegrees(pitch - mc.player.getPitch()));
 			});
 		} else {
 			comparator = Comparator.comparing(mc.player::distanceTo);
@@ -142,8 +142,8 @@ public class Killaura extends Module {
 				.filter(e -> (EntityUtils.isPlayer(e) && getSetting(1).asToggle().getState())
 						|| (EntityUtils.isMob(e) && getSetting(2).asToggle().getState())
 						|| (EntityUtils.isAnimal(e) && getSetting(3).asToggle().getState())
-						|| (e instanceof ArmorStandEntity && getSetting(4).asToggle().getState())
-						|| ((e instanceof ShulkerBulletEntity || e instanceof AbstractFireballEntity) && getSetting(5).asToggle().getState()))
+						|| (e instanceof ArmorStand && getSetting(4).asToggle().getState())
+						|| ((e instanceof ShulkerBullet || e instanceof Fireball) && getSetting(5).asToggle().getState()))
 				.sorted(comparator)
 				.limit(getSetting(7).asToggle().getState() ? getSetting(7).asToggle().getChild(0).asSlider().getValueLong() : 1L)
 				.collect(Collectors.toList());

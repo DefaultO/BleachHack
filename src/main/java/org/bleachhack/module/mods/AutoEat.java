@@ -16,10 +16,10 @@ import org.bleachhack.setting.module.SettingSlider;
 import org.bleachhack.setting.module.SettingToggle;
 import org.bleachhack.util.InventoryUtils;
 
-import net.minecraft.entity.effect.StatusEffectCategory;
+import net.minecraft.world.effect.MobEffectCategory;
 import net.minecraft.item.FoodComponent;
 import net.minecraft.item.FoodComponents;
-import net.minecraft.util.Hand;
+import net.minecraft.world.InteractionHand;
 
 public class AutoEat extends Module {
 
@@ -88,7 +88,7 @@ public class AutoEat extends Module {
 		if (hunger != -1) {
 			if (slot == mc.player.getInventory().selectedSlot || slot == 40) {
 				mc.options.useKey.setPressed(true);
-				mc.interactionManager.interactItem(mc.player, slot == 40 ? Hand.OFF_HAND : Hand.MAIN_HAND);
+				mc.interactionManager.interactItem(mc.player, slot == 40 ? InteractionHand.OFF_HAND : InteractionHand.MAIN_HAND);
 				eating = true;
 			} else {
 				InventoryUtils.selectSlot(slot);
@@ -97,6 +97,6 @@ public class AutoEat extends Module {
 	}
 
 	private boolean isPoisonous(FoodComponent food) {
-		return food.getStatusEffects().stream().anyMatch(e -> e.getFirst().getEffectType().getCategory() == StatusEffectCategory.HARMFUL);
+		return food.getStatusEffects().stream().anyMatch(e -> e.getFirst().getEffectType().getCategory() == MobEffectCategory.HARMFUL);
 	}
 }

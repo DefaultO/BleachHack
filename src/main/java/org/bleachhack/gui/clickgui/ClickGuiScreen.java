@@ -8,11 +8,11 @@
  */
 package org.bleachhack.gui.clickgui;
 
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.sound.PositionedSoundInstance;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.text.Text;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.resources.sounds.SimpleSoundInstance;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.network.chat.Component;
 import org.apache.commons.lang3.ArrayUtils;
 import org.bleachhack.gui.clickgui.window.ClickGuiWindow;
 import org.bleachhack.gui.clickgui.window.ClickGuiWindow.Tooltip;
@@ -34,7 +34,7 @@ public abstract class ClickGuiScreen extends WindowScreen {
 	
 	private int warningOpacity;
 
-	public ClickGuiScreen(Text title) {
+	public ClickGuiScreen(Component title) {
 		super(title);
 	}
 	
@@ -50,7 +50,7 @@ public abstract class ClickGuiScreen extends WindowScreen {
 		return false;
 	}
 
-	public void render(DrawContext drawContext, int mouseX, int mouseY, float delta) {
+	public void render(GuiGraphics drawContext, int mouseX, int mouseY, float delta) {
 		this.renderBackground(drawContext, mouseX, mouseY, delta);
 
 		for (Window w : getWindows()) {
@@ -125,10 +125,10 @@ public abstract class ClickGuiScreen extends WindowScreen {
 	public boolean mouseClicked(double mouseX, double mouseY, int button) {
 		if (button == 0) {
 			if (mouseX >= width / 2 - 50 && mouseX <= width / 2 - 2 && mouseY >= 0 && mouseY <= 12) {
-				client.getSoundManager().play(PositionedSoundInstance.master(SoundEvents.UI_BUTTON_CLICK, 1f));
+				client.getSoundManager().play(SimpleSoundInstance.master(SoundEvents.UI_BUTTON_CLICK, 1f));
 				tryOpen(ModuleClickGuiScreen.INSTANCE);
 			} else if (mouseX >= width / 2 + 2 && mouseX <= width / 2 + 50 && mouseY >= 0 && mouseY <= 12) {
-				client.getSoundManager().play(PositionedSoundInstance.master(SoundEvents.UI_BUTTON_CLICK, 1f));
+				client.getSoundManager().play(SimpleSoundInstance.master(SoundEvents.UI_BUTTON_CLICK, 1f));
 				tryOpen(UIClickGuiScreen.INSTANCE);
 			} else {
 				lmDown = true;

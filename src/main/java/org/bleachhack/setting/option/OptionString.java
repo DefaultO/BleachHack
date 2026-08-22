@@ -6,7 +6,7 @@ import org.bleachhack.gui.window.widget.WindowTextFieldWidget;
 import org.bleachhack.gui.window.widget.WindowWidget;
 import org.bleachhack.setting.SettingDataHandlers;
 
-import net.minecraft.client.gui.widget.TextFieldWidget;
+import net.minecraft.client.gui.components.EditBox;
 
 public class OptionString extends Option<String> {
 
@@ -31,20 +31,20 @@ public class OptionString extends Option<String> {
 			public void charTyped(char chr, int modifiers) {
 				super.charTyped(chr, modifiers);
 
-				setValue(textField.getText());
+				setValue(textField.getValue());
 			}
 
 			@Override
 			public void keyPressed(int keyCode, int scanCode, int modifiers) {
 				super.keyPressed(keyCode, scanCode, modifiers);
 
-				setValue(textField.getText());
+				setValue(textField.getValue());
 			}
 
 		}.withRenderEvent((w, ms, wx, wy) -> {
-			TextFieldWidget textField = ((WindowTextFieldWidget) w).textField;
-			if (!textField.getText().equals(getRealValue()))
-				textField.setText(getRealValue());
+			EditBox textField = ((WindowTextFieldWidget) w).textField;
+			if (!textField.getValue().equals(getRealValue()))
+				textField.setValue(getRealValue());
 
 			if (validator != null && !validator.apply(getRealValue())) {
 				ms.fill(wx + w.x1 - 1, wy + w.y1 - 1, wx + w.x2 + 1, wy + w.y1, 0xffd07070);

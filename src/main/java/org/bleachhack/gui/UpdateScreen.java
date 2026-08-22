@@ -11,13 +11,13 @@ package org.bleachhack.gui;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
-import net.minecraft.text.StringVisitable;
-import net.minecraft.text.Style;
-import net.minecraft.text.Text;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.network.chat.FormattedText;
+import net.minecraft.network.chat.Style;
+import net.minecraft.network.chat.Component;
 import net.minecraft.util.Util;
 import org.apache.commons.io.FileUtils;
 import org.bleachhack.BleachHack;
@@ -46,7 +46,7 @@ public class UpdateScreen extends WindowScreen {
 	private String updateResult = "";
 
 	public UpdateScreen(Screen parent, JsonObject updateJson) {
-		super(Text.literal("BleachHack Update Available"));
+		super(Component.literal("BleachHack Update Available"));
 		this.parent = parent;
 		this.updateJson = updateJson;
 	}
@@ -74,7 +74,7 @@ public class UpdateScreen extends WindowScreen {
 					if (string.charAt(0) == '-')
 						string = "§7-§r" + string.substring(1);
 
-					List<StringVisitable> wrapped = client.textRenderer.getTextHandler().wrapLines(string, w - 32, Style.EMPTY);
+					List<FormattedText> wrapped = client.textRenderer.getTextHandler().wrapLines(string, w - 32, Style.EMPTY);
 					for (int i = 0; i < wrapped.size(); i++)
 						changelog.add(wrapped.get(i).getString(), i == 0);
 				}
@@ -165,11 +165,11 @@ public class UpdateScreen extends WindowScreen {
 
 		getWindow(1).addWidget(new WindowTextWidget("", true, WindowTextWidget.TextAlign.MIDDLE, wd, 16, 0xc05050)
 				.withRenderEvent((wg, ms, wx, wy)
-						-> ((WindowTextWidget) wg).setText(Text.literal(updateResult))));
+						-> ((WindowTextWidget) wg).setText(Component.literal(updateResult))));
 	}
 
 	@Override
-	public void render(DrawContext drawContext, int mouseX, int mouseY, float delta) {
+	public void render(GuiGraphics drawContext, int mouseX, int mouseY, float delta) {
 		this.renderBackground(drawContext, mouseX, mouseY, delta);
 
 		int offset = scrollbar.getOffsetSinceRender();

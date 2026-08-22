@@ -1,9 +1,9 @@
 package org.bleachhack.module.mods;
 
-import net.minecraft.client.gui.screen.DisconnectedScreen;
-import net.minecraft.network.packet.s2c.play.PlayerListS2CPacket;
-import net.minecraft.text.Text;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.client.gui.screens.DisconnectedScreen;
+import net.minecraft.network.protocol.game.ClientboundPlayerInfoUpdatePacket;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.phys.Vec3;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.bleachhack.event.events.EventEntityRender;
@@ -38,7 +38,7 @@ public class LogoutSpot extends Module {
 								new SettingSlider("Duration", 1, 1800, 120, 0).withDesc("Duration after which a logged out players gets removed (in seconds).")), // 0-1-0
 						new SettingToggle("Disconnect", true).withDesc("Removes all logout spots when disconnecting."), // 0-2
 						new SettingToggle("Disable", true).withDesc("Removes all logout spots when disabling LogoutSpot.")), // 0-3
-				new SettingToggle("Text", true).withDesc("Adds text next to players.").withChildren( // 1
+				new SettingToggle("Component", true).withDesc("Adds text next to players.").withChildren( // 1
 						new SettingToggle("Name", true).withDesc("Shows the name of the logged player."), // 1-0
 						new SettingToggle("Coords", false).withDesc("Shows the coords of the logged player."), // 1-1
 						new SettingToggle("Health", true).withDesc("Shows the health of the logged player."), // 1-2
@@ -70,15 +70,15 @@ public class LogoutSpot extends Module {
 
 	@BleachSubscribe
 	public void onReadPacket(EventPacket.Read event) {
-		if (!(event.getPacket() instanceof PlayerListS2CPacket) || mc.world == null) {
+		if (!(event.getPacket() instanceof ClientboundPlayerInfoUpdatePacket) || mc.world == null) {
 			return;
 		}
 
-		/*PlayerListS2CPacket list = (PlayerListS2CPacket) event.getPacket();
+		/*ClientboundPlayerInfoUpdatePacket list = (ClientboundPlayerInfoUpdatePacket) event.getPacket();
 
 		// Spawns fake player when player leaves
-		if (list.getAction() == PlayerListS2CPacket.Action.REMOVE_PLAYER) {
-			for (PlayerListS2CPacket.Entry entry : list.getEntries()) {
+		if (list.getAction() == ClientboundPlayerInfoUpdatePacket.Action.REMOVE_PLAYER) {
+			for (ClientboundPlayerInfoUpdatePacket.Entry entry : list.getEntries()) {
 				PlayerEntity player = mc.world.getPlayerByUuid(entry.getProfile().getId());
 
 				if (player != null && !mc.player.equals(player) && !players.containsKey(player.getUuid())) {
@@ -90,8 +90,8 @@ public class LogoutSpot extends Module {
 		}
 
 		// Removes fake player when player joins
-		if (list.getAction().equals(PlayerListS2CPacket.Action.ADD_PLAYER)) {
-			for (PlayerListS2CPacket.Entry entry : list.getEntries()) {
+		if (list.getAction().equals(ClientboundPlayerInfoUpdatePacket.Action.ADD_PLAYER)) {
+			for (ClientboundPlayerInfoUpdatePacket.Entry entry : list.getEntries()) {
 				Pair<PlayerCopyEntity, Long> fakePlayer = players.remove(entry.getProfile().getId());
 
 				if (fakePlayer != null && mc.world != null) {
@@ -137,11 +137,11 @@ public class LogoutSpot extends Module {
 			if (getSetting(1).asToggle().getState()) {
 				PlayerCopyEntity player = playerPair.getLeft();
 
-				Vec3d rVec = new Vec3d(player.lastRenderX + (player.getX() - player.lastRenderX) * mc.getTickDelta(),
+				Vec3 rVec = new Vec3(player.lastRenderX + (player.getX() - player.lastRenderX) * mc.getTickDelta(),
 						player.lastRenderY + (player.getY() - player.lastRenderY) * mc.getTickDelta() + player.getHeight(),
 						player.lastRenderZ + (player.getZ() - player.lastRenderZ) * mc.getTickDelta());
 
-				Vec3d offset = new Vec3d(0, 0, 0.45 + mc.textRenderer.getWidth(player.getDisplayName().getString()) / 90d)
+				Vec3 offset = new Vec3(0, 0, 0.45 + mc.textRenderer.getWidth(player.getDisplayName().getString()) / 90d)
 						.rotateY((float) -Math.toRadians(mc.player.getYaw() + 90));
 
 				List<String> lines = new ArrayList<>();
@@ -160,7 +160,7 @@ public class LogoutSpot extends Module {
 					lines.add("§c" + getTimeElapsed(playerPair.getRight()));
 
 				for (int i = 0; i < lines.size(); i++) {
-					WorldRenderer.drawText(Text.literal(lines.get(i)), rVec.x + offset.x, rVec.y + 0.1 - i * 0.25, rVec.z + offset.z, 1, true);
+					WorldRenderer.drawText(Component.literal(lines.get(i)), rVec.x + offset.x, rVec.y + 0.1 - i * 0.25, rVec.z + offset.z, 1, true);
 				}
 			}
 		}

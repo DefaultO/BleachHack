@@ -17,13 +17,13 @@ import org.bleachhack.setting.module.ModuleSetting;
 import org.bleachhack.setting.module.SettingKey;
 import org.bleachhack.util.io.BleachFileHelper;
 
-import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.Minecraft;
 
 public class Module {
 
 	public static final int KEY_UNBOUND = -1481058891;
 
-	protected static final MinecraftClient mc = MinecraftClient.getInstance();
+	protected static final Minecraft mc = Minecraft.getInstance();
 	private String name;
 	private SettingKey key;
 

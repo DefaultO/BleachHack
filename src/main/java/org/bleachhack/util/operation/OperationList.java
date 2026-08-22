@@ -8,9 +8,9 @@
  */
 package org.bleachhack.util.operation;
 
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
-import net.minecraft.util.math.Direction;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.core.Direction;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -57,14 +57,14 @@ public class OperationList {
 		return operations.get(index);
 	}
 
-	public Box getBox() {
-		Box box = null;
+	public AABB getBox() {
+		AABB box = null;
 
 		for (Operation o: operations) {
 			if (box == null) {
-				box = new Box(o.pos);
+				box = new AABB(o.pos);
 			} else {
-				box = new Box(Math.min(box.minX, o.pos.getX()), Math.min(box.minY, o.pos.getY()), Math.min(box.minZ, o.pos.getZ()),
+				box = new AABB(Math.min(box.minX, o.pos.getX()), Math.min(box.minY, o.pos.getY()), Math.min(box.minZ, o.pos.getZ()),
 						Math.max(box.maxX, o.pos.getX() + 1), Math.max(box.maxY, o.pos.getY() + 1), Math.max(box.maxZ, o.pos.getZ() + 1));
 			}
 		}

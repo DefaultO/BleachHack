@@ -8,49 +8,49 @@
  */
 package org.bleachhack.util.world;
 
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.mob.AmbientEntity;
-import net.minecraft.entity.mob.Monster;
-import net.minecraft.entity.mob.WaterCreatureEntity;
-import net.minecraft.entity.passive.IronGolemEntity;
-import net.minecraft.entity.passive.PassiveEntity;
-import net.minecraft.entity.passive.SnowGolemEntity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.projectile.AbstractFireballEntity;
-import net.minecraft.entity.projectile.ShulkerBulletEntity;
+import net.minecraft.client.Minecraft;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.ambient.AmbientCreature;
+import net.minecraft.world.entity.monster.Enemy;
+import net.minecraft.world.entity.animal.fish.WaterAnimal;
+import net.minecraft.world.entity.animal.golem.IronGolem;
+import net.minecraft.world.entity.AgeableMob;
+import net.minecraft.world.entity.animal.golem.SnowGolem;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.projectile.hurtingprojectile.Fireball;
+import net.minecraft.world.entity.projectile.ShulkerBullet;
 import org.bleachhack.BleachHack;
 
 public class EntityUtils {
 
 	public static boolean isAnimal(Entity e) {
-		return e instanceof PassiveEntity
-				|| e instanceof AmbientEntity
-				|| e instanceof WaterCreatureEntity
-				|| e instanceof IronGolemEntity
-				|| e instanceof SnowGolemEntity;
+		return e instanceof AgeableMob
+				|| e instanceof AmbientCreature
+				|| e instanceof WaterAnimal
+				|| e instanceof IronGolem
+				|| e instanceof SnowGolem;
 	}
 
 	public static boolean isMob(Entity e) {
-		return e instanceof Monster;
+		return e instanceof Enemy;
 	}
 
 	public static boolean isPlayer(Entity e) {
-		return e instanceof PlayerEntity;
+		return e instanceof Player;
 	}
 
 	public static boolean isOtherServerPlayer(Entity e) {
-		return e instanceof PlayerEntity
-				&& e != MinecraftClient.getInstance().player
+		return e instanceof Player
+				&& e != Minecraft.getInstance().player
 				&& !(e instanceof PlayerCopyEntity);
 	}
 
 	public static boolean isAttackable(Entity e, boolean ignoreFriends) {
-		return (e instanceof LivingEntity || e instanceof ShulkerBulletEntity || e instanceof AbstractFireballEntity)
+		return (e instanceof LivingEntity || e instanceof ShulkerBullet || e instanceof Fireball)
 				&& e.isAlive()
-				&& e != MinecraftClient.getInstance().player
-				&& !e.isConnectedThroughVehicle(MinecraftClient.getInstance().player)
+				&& e != Minecraft.getInstance().player
+				&& !e.isPassengerOfSameVehicle(Minecraft.getInstance().player)
 				&& !(e instanceof PlayerCopyEntity)
 				&& (!ignoreFriends || !BleachHack.friendMang.has(e));
 	}

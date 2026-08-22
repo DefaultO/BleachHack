@@ -1,30 +1,30 @@
 package org.bleachhack.util.shader;
 
 import com.google.gson.JsonSyntaxException;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gl.Framebuffer;
-import net.minecraft.client.gl.PostEffectProcessor;
-import net.minecraft.client.gl.ShaderProgram;
+import net.minecraft.client.Minecraft;
+import com.mojang.blaze3d.pipeline.RenderTarget;
+import net.minecraft.client.renderer.PostChain;
+import com.mojang.blaze3d.opengl.GlProgram;
 import net.minecraft.client.render.VertexFormat;
-import net.minecraft.client.texture.TextureManager;
-import net.minecraft.resource.ResourceManager;
-import net.minecraft.util.Identifier;
+import net.minecraft.client.renderer.texture.TextureManager;
+import net.minecraft.server.packs.resources.ResourceManager;
+import net.minecraft.resources.Identifier;
 
 import java.io.IOException;
 
 public class ShaderLoader {
 
-	public static ShaderProgram load(VertexFormat format, Identifier id) throws IOException {
-		ResourceManager resMang = MinecraftClient.getInstance().getResourceManager();
+	public static GlProgram load(VertexFormat format, Identifier id) throws IOException {
+		ResourceManager resMang = Minecraft.getInstance().getResourceManager();
 		
-		return new ShaderProgram(new OpenResourceManager(resMang), id.toString(), format);
+		return new GlProgram(new OpenResourceManager(resMang), id.toString(), format);
 	}
 
-	public static PostEffectProcessor loadEffect(Framebuffer framebuffer, Identifier id) throws JsonSyntaxException, IOException {
-		ResourceManager resMang = MinecraftClient.getInstance().getResourceManager();
-		TextureManager texMang = MinecraftClient.getInstance().getTextureManager();
+	public static PostChain loadEffect(RenderTarget framebuffer, Identifier id) throws JsonSyntaxException, IOException {
+		ResourceManager resMang = Minecraft.getInstance().getResourceManager();
+		TextureManager texMang = Minecraft.getInstance().getTextureManager();
 	
-		return new PostEffectProcessor(texMang, new OpenResourceManager(resMang), framebuffer, id);
+		return new PostChain(texMang, new OpenResourceManager(resMang), framebuffer, id);
 	}
 
 }

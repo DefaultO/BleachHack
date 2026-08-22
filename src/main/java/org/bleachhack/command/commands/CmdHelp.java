@@ -16,10 +16,10 @@ import org.bleachhack.command.CommandCategory;
 import org.bleachhack.command.CommandManager;
 import org.bleachhack.util.BleachLogger;
 
-import net.minecraft.text.HoverEvent;
+import net.minecraft.network.chat.HoverEvent;
 
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Text;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.network.chat.Component;
 
 public class CmdHelp extends Command {
 
@@ -41,7 +41,7 @@ public class CmdHelp extends Command {
 			if (!cmd.isEmpty() && Stream.of(c.getAliases()).noneMatch(cmd::equalsIgnoreCase))
 				continue;
 
-			MutableText text = Text.literal(getPrefix() + c.getAliases()[0] + ": §f" + c.getDescription())
+			MutableComponent text = Component.literal(getPrefix() + c.getAliases()[0] + ": §f" + c.getDescription())
 					.styled(s -> s.withColor(BleachLogger.INFO_COLOR));
 
 			BleachLogger.noPrefix(

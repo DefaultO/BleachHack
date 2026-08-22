@@ -13,10 +13,10 @@ import org.bleachhack.mixin.AccessorChatScreen;
 import org.bleachhack.setting.option.Option;
 import org.lwjgl.glfw.GLFW;
 
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.screen.ChatScreen;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.widget.TextFieldWidget;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.ChatScreen;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.components.EditBox;
 
 public class CommandSuggestor {
 
@@ -49,10 +49,10 @@ public class CommandSuggestor {
 		if (!Option.CHAT_SHOW_SUGGESTIONS.getValue())
 			return;
 
-		Screen screen = MinecraftClient.getInstance().currentScreen;
+		Screen screen = Minecraft.getInstance().currentScreen;
 
 		if (screen instanceof ChatScreen) {
-			TextFieldWidget field = ((AccessorChatScreen) screen).getChatField();
+			EditBox field = ((AccessorChatScreen) screen).getChatField();
 			String text = field.getText();
 
 			if (!text.equals(curText)) {
@@ -83,17 +83,17 @@ public class CommandSuggestor {
 				event.getContext().getMatrices().translate(0, 0, 200);
 
 				int length = suggestions.stream()
-						.map(s -> MinecraftClient.getInstance().textRenderer.getWidth(s))
+						.map(s -> Minecraft.getInstance().textRenderer.getWidth(s))
 						.min(Comparator.reverseOrder()).orElse(0);
 
-				int startX = MinecraftClient.getInstance().textRenderer.getWidth(
+				int startX = Minecraft.getInstance().textRenderer.getWidth(
 						field.getText().replaceFirst("[^ ]*$", "") + (!field.getText().contains(" ") ? Command.getPrefix() : "")) + 3;
 				int startY = screen.height - Math.min(suggestions.size(), 10) * 12 - 15;
 				for (int i = scroll; i < suggestions.size() && i < scroll + 10; i++) {
 					String suggestion = suggestions.get(i);
 
 					event.getContext().fill(startX, startY, startX + length + 2, startY + 12, 0xd0000000);
-					event.getContext().drawTextWithShadow(MinecraftClient.getInstance().textRenderer,
+					event.getContext().drawTextWithShadow(Minecraft.getInstance().textRenderer,
 							suggestion, startX + 1, startY + 2, i == selected ? 0xffff00: 0xb0b0b0);
 
 					startY += 12;
@@ -115,7 +115,7 @@ public class CommandSuggestor {
 				updateScroll();
 			} else if (event.getKey() == GLFW.GLFW_KEY_SPACE || event.getKey() == GLFW.GLFW_KEY_TAB) {
 				if (selected >= 0 && selected < suggestions.size()) {
-					TextFieldWidget field = ((AccessorChatScreen) MinecraftClient.getInstance().currentScreen).getChatField();
+					EditBox field = ((AccessorChatScreen) Minecraft.getInstance().currentScreen).getChatField();
 					String[] split = field.getText().split(" ", -1);
 					int offset = split[split.length - 1].length() - (split.length == 1 ? Command.getPrefix().length() : 0);
 
@@ -129,7 +129,7 @@ public class CommandSuggestor {
 
 	@BleachSubscribe
 	public void onKeyPressChat(EventKeyPress.InChat event) {
-		TextFieldWidget field = ((AccessorChatScreen) MinecraftClient.getInstance().currentScreen).getChatField();
+		EditBox field = ((AccessorChatScreen) Minecraft.getInstance().currentScreen).getChatField();
 		if (field.getText().startsWith(Command.getPrefix())
 				&& (event.getKey() == GLFW.GLFW_KEY_TAB || event.getKey() == GLFW.GLFW_KEY_UP || event.getKey() == GLFW.GLFW_KEY_DOWN)) {
 			event.setCancelled(true);
@@ -146,7 +146,7 @@ public class CommandSuggestor {
 
 	@BleachSubscribe
 	public void onOpenScreen(EventOpenScreen event) {
-		if (MinecraftClient.getInstance().currentScreen instanceof ChatScreen) {
+		if (Minecraft.getInstance().currentScreen instanceof ChatScreen) {
 			reset();
 		}
 	}

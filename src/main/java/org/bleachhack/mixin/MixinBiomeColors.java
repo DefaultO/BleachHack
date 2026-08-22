@@ -8,11 +8,11 @@
  */
 package org.bleachhack.mixin;
 
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.color.world.BiomeColors;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.BlockRenderView;
-import net.minecraft.world.biome.ColorResolver;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.BiomeColors;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.BlockAndTintGetter;
+import net.minecraft.world.level.ColorResolver;
 import org.bleachhack.BleachHack;
 import org.bleachhack.event.events.EventBiomeColor;
 import org.spongepowered.asm.mixin.Mixin;
@@ -23,9 +23,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(BiomeColors.class)
 public class MixinBiomeColors {
 
-	@Inject(method = "getColor(Lnet/minecraft/world/BlockRenderView;Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/world/biome/ColorResolver;)I", at = @At("RETURN"), cancellable = true)
-	private static void getColor(BlockRenderView world, BlockPos pos, ColorResolver resolver, CallbackInfoReturnable<Integer> callback) {
-		if (MinecraftClient.getInstance().world != null) {
+	@Inject(method = "getColor(Lnet/minecraft/world/BlockAndTintGetter;Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/world/biome/ColorResolver;)I", at = @At("RETURN"), cancellable = true)
+	private static void getColor(BlockAndTintGetter world, BlockPos pos, ColorResolver resolver, CallbackInfoReturnable<Integer> callback) {
+		if (Minecraft.getInstance().world != null) {
 			EventBiomeColor event = 
 					resolver == BiomeColors.FOLIAGE_COLOR ? new EventBiomeColor.Foilage(world, pos, callback.getReturnValueI()) :
 						resolver == BiomeColors.GRASS_COLOR ? new EventBiomeColor.Grass(world, pos, callback.getReturnValueI()) :

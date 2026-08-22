@@ -8,11 +8,11 @@
  */
 package org.bleachhack.gui.clickgui.window;
 
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.sound.PositionedSoundInstance;
-import net.minecraft.item.ItemStack;
-import net.minecraft.sound.SoundEvents;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.resources.sounds.SimpleSoundInstance;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.sounds.SoundEvents;
 import org.bleachhack.module.Module;
 import org.bleachhack.module.ModuleManager;
 import org.bleachhack.module.mods.ClickGui;
@@ -47,7 +47,7 @@ public class ModuleWindow extends ClickGuiWindow {
 		y2 = getHeight();
 	}
 
-	public void render(DrawContext drawContext, int mouseX, int mouseY) {
+	public void render(GuiGraphics drawContext, int mouseX, int mouseY) {
 		tooltip = null;
 		int x = x1 + 1;
 		int y = y1 + 13;
@@ -58,7 +58,7 @@ public class ModuleWindow extends ClickGuiWindow {
 
 		if (hiding) return;
 
-		TextRenderer textRend = mc.textRenderer;
+		Font textRend = mc.textRenderer;
 
 		int curY = 0;
 		for (Entry<Module, Boolean> m : mods.entrySet()) {
@@ -83,7 +83,7 @@ public class ModuleWindow extends ClickGuiWindow {
 				if (rmDown)
 					mods.replace(m.getKey(), !m.getValue());
 				if (lmDown || rmDown)
-					mc.getSoundManager().play(PositionedSoundInstance.master(SoundEvents.UI_BUTTON_CLICK, 1.0F));
+					mc.getSoundManager().play(SimpleSoundInstance.master(SoundEvents.UI_BUTTON_CLICK, 1.0F));
 			}
 
 			curY += 12;

@@ -19,41 +19,41 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.client.network.ClientPlayerInteractionManager;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.util.ActionResult;
-import net.minecraft.util.Hand;
-import net.minecraft.util.hit.BlockHitResult;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.client.multiplayer.MultiPlayerGameMode;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 
-@Mixin(ClientPlayerInteractionManager.class)
+@Mixin(MultiPlayerGameMode.class)
 public class MixinClientPlayerInteractionManager {
 
 	@Shadow private int blockBreakingCooldown;
 
-	@Redirect(method = "updateBlockBreakingProgress", at = @At(value = "FIELD", target = "Lnet/minecraft/client/network/ClientPlayerInteractionManager;blockBreakingCooldown:I", ordinal = 3),
+	@Redirect(method = "updateBlockBreakingProgress", at = @At(value = "FIELD", target = "Lnet/minecraft/client/network/MultiPlayerGameMode;blockBreakingCooldown:I", ordinal = 3),
 			require = 0 /* TODO: meteor compatibility */)
-	private void updateBlockBreakingProgress(ClientPlayerInteractionManager clientPlayerInteractionManager, int newCooldown) {
+	private void updateBlockBreakingProgress(MultiPlayerGameMode clientPlayerInteractionManager, int newCooldown) {
 		EventBlockBreakCooldown event = new EventBlockBreakCooldown(newCooldown);
 		BleachHack.eventBus.post(event);
 
 		this.blockBreakingCooldown = event.getCooldown();
 	}
 
-	@Redirect(method = "updateBlockBreakingProgress", at = @At(value = "FIELD", target = "Lnet/minecraft/client/network/ClientPlayerInteractionManager;blockBreakingCooldown:I", ordinal = 4),
+	@Redirect(method = "updateBlockBreakingProgress", at = @At(value = "FIELD", target = "Lnet/minecraft/client/network/MultiPlayerGameMode;blockBreakingCooldown:I", ordinal = 4),
 			require = 0 /* TODO: meteor compatibility */)
-	private void updateBlockBreakingProgress2(ClientPlayerInteractionManager clientPlayerInteractionManager, int newCooldown) {
+	private void updateBlockBreakingProgress2(MultiPlayerGameMode clientPlayerInteractionManager, int newCooldown) {
 		EventBlockBreakCooldown event = new EventBlockBreakCooldown(newCooldown);
 		BleachHack.eventBus.post(event);
 
 		this.blockBreakingCooldown = event.getCooldown();
 	}
 
-	@Redirect(method = "attackBlock", at = @At(value = "FIELD", target = "Lnet/minecraft/client/network/ClientPlayerInteractionManager;blockBreakingCooldown:I"),
+	@Redirect(method = "attackBlock", at = @At(value = "FIELD", target = "Lnet/minecraft/client/network/MultiPlayerGameMode;blockBreakingCooldown:I"),
 			require = 0 /* TODO: meteor compatibility */)
-	private void attackBlock(ClientPlayerInteractionManager clientPlayerInteractionManager, int newCooldown) {
+	private void attackBlock(MultiPlayerGameMode clientPlayerInteractionManager, int newCooldown) {
 		EventBlockBreakCooldown event = new EventBlockBreakCooldown(newCooldown);
 		BleachHack.eventBus.post(event);
 
@@ -81,22 +81,22 @@ public class MixinClientPlayerInteractionManager {
 	}
 
 	@Inject(method = "interactBlock", at = @At("HEAD"), cancellable = true)
-	private void interactBlock(ClientPlayerEntity player, Hand hand, BlockHitResult hitResult, CallbackInfoReturnable<ActionResult> callback) {
+	private void interactBlock(LocalPlayer player, InteractionHand hand, BlockHitResult hitResult, CallbackInfoReturnable<InteractionResult> callback) {
 		EventInteract.InteractBlock event = new EventInteract.InteractBlock(hand, hitResult);
 		BleachHack.eventBus.post(event);
 
 		if (event.isCancelled()) {
-			callback.setReturnValue(ActionResult.PASS);
+			callback.setReturnValue(InteractionResult.PASS);
 		}
 	}
 
 	@Inject(method = "interactItem", at = @At("HEAD"), cancellable = true)
-	private void interactItem(PlayerEntity player, Hand hand, CallbackInfoReturnable<ActionResult> callback) {
+	private void interactItem(Player player, InteractionHand hand, CallbackInfoReturnable<InteractionResult> callback) {
 		EventInteract.InteractItem event = new EventInteract.InteractItem(hand);
 		BleachHack.eventBus.post(event);
 
 		if (event.isCancelled()) {
-			callback.setReturnValue(ActionResult.PASS);
+			callback.setReturnValue(InteractionResult.PASS);
 		}
 	}
 

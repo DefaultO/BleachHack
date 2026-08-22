@@ -8,7 +8,7 @@
  */
 package org.bleachhack.module.mods;
 
-import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.GuiGraphics;
 import org.bleachhack.event.events.EventOpenScreen;
 import org.bleachhack.event.events.EventPacket;
 import org.bleachhack.event.events.EventRenderInGameHud;
@@ -18,14 +18,14 @@ import org.bleachhack.module.Module;
 import org.bleachhack.module.ModuleCategory;
 import org.bleachhack.setting.module.SettingToggle;
 
-import net.minecraft.client.gui.screen.DeathScreen;
-import net.minecraft.client.gui.screen.DisconnectedScreen;
-import net.minecraft.network.packet.s2c.play.GameJoinS2CPacket;
+import net.minecraft.client.gui.screens.DeathScreen;
+import net.minecraft.client.gui.screens.DisconnectedScreen;
+import net.minecraft.network.protocol.game.ClientboundLoginPacket;
 
 public class DeathExplorer extends Module {
 
 	private boolean dead;
-	DrawContext drawContext = new DrawContext(mc, mc.getBufferBuilders().getEffectVertexConsumers());
+	GuiGraphics drawContext = new GuiGraphics(mc, mc.getBufferBuilders().getEffectVertexConsumers());
 
 	public DeathExplorer() {
 		super("DeathExplorer", KEY_UNBOUND, ModuleCategory.PLAYER, "Allows you to explore the world after you've died.",
@@ -63,7 +63,7 @@ public class DeathExplorer extends Module {
 
 	@BleachSubscribe
 	public void onReadPacket(EventPacket.Read event) {
-		if (event.getPacket() instanceof GameJoinS2CPacket) {
+		if (event.getPacket() instanceof ClientboundLoginPacket) {
 			dead = false;
 		}
 	}

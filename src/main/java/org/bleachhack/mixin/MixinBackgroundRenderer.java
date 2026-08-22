@@ -15,9 +15,9 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;
 
 import net.minecraft.client.render.BackgroundRenderer;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.effect.StatusEffect;
-import net.minecraft.entity.effect.StatusEffects;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.effect.MobEffect;
+import net.minecraft.world.effect.MobEffects;
 
 @Mixin(BackgroundRenderer.class)
 public class MixinBackgroundRenderer {
@@ -25,9 +25,9 @@ public class MixinBackgroundRenderer {
 	@Redirect(method = {
 			"render(Lnet/minecraft/client/render/Camera;FLnet/minecraft/client/world/ClientWorld;IF)V",
 			"applyFog"},
-			at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/LivingEntity;hasStatusEffect(Lnet/minecraft/entity/effect/StatusEffect;)Z"))
-	private static boolean hasStatusEffect(LivingEntity entity, StatusEffect effect) {
-		if (effect == StatusEffects.BLINDNESS && ModuleManager.getModule(NoRender.class).isOverlayToggled(0)) {
+			at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/LivingEntity;hasStatusEffect(Lnet/minecraft/entity/effect/MobEffect;)Z"))
+	private static boolean hasStatusEffect(LivingEntity entity, MobEffect effect) {
+		if (effect == MobEffects.BLINDNESS && ModuleManager.getModule(NoRender.class).isOverlayToggled(0)) {
 			return false;
 		}
 

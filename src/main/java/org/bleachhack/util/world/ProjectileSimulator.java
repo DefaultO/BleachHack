@@ -8,26 +8,27 @@
  */
 package org.bleachhack.util.world;
 
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityType;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.projectile.ArrowEntity;
-import net.minecraft.entity.projectile.TridentEntity;
-import net.minecraft.entity.projectile.thrown.ExperienceBottleEntity;
-import net.minecraft.entity.projectile.thrown.PotionEntity;
-import net.minecraft.entity.projectile.thrown.SnowballEntity;
-import net.minecraft.entity.projectile.thrown.ThrownEntity;
-import net.minecraft.item.*;
-import net.minecraft.predicate.entity.EntityPredicates;
-import net.minecraft.util.hit.BlockHitResult;
-import net.minecraft.util.hit.HitResult;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.RaycastContext;
+import net.minecraft.client.Minecraft;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityTypes;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.projectile.arrow.Arrow;
+import net.minecraft.world.entity.projectile.arrow.ThrownTrident;
+import net.minecraft.world.entity.projectile.throwableitemprojectile.ThrownExperienceBottle;
+import net.minecraft.world.entity.projectile.throwableitemprojectile.AbstractThrownPotion;
+import net.minecraft.world.entity.projectile.throwableitemprojectile.ThrownSplashPotion;
+import net.minecraft.world.entity.projectile.throwableitemprojectile.Snowball;
+import net.minecraft.world.entity.projectile.ThrowableProjectile;
+import net.minecraft.world.item.*;
+import net.minecraft.world.entity.EntitySelector;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.HitResult;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.util.Mth;
+import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.level.ClipContext;
 import org.apache.commons.lang3.tuple.Triple;
 
 import java.util.ArrayList;
@@ -35,42 +36,42 @@ import java.util.List;
 
 public class ProjectileSimulator {
 
-	private static MinecraftClient mc = MinecraftClient.getInstance();
+	private static Minecraft mc = Minecraft.getInstance();
 
-	public static Entity summonProjectile(PlayerEntity thrower, boolean allowThrowables, boolean allowXp, boolean allowPotions) {
-		ItemStack hand = (isThrowable(thrower.getInventory().getMainHandStack().getItem(), allowThrowables, allowXp, allowPotions)
-				? thrower.getInventory().getMainHandStack()
-				: isThrowable(thrower.getInventory().offHand.get(0).getItem(), allowThrowables, allowXp, allowPotions)
-				? thrower.getInventory().offHand.get(0)
+	public static Entity summonProjectile(Player thrower, boolean allowThrowables, boolean allowXp, boolean allowPotions) {
+		ItemStack hand = (isThrowable(thrower.getMainHandItem().getItem(), allowThrowables, allowXp, allowPotions)
+				? thrower.getMainHandItem()
+				: isThrowable(thrower.getOffhandItem().getItem(), allowThrowables, allowXp, allowPotions)
+				? thrower.getOffhandItem()
 				: null);
 
 		if (hand == null) {
 			return null;
 		}
 
-		if (hand.getItem() instanceof RangedWeaponItem) {
+		if (hand.getItem() instanceof ProjectileWeaponItem) {
 			float charged = hand.getItem() == Items.CROSSBOW && CrossbowItem.isCharged(hand) ? 1f
-					: hand.getItem() == Items.CROSSBOW ? 0f : BowItem.getPullProgress(thrower.getItemUseTime());
+					: hand.getItem() == Items.CROSSBOW ? 0f : BowItem.getPowerForTime(thrower.getTicksUsingItem());
 
 			if (charged > 0f) {
-				Entity e = new ArrowEntity(EntityType.ARROW, mc.world);
+				Entity e = new Arrow(EntityTypes.ARROW, mc.level);
 				initProjectile(e, thrower, 0f, charged * 3);
 				return e;
 			}
-		} else if (hand.getItem() instanceof SnowballItem || hand.getItem() instanceof EggItem || hand.getItem() instanceof EnderPearlItem) {
-			Entity e = new SnowballEntity(mc.world, mc.player);
+		} else if (hand.getItem() instanceof SnowballItem || hand.getItem() instanceof EggItem || hand.getItem() instanceof EnderpearlItem) {
+			Entity e = new Snowball(mc.level, mc.player, hand);
 			initProjectile(e, thrower, 0f, 1.5f);
 			return e;
 		} else if (hand.getItem() instanceof ExperienceBottleItem) {
-			Entity e = new ExperienceBottleEntity(mc.world, mc.player);
+			Entity e = new ThrownExperienceBottle(mc.level, mc.player, hand);
 			initProjectile(e, thrower, -20f, 0.7f);
 			return e;
 		} else if (hand.getItem() instanceof ThrowablePotionItem) {
-			Entity e = new PotionEntity(mc.world, mc.player);
+			Entity e = new ThrownSplashPotion(mc.level, mc.player, hand);
 			initProjectile(e, thrower, -20f, 0.5f);
 			return e;
 		} else if (hand.getItem() instanceof TridentItem) {
-			Entity e = new TridentEntity(mc.world, mc.player, hand);
+			Entity e = new ThrownTrident(mc.level, mc.player, hand);
 			initProjectile(e, thrower, 0f, 2.5f);
 			return e;
 		}
@@ -83,58 +84,58 @@ public class ProjectileSimulator {
 	}
 
 	public static boolean isThrowable(Item item, boolean allowThrowables, boolean allowXp, boolean allowPotions) {
-		return item instanceof RangedWeaponItem
-				|| (allowThrowables && (item instanceof EggItem || item instanceof SnowballItem || item instanceof EnderPearlItem))
+		return item instanceof ProjectileWeaponItem
+				|| (allowThrowables && (item instanceof EggItem || item instanceof SnowballItem || item instanceof EnderpearlItem))
 				|| (allowXp && item instanceof ExperienceBottleItem)
 				|| (allowPotions && item instanceof ThrowablePotionItem) || item instanceof TridentItem;
 	}
 
 	private static void initProjectile(Entity e, Entity thrower, float addPitch, float strength) {
-		float velX = -MathHelper.sin(thrower.getYaw() * 0.017453292F) * MathHelper.cos(thrower.getPitch() * 0.017453292F);
-		float velY = -MathHelper.sin((thrower.getPitch() + addPitch) * 0.017453292F);
-		float velZ = MathHelper.cos(thrower.getYaw() * 0.017453292F) * MathHelper.cos(thrower.getPitch() * 0.017453292F);
+		float velX = -Mth.sin(thrower.getYRot() * 0.017453292F) * Mth.cos(thrower.getXRot() * 0.017453292F);
+		float velY = -Mth.sin((thrower.getXRot() + addPitch) * 0.017453292F);
+		float velZ = Mth.cos(thrower.getYRot() * 0.017453292F) * Mth.cos(thrower.getXRot() * 0.017453292F);
 
-		Vec3d velVec = new Vec3d(velX, velY, velZ).normalize().multiply(strength);
-		e.setVelocity(velVec);
-		float float_3 = MathHelper.sqrt((float) velVec.horizontalLengthSquared());
-		e.setYaw((float) (MathHelper.atan2(velVec.x, velVec.z) * 57.2957763671875));
-		e.setPitch((float) (MathHelper.atan2(velVec.y, float_3) * 57.2957763671875));
-		e.prevYaw = e.getYaw();
-		e.prevPitch = e.getPitch();
+		Vec3 velVec = new Vec3(velX, velY, velZ).normalize().scale(strength);
+		e.setDeltaMovement(velVec);
+		float float_3 = Mth.sqrt((float) velVec.horizontalDistanceSqr());
+		e.setYRot((float) (Mth.atan2(velVec.x, velVec.z) * 57.2957763671875));
+		e.setXRot((float) (Mth.atan2(velVec.y, float_3) * 57.2957763671875));
+		e.yRotO = e.getYRot();
+		e.xRotO = e.getXRot();
 
-		e.setVelocity(velVec.add(thrower.getVelocity().x, thrower.isOnGround() ? 0.0D : thrower.getVelocity().y, thrower.getVelocity().z));
+		e.setDeltaMovement(velVec.add(thrower.getDeltaMovement().x, thrower.onGround() ? 0.0D : thrower.getDeltaMovement().y, thrower.getDeltaMovement().z));
 	}
 
-	public static Triple<List<Vec3d>, Entity, BlockPos> simulate(Entity e) {
-		List<Vec3d> vecs = new ArrayList<>();
+	public static Triple<List<Vec3>, Entity, BlockPos> simulate(Entity e) {
+		List<Vec3> vecs = new ArrayList<>();
 
 		SimulatedProjectile spoofE = new SimulatedProjectile(e);
 		for (int i = 0; i < 100; i++) {
-			Vec3d vel = spoofE.velocity;
-			Vec3d newVec = spoofE.getPos().add(vel);
+			Vec3 vel = spoofE.velocity;
+			Vec3 newVec = spoofE.getPos().add(vel);
 			// EntityHitResult entityHit = ProjectileUtil.raycast(mc.player, e.getPos(),
 			// newVec, e.getBoundingBox(), null, 1f);
-			List<LivingEntity> entities = mc.world.getEntitiesByClass(LivingEntity.class, spoofE.getBoundingBox().expand(0.15),
-					EntityPredicates.VALID_LIVING_ENTITY.and(en -> en != mc.player && en != e));
+			List<LivingEntity> entities = mc.level.getEntitiesOfClass(LivingEntity.class, spoofE.getBoundingBox().inflate(0.15),
+					EntitySelector.LIVING_ENTITY_STILL_ALIVE.and(en -> en != mc.player && en != e));
 
 			if (!entities.isEmpty()) {
 				return Triple.of(vecs, entities.get(0), null);
 			}
 
-			BlockHitResult blockHit = mc.world.raycast(
-					new RaycastContext(spoofE.getPos(), newVec, RaycastContext.ShapeType.COLLIDER, RaycastContext.FluidHandling.NONE, e));
+			BlockHitResult blockHit = mc.level.clip(
+					new ClipContext(spoofE.getPos(), newVec, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, e));
 			if (blockHit.getType() != HitResult.Type.MISS) {
-				vecs.add(blockHit.getPos());
+				vecs.add(blockHit.getLocation());
 				return Triple.of(vecs, null, blockHit.getBlockPos());
 			}
 
 			float prevPitch = spoofE.pitch;
-			spoofE.pitch = MathHelper.lerp(0.2F, spoofE.prevPitch, spoofE.pitch);
+			spoofE.pitch = Mth.lerp(0.2F, spoofE.prevPitch, spoofE.pitch);
 			spoofE.prevPitch = prevPitch;
 
-			double gravity = e instanceof PotionEntity ? 0.05
-					: e instanceof ExperienceBottleEntity ? 0.07 : e instanceof ThrownEntity ? 0.03 : 0.05000000074505806;
-			spoofE.velocity = new Vec3d(vel.x * 0.99, vel.y * 0.99 - gravity, vel.z * 0.99);
+			double gravity = e instanceof AbstractThrownPotion ? 0.05
+					: e instanceof ThrownExperienceBottle ? 0.07 : e instanceof ThrowableProjectile ? 0.03 : 0.05000000074505806;
+			spoofE.velocity = new Vec3(vel.x * 0.99, vel.y * 0.99 - gravity, vel.z * 0.99);
 			spoofE.setPos(spoofE.getPos().x + spoofE.velocity.x,
 					spoofE.getPos().y + spoofE.velocity.y, spoofE.getPos().z + spoofE.velocity.z);
 
@@ -156,7 +157,7 @@ public class ProjectileSimulator {
 		public float pitch;
 		public float prevPitch = 0f;
 
-		public Vec3d velocity;
+		public Vec3 velocity;
 
 		private float width;
 		private float height;
@@ -166,16 +167,16 @@ public class ProjectileSimulator {
 			y = realProjectile.getY();
 			z = realProjectile.getZ();
 
-			pitch = realProjectile.getPitch();
+			pitch = realProjectile.getXRot();
 
-			velocity = realProjectile.getVelocity();
+			velocity = realProjectile.getDeltaMovement();
 
-			width = realProjectile.getWidth();
-			height = realProjectile.getHeight();
+			width = realProjectile.getBbWidth();
+			height = realProjectile.getBbHeight();
 		}
 
-		public Vec3d getPos() {
-			return new Vec3d(x, y, z);
+		public Vec3 getPos() {
+			return new Vec3(x, y, z);
 		}
 
 		public void setPos(double x, double y, double z) {
@@ -184,8 +185,8 @@ public class ProjectileSimulator {
 			this.z = z;
 		}
 
-		public Box getBoundingBox() {
-			return new Box(x - width / 2, y - height / 2, z - width / 2, x + width / 2, y + height / 2, z + width / 2);
+		public AABB getBoundingBox() {
+			return new AABB(x - width / 2, y - height / 2, z - width / 2, x + width / 2, y + height / 2, z + width / 2);
 		}
 	}
 }

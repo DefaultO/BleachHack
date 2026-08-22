@@ -17,7 +17,7 @@ import org.bleachhack.module.ModuleCategory;
 import org.bleachhack.setting.module.SettingToggle;
 import org.bleachhack.util.world.WorldUtils;
 
-import net.minecraft.block.Blocks;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.client.particle.PortalParticle;
 
 public class BetterPortal extends Module {

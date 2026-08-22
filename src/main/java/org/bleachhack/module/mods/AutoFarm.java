@@ -9,15 +9,15 @@
 package org.bleachhack.module.mods;
 
 import net.minecraft.block.*;
-import net.minecraft.item.HoeItem;
-import net.minecraft.item.Item;
-import net.minecraft.item.Items;
-import net.minecraft.predicate.entity.EntityPredicates;
-import net.minecraft.registry.tag.FluidTags;
-import net.minecraft.util.Hand;
-import net.minecraft.util.hit.BlockHitResult;
+import net.minecraft.world.item.HoeItem;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.entity.EntitySelector;
+import net.minecraft.tags.FluidTags;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.util.math.*;
-import net.minecraft.world.gen.feature.TreeFeature;
+import net.minecraft.world.level.levelgen.feature.TreeFeature;
 import org.apache.commons.lang3.tuple.Pair;
 import org.bleachhack.event.events.EventTick;
 import org.bleachhack.eventbus.BleachSubscribe;
@@ -97,7 +97,7 @@ public class AutoFarm extends Module {
 						mc.interactionManager.updateBlockBreakingProgress(bestBlock.up(), Direction.UP);
 					}
 
-					Hand hand = InventoryUtils.selectSlot(slot);
+					InteractionHand hand = InventoryUtils.selectSlot(slot);
 					mc.interactionManager.interactBlock(mc.player, hand,
 							new BlockHitResult(Vec3d.ofCenter(bestBlock, 1), Direction.UP, bestBlock, false));
 					mossMap.put(bestBlock, 100);
@@ -116,7 +116,7 @@ public class AutoFarm extends Module {
 				if (!tillSetting.getChild(0).asToggle().getState()
 						|| BlockPos.stream(pos.getX() - 4, pos.getY(), pos.getZ() - 4, pos.getX() + 4, pos.getY(), pos.getZ() + 4).anyMatch(
 								b -> mc.world.getFluidState(b).isIn(FluidTags.WATER))) {
-					Hand hand = InventoryUtils.selectSlot(true, i -> mc.player.getInventory().getStack(i).getItem() instanceof HoeItem);
+					InteractionHand hand = InventoryUtils.selectSlot(true, i -> mc.player.getInventory().getStack(i).getItem() instanceof HoeItem);
 					
 					if (hand != null) {
 						mc.interactionManager.interactBlock(mc.player, hand,
@@ -140,7 +140,7 @@ public class AutoFarm extends Module {
 				}
 			}
 
-			if (plantSetting.getState() && mc.world.getOtherEntities(null, new Box(pos.up()), EntityPredicates.VALID_LIVING_ENTITY).isEmpty()) {
+			if (plantSetting.getState() && mc.world.getOtherEntities(null, new Box(pos.up()), EntitySelector.VALID_LIVING_ENTITY).isEmpty()) {
 				if (block instanceof FarmlandBlock && mc.world.isAir(pos.up())) {
 					int slot = InventoryUtils.getSlot(true, i -> {
 						Item item = mc.player.getInventory().getStack(i).getItem();
@@ -178,7 +178,7 @@ public class AutoFarm extends Module {
 							|| (bonemealSetting.getChild(3).asToggle().getState() && block instanceof SweetBerryBushBlock && state.get(SweetBerryBushBlock.AGE) < 3)
 							|| (bonemealSetting.getChild(4).asToggle().getState() && block instanceof MushroomPlantBlock)
 							|| (bonemealSetting.getChild(5).asToggle().getState() && (block instanceof SaplingBlock || block instanceof AzaleaBlock) && canPlaceSapling(pos))) {
-						Hand hand = InventoryUtils.selectSlot(slot);
+						InteractionHand hand = InventoryUtils.selectSlot(slot);
 						mc.interactionManager.interactBlock(mc.player, hand,
 								new BlockHitResult(Vec3d.ofCenter(pos, 1), Direction.UP, pos, false));
 						return;

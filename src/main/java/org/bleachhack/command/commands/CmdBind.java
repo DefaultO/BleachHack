@@ -8,7 +8,7 @@
  */
 package org.bleachhack.command.commands;
 
-import net.minecraft.client.util.InputUtil;
+import com.mojang.blaze3d.platform.InputConstants;
 import org.bleachhack.command.Command;
 import org.bleachhack.command.CommandCategory;
 import org.bleachhack.command.exception.CmdSyntaxException;
@@ -48,17 +48,17 @@ public class CmdBind extends Command {
 
 						// Special cases for rshift/rcontrol and that shit
 						try {
-							key = InputUtil.fromTranslationKey("key.keyboard." + args[2].toLowerCase(Locale.ENGLISH)).getCode();
+							key = InputConstants.fromTranslationKey("key.keyboard." + args[2].toLowerCase(Locale.ENGLISH)).getCode();
 						} catch (IllegalArgumentException e) {
 							if (args[2].toLowerCase(Locale.ENGLISH).startsWith("right")) {
 								try {
-									key = InputUtil.fromTranslationKey("key.keyboard." + args[2].toLowerCase(Locale.ENGLISH).replaceFirst("right", "right.")).getCode();
+									key = InputConstants.fromTranslationKey("key.keyboard." + args[2].toLowerCase(Locale.ENGLISH).replaceFirst("right", "right.")).getCode();
 								} catch (IllegalArgumentException e1) {
 									throw new CmdSyntaxException("Unknown key: " + args[2] + " / " + args[2].toLowerCase(Locale.ENGLISH).replaceFirst("right", "right."));
 								}
 							} else if (args[2].toLowerCase(Locale.ENGLISH).startsWith("r")) {
 								try {
-									key = InputUtil.fromTranslationKey("key.keyboard." + args[2].toLowerCase(Locale.ENGLISH).replaceFirst("r", "right.")).getCode();
+									key = InputConstants.fromTranslationKey("key.keyboard." + args[2].toLowerCase(Locale.ENGLISH).replaceFirst("r", "right.")).getCode();
 								} catch (IllegalArgumentException e1) {
 									throw new CmdSyntaxException("Unknown key: " + args[2] + " / " + args[2].toLowerCase(Locale.ENGLISH).replaceFirst("r", "right."));
 								}

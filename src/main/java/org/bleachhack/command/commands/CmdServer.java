@@ -9,14 +9,14 @@
 package org.bleachhack.command.commands;
 
 import net.minecraft.SharedConstants;
-import net.minecraft.client.network.PlayerListEntry;
-import net.minecraft.network.packet.c2s.play.RequestCommandCompletionsC2SPacket;
-import net.minecraft.network.packet.s2c.play.CommandSuggestionsS2CPacket;
-import net.minecraft.text.ClickEvent;
-import net.minecraft.text.HoverEvent;
+import net.minecraft.client.multiplayer.PlayerInfo;
+import net.minecraft.network.protocol.game.ServerboundCommandSuggestionPacket;
+import net.minecraft.network.protocol.game.ClientboundCommandSuggestionsPacket;
+import net.minecraft.network.chat.ClickEvent;
+import net.minecraft.network.chat.HoverEvent;
 
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
+import net.minecraft.network.chat.Component;
+import net.minecraft.ChatFormatting;
 import org.apache.commons.lang3.StringUtils;
 import org.bleachhack.BleachHack;
 import org.bleachhack.command.Command;
@@ -90,10 +90,10 @@ public class CmdServer extends Command {
 
 	@BleachSubscribe
 	public void onReadPacket(EventPacket.Read event) {
-		if (event.getPacket() instanceof CommandSuggestionsS2CPacket) {
+		if (event.getPacket() instanceof ClientboundCommandSuggestionsPacket) {
 			BleachHack.eventBus.unsubscribe(this);
 
-			CommandSuggestionsS2CPacket packet = (CommandSuggestionsS2CPacket) event.getPacket();
+			ClientboundCommandSuggestionsPacket packet = (ClientboundCommandSuggestionsPacket) event.getPacket();
 			List<String> plugins = packet.getSuggestions().getList().stream()
 					.map(s -> {
 						String[] split = s.getText().split(":");
@@ -112,16 +112,16 @@ public class CmdServer extends Command {
 		}
 	}
 
-	public Text createText(String name, String value) {
+	public Component createText(String name, String value) {
 		boolean newlines = value.contains("\n");
-		return Text.literal("§7" + name + "§f:" + (newlines ? "\n" : " " ) + "§a" + value).styled(style -> style
-				.withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.literal("Click to copy to clipboard")))
-				.withClickEvent(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, Formatting.strip(value))));
+		return Component.literal("§7" + name + "§f:" + (newlines ? "\n" : " " ) + "§a" + value).styled(style -> style
+				.withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.literal("Click to copy to clipboard")))
+				.withClickEvent(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, ChatFormatting.strip(value))));
 	}
 
 	public void checkForPlugins() {
 		BleachHack.eventBus.subscribe(this); // Plugins
-		mc.player.networkHandler.sendPacket(new RequestCommandCompletionsC2SPacket(0, "/"));
+		mc.player.networkHandler.sendPacket(new ServerboundCommandSuggestionPacket(0, "/"));
 
 		Thread timeoutThread = new Thread(() -> {
 			try {
@@ -176,7 +176,7 @@ public class CmdServer extends Command {
 	}
 
 	public String getPing(boolean singleplayer) {
-		PlayerListEntry playerEntry = mc.player.networkHandler.getPlayerListEntry(mc.player.getGameProfile().getId());
+		PlayerInfo playerEntry = mc.player.networkHandler.getPlayerListEntry(mc.player.getGameProfile().getId());
 		return playerEntry == null ? "0" : Integer.toString(playerEntry.getLatency());
 	}
 

@@ -23,12 +23,12 @@ import org.bleachhack.setting.module.SettingToggle;
 import org.bleachhack.util.render.Renderer;
 import org.bleachhack.util.render.color.LineColor;
 
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.phys.Vec3;
 
 public class Trail extends Module {
 
-	private Map<Vec3d, Vec3d> trails = new LinkedHashMap<>();
-	private Vec3d lastVec = null;
+	private Map<Vec3, Vec3> trails = new LinkedHashMap<>();
+	private Vec3 lastVec = null;
 
 	public Trail() {
 		super("Trail", KEY_UNBOUND, ModuleCategory.RENDER, "Shows a trail behind you.",
@@ -74,7 +74,7 @@ public class Trail extends Module {
 
 		int count = 250;
 		boolean rev = false;
-		for (Entry<Vec3d, Vec3d> e : trails.entrySet()) {
+		for (Entry<Vec3, Vec3> e : trails.entrySet()) {
 			if (getSetting(3).asToggle().getState()) {
 				color = blendColor(color, secondColor, count / 255f);
 			}

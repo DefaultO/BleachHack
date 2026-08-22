@@ -8,16 +8,16 @@
  */
 package org.bleachhack.setting.module;
 
-import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.GuiGraphics; // TODO(26.2): GuiGraphics removed; GUI draw pipeline is now GuiGraphicsExtractor + GuiRenderState (extractRenderState). Needs window-framework migration.
 import org.bleachhack.gui.clickgui.window.ModuleWindow;
 import org.bleachhack.module.Module;
 import org.bleachhack.setting.SettingDataHandlers;
 import org.lwjgl.glfw.GLFW;
 
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.sound.PositionedSoundInstance;
-import net.minecraft.client.util.InputUtil;
-import net.minecraft.sound.SoundEvents;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.resources.sounds.SimpleSoundInstance;
+import com.mojang.blaze3d.platform.InputConstants;
+import net.minecraft.sounds.SoundEvents;
 
 public class SettingKey extends ModuleSetting<Integer> {
 
@@ -26,25 +26,26 @@ public class SettingKey extends ModuleSetting<Integer> {
 	}
 
 	@Override
-	public void render(ModuleWindow window, DrawContext drawContext, int x, int y, int len) {
+	// TODO(26.2): render body uses removed immediate-mode GuiGraphics API (fill/drawTextWithShadow). Migrate to GuiGraphicsExtractor/GuiRenderState with the window framework.
+	public void render(ModuleWindow window, GuiGraphics drawContext, int x, int y, int len) {
 		if (window.mouseOver(x, y, x + len, y + 12)) {
 			drawContext.fill(x + 1, y, x + len, y + 12, 0x70303070);
 		}
 		
 		if (window.keyDown >= 0 && window.keyDown != GLFW.GLFW_KEY_ESCAPE && window.mouseOver(x, y, x + len, y + 12)) {
 			setValue(window.keyDown == GLFW.GLFW_KEY_DELETE ? Module.KEY_UNBOUND : window.keyDown);
-			MinecraftClient.getInstance().getSoundManager().play(
-					PositionedSoundInstance.master(SoundEvents.UI_BUTTON_CLICK.value(), 1.0F, 0.3F));
+			Minecraft.getInstance().getSoundManager().play(
+					SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK.value(), 1.0F, 0.3F));
 		}
 
 		int key = getValue();
-		String name = key < 0 ? "NONE" : InputUtil.fromKeyCode(key, -1).getLocalizedText().getString();
+		String name = key < 0 ? "NONE" : InputConstants.Type.KEYSYM.getOrCreate(key).getDisplayName().getString();
 		if (name == null)
 			name = "KEY" + key;
 		else if (name.isEmpty())
 			name = "NONE";
 
-		drawContext.drawTextWithShadow(MinecraftClient.getInstance().textRenderer, "Bind: " + name + (window.mouseOver(x, y, x + len, y + 12) ? "..." : ""), x + 3, y + 2, 0xcfe0cf);
+		drawContext.drawTextWithShadow(Minecraft.getInstance().font, "Bind: " + name + (window.mouseOver(x, y, x + len, y + 12) ? "..." : ""), x + 3, y + 2, 0xcfe0cf);
 	}
 
 	public SettingKey withDesc(String desc) {

@@ -16,8 +16,8 @@ import org.bleachhack.setting.module.SettingMode;
 import org.bleachhack.setting.module.SettingToggle;
 import org.lwjgl.glfw.GLFW;
 
-import net.minecraft.client.util.InputUtil;
-import net.minecraft.util.math.MathHelper;
+import com.mojang.blaze3d.platform.InputConstants;
+import net.minecraft.util.Mth;
 
 public class RotationSnap extends Module {
 
@@ -45,31 +45,31 @@ public class RotationSnap extends Module {
 			int yAngle = yMode == 0 ? 45 : yMode == 1 ? 30 : yMode == 2 ? 15 : 90;
 			int pAngle = pMode == 0 ? 45 : pMode == 1 ? 30 : pMode == 2 ? 15 : 90;
 
-			if (InputUtil.isKeyPressed(mc.getWindow().getHandle(), GLFW.GLFW_KEY_LEFT) && !lDown) {
+			if (InputConstants.isKeyPressed(mc.getWindow().getHandle(), GLFW.GLFW_KEY_LEFT) && !lDown) {
 				mc.player.setYaw(mc.player.getYaw() - yAngle);
 				lDown = true;
-			} else if (!InputUtil.isKeyPressed(mc.getWindow().getHandle(), GLFW.GLFW_KEY_LEFT)) {
+			} else if (!InputConstants.isKeyPressed(mc.getWindow().getHandle(), GLFW.GLFW_KEY_LEFT)) {
 				lDown = false;
 			}
 
-			if (InputUtil.isKeyPressed(mc.getWindow().getHandle(), GLFW.GLFW_KEY_RIGHT) && !rDown) {
+			if (InputConstants.isKeyPressed(mc.getWindow().getHandle(), GLFW.GLFW_KEY_RIGHT) && !rDown) {
 				mc.player.setYaw(mc.player.getYaw() + yAngle);
 				rDown = true;
-			} else if (!InputUtil.isKeyPressed(mc.getWindow().getHandle(), GLFW.GLFW_KEY_RIGHT)) {
+			} else if (!InputConstants.isKeyPressed(mc.getWindow().getHandle(), GLFW.GLFW_KEY_RIGHT)) {
 				rDown = false;
 			}
 
-			if (InputUtil.isKeyPressed(mc.getWindow().getHandle(), GLFW.GLFW_KEY_UP) && !uDown) {
-				mc.player.setPitch(MathHelper.clamp(mc.player.getPitch() - pAngle, -90, 90));
+			if (InputConstants.isKeyPressed(mc.getWindow().getHandle(), GLFW.GLFW_KEY_UP) && !uDown) {
+				mc.player.setPitch(Mth.clamp(mc.player.getPitch() - pAngle, -90, 90));
 				uDown = true;
-			} else if (!InputUtil.isKeyPressed(mc.getWindow().getHandle(), GLFW.GLFW_KEY_UP)) {
+			} else if (!InputConstants.isKeyPressed(mc.getWindow().getHandle(), GLFW.GLFW_KEY_UP)) {
 				uDown = false;
 			}
 
-			if (InputUtil.isKeyPressed(mc.getWindow().getHandle(), GLFW.GLFW_KEY_DOWN) && !dDown) {
-				mc.player.setPitch(MathHelper.clamp(mc.player.getPitch() + pAngle, -90, 90));
+			if (InputConstants.isKeyPressed(mc.getWindow().getHandle(), GLFW.GLFW_KEY_DOWN) && !dDown) {
+				mc.player.setPitch(Mth.clamp(mc.player.getPitch() + pAngle, -90, 90));
 				dDown = true;
-			} else if (!InputUtil.isKeyPressed(mc.getWindow().getHandle(), GLFW.GLFW_KEY_DOWN)) {
+			} else if (!InputConstants.isKeyPressed(mc.getWindow().getHandle(), GLFW.GLFW_KEY_DOWN)) {
 				dDown = false;
 			}
 		}
@@ -91,7 +91,7 @@ public class RotationSnap extends Module {
 		if (getSetting(1).asToggle().getState()) {
 			int mode = getSetting(1).asToggle().getChild(0).asMode().getMode();
 			int interval = mode == 0 ? 45 : mode == 1 ? 30 : mode == 2 ? 15 : 90;
-			int rot = MathHelper.clamp(((int) mc.player.getPitch() + (Math.floorMod((int) mc.player.getPitch(), interval) < interval / 2 ?
+			int rot = Mth.clamp(((int) mc.player.getPitch() + (Math.floorMod((int) mc.player.getPitch(), interval) < interval / 2 ?
 					-Math.floorMod((int) mc.player.getPitch(), interval) : interval - Math.floorMod((int) mc.player.getPitch(), interval))), -90, 90);
 
 			mc.player.setPitch(rot);

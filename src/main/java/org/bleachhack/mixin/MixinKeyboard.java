@@ -18,11 +18,11 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-import net.minecraft.client.Keyboard;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.screen.ChatScreen;
+import net.minecraft.client.KeyboardHandler;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.ChatScreen;
 
-@Mixin(Keyboard.class)
+@Mixin(KeyboardHandler.class)
 public class MixinKeyboard {
 
 	@Inject(method = "onKey", at = @At("HEAD"), cancellable = true)
@@ -48,7 +48,7 @@ public class MixinKeyboard {
 		if (action == 2) action = 1;
 
 		if (Option.CHAT_QUICK_PREFIX.getValue() && Command.getPrefix().length() == 1 && key == Command.getPrefix().charAt(0)) {
-			MinecraftClient.getInstance().setScreen(new ChatScreen(Command.getPrefix()));
+			Minecraft.getInstance().setScreen(new ChatScreen(Command.getPrefix()));
 		}
 
 		ModuleManager.handleKey(key);

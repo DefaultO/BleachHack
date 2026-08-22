@@ -8,8 +8,8 @@
  */
 package org.bleachhack.mixin;
 
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.entity.Entity;
+import net.minecraft.client.Minecraft;
+import net.minecraft.world.entity.Entity;
 import org.bleachhack.BleachHack;
 import org.bleachhack.event.events.EventPlayerPushed;
 import org.spongepowered.asm.mixin.Mixin;
@@ -22,7 +22,7 @@ public class MixinEntity {
 
 	@ModifyArgs(method = "pushAwayFrom", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/Entity;addVelocity(DDD)V"))
 	private void pushAwayFrom_addVelocity(Args args) {
-		if ((Object) this == MinecraftClient.getInstance().player) {
+		if ((Object) this == Minecraft.getInstance().player) {
 			EventPlayerPushed event = new EventPlayerPushed(args.get(0), args.get(1), args.get(2));
 			BleachHack.eventBus.post(event);
 

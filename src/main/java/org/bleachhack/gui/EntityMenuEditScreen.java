@@ -10,12 +10,12 @@ package org.bleachhack.gui;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.widget.TextFieldWidget;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
-import net.minecraft.text.Text;
-import net.minecraft.util.math.MathHelper;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.network.chat.Component;
+import net.minecraft.util.Mth;
 import org.apache.commons.lang3.tuple.MutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.bleachhack.gui.window.Window;
@@ -38,11 +38,11 @@ public class EntityMenuEditScreen extends WindowScreen {
 	private String insertString;
 	private String insertStartString;
 
-	private TextFieldWidget editNameField;
-	private TextFieldWidget editValueField;
+	private EditBox editNameField;
+	private EditBox editValueField;
 
 	public EntityMenuEditScreen(MutablePairList<String, String> interactions) {
-		super(Text.literal("Interaction Edit Screen"));
+		super(Component.literal("Interaction Edit Screen"));
 
 		this.interactions = interactions;
 	}
@@ -59,23 +59,23 @@ public class EntityMenuEditScreen extends WindowScreen {
 				"Edit Interactions", new ItemStack(Items.OAK_SIGN)));
 
 		if (editNameField == null) {
-			editNameField = new TextFieldWidget(textRenderer, 0, 0, 1000, 16, Text.empty());
+			editNameField = new EditBox(textRenderer, 0, 0, 1000, 16, Component.empty());
 		}
 
 		if (editValueField == null) {
-			editValueField = new TextFieldWidget(textRenderer, 0, 0, 1000, 16, Text.empty());
+			editValueField = new EditBox(textRenderer, 0, 0, 1000, 16, Component.empty());
 		}
 	}
 
 	@Override
-	public void render(DrawContext drawContext, int mouseX, int mouseY, float delta) {
+	public void render(GuiGraphics drawContext, int mouseX, int mouseY, float delta) {
 		renderBackground(drawContext, mouseX, mouseY, delta);
 		super.render(drawContext, mouseX, mouseY, delta);
 	}
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public void onRenderWindow(DrawContext drawContext, int window, int mouseX, int mouseY) {
+	public void onRenderWindow(GuiGraphics drawContext, int window, int mouseX, int mouseY) {
 		super.onRenderWindow(drawContext, window, mouseX, mouseY);
 
 		if (window == 0) {
@@ -108,7 +108,7 @@ public class EntityMenuEditScreen extends WindowScreen {
 			int maxEntries = (h - 33) / 17;
 			int entries = 0;
 
-			scroll = MathHelper.clamp(scroll, 0, interactions.size() - maxEntries);
+			scroll = Mth.clamp(scroll, 0, interactions.size() - maxEntries);
 
 			if (scroll > 0) {
 				boolean mouseOver = mouseX >= x + 2 && mouseX <= seperator - 1 && mouseY >= y + 17 && mouseY <= y + 33;

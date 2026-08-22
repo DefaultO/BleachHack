@@ -9,8 +9,8 @@
 package org.bleachhack.util;
 
 
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Text;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.network.chat.Component;
 
 public class Watermark {
 
@@ -61,16 +61,16 @@ public class Watermark {
 		this.color2 = color2;
 	}
 
-	public MutableText getText() {
-		MutableText t1 = Text.literal(text1).styled(s -> s.withColor(color1));
-		return text2 == null ? t1 : t1.append(Text.literal(text2).styled(s -> s.withColor(color2)));
+	public MutableComponent getText() {
+		MutableComponent t1 = Component.literal(text1).withStyle(s -> s.withColor(color1));
+		return text2 == null ? t1 : t1.append(Component.literal(text2).withStyle(s -> s.withColor(color2)));
 	}
 
-	public MutableText getShortText() {
+	public MutableComponent getShortText() {
 		if (text2.isEmpty()) {
-			return Text.literal(text1.substring(0, 2)).styled(s -> s.withColor(color1));
+			return Component.literal(text1.substring(0, 2)).withStyle(s -> s.withColor(color1));
 		} else {
-			return Text.literal(text1.substring(0, 1)).styled(s -> s.withColor(color1)).append(Text.literal(text2.substring(0, 1)).styled(s -> s.withColor(color2)));
+			return Component.literal(text1.substring(0, 1)).withStyle(s -> s.withColor(color1)).append(Component.literal(text2.substring(0, 1)).withStyle(s -> s.withColor(color2)));
 		}
 	}
 }

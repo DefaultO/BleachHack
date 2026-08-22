@@ -8,7 +8,7 @@
  */
 package org.bleachhack.mixin;
 
-import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.GuiGraphics;
 import org.bleachhack.BleachHack;
 import org.bleachhack.event.events.EventRenderScreenBackground;
 import org.bleachhack.event.events.EventRenderTooltip;
@@ -19,7 +19,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.gui.screens.Screen;
 
 @Mixin(Screen.class)
 public class MixinScreen {
@@ -29,16 +29,16 @@ public class MixinScreen {
 
 	@Unique private boolean skipTooltip;
 
-	@Shadow private void renderWithTooltip(DrawContext context, int mouseX, int mouseY, float delta) {}
+	@Shadow private void renderWithTooltip(GuiGraphics context, int mouseX, int mouseY, float delta) {}
 
 	@Inject(method = "render", at = @At("HEAD"))
-	private void render(DrawContext context, int mouseX, int mouseY, float delta, CallbackInfo callback) {
+	private void render(GuiGraphics context, int mouseX, int mouseY, float delta, CallbackInfo callback) {
 		lastMX = mouseX;
 		lastMY = mouseY;
 	}
 
 	@Inject(method = "renderWithTooltip", at = @At("HEAD"), cancellable = true)
-	private void renderWithTooltip(DrawContext context, int mouseX, int mouseY, float delta, CallbackInfo ci) {
+	private void renderWithTooltip(GuiGraphics context, int mouseX, int mouseY, float delta, CallbackInfo ci) {
 		if (!skipTooltip) {
 			EventRenderTooltip event = new EventRenderTooltip((Screen) (Object) this, context, mouseX, mouseY, delta);
 			BleachHack.eventBus.post(event);
@@ -56,7 +56,7 @@ public class MixinScreen {
 	}
 
 	@Inject(method = "renderBackground", at = @At("HEAD"), cancellable = true)
-	private void renderBackground(DrawContext context, int mouseX, int mouseY, float delta, CallbackInfo ci) {
+	private void renderBackground(GuiGraphics context, int mouseX, int mouseY, float delta, CallbackInfo ci) {
 		EventRenderScreenBackground event = new EventRenderScreenBackground(context);
 		BleachHack.eventBus.post(event);
 

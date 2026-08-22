@@ -8,13 +8,13 @@
  */
 package org.bleachhack.module.mods;
 
-import net.minecraft.block.LadderBlock;
-import net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket;
-import net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket.Mode;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.util.shape.VoxelShape;
+import net.minecraft.world.level.block.LadderBlock;
+import net.minecraft.network.protocol.game.ServerboundPlayerCommandPacket;
+import net.minecraft.network.protocol.game.ServerboundPlayerCommandPacket.Mode;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.phys.shapes.VoxelShape;
 import org.bleachhack.event.events.EventClientMove;
 import org.bleachhack.event.events.EventTick;
 import org.bleachhack.event.events.EventWorldRender;
@@ -63,25 +63,25 @@ public class AutoParkour extends Module {
 		if (!mc.player.isSneaking() && mc.player.isOnGround()) {
 			smartPos = null;
 
-			Box box = mc.player.getBoundingBox().offset(0, -0.51, 0);
+			AABB box = mc.player.getBoundingBox().offset(0, -0.51, 0);
 			Iterable<VoxelShape> blockCollisions = mc.world.getBlockCollisions(mc.player, box);
 
 			if (!blockCollisions.iterator().hasNext()) {
 				if (getSetting(0).asToggle().getState() && !mc.player.isSprinting()) {
 					mc.player.setSprinting(true);
-					mc.player.networkHandler.sendPacket(new ClientCommandC2SPacket(mc.player, Mode.START_SPRINTING));
+					mc.player.networkHandler.sendPacket(new ServerboundPlayerCommandPacket(mc.player, Mode.START_SPRINTING));
 				}
 
 				if (getSetting(1).asToggle().getState()) {
-					Vec3d lookVec = mc.player.getPos().add(new Vec3d(0, 0, 3.5).rotateY(-(float) Math.toRadians(mc.player.getYaw())));
+					Vec3 lookVec = mc.player.getPos().add(new Vec3(0, 0, 3.5).rotateY(-(float) Math.toRadians(mc.player.getYaw())));
 
 					BlockPos nearestPos = BlockPos.streamOutwards(mc.player.getBlockPos().down(), 4, 1, 4)
 							.map(BlockPos::toImmutable)
-							.filter(pos -> (mc.world.isTopSolid(pos, mc.player) && !mc.world.getBlockCollisions(mc.player, new Box(new Vec3d(pos.getX(), pos.getY(), pos.getZ()), new Vec3d(1, 3, 1))).iterator().hasNext())
+							.filter(pos -> (mc.world.isTopSolid(pos, mc.player) && !mc.world.getBlockCollisions(mc.player, new AABB(new Vec3(pos.getX(), pos.getY(), pos.getZ()), new Vec3(1, 3, 1))).iterator().hasNext())
 									|| mc.world.getBlockState(pos).getBlock() instanceof LadderBlock
 									|| mc.world.getBlockState(pos.up()).getBlock() instanceof LadderBlock)
-							.filter(pos -> mc.player.getPos().distanceTo(Vec3d.of(pos).add(0.5, 1, 0.5)) >= 1)
-							.filter(pos -> mc.player.getPos().distanceTo(Vec3d.of(pos).add(0.5, 1, 0.5)) <= 4.5 /* ? */)
+							.filter(pos -> mc.player.getPos().distanceTo(Vec3.of(pos).add(0.5, 1, 0.5)) >= 1)
+							.filter(pos -> mc.player.getPos().distanceTo(Vec3.of(pos).add(0.5, 1, 0.5)) <= 4.5 /* ? */)
 							.sorted(Comparator.comparing(pos -> pos.getSquaredDistance(lookVec)))
 							.findFirst().orElse(null);
 

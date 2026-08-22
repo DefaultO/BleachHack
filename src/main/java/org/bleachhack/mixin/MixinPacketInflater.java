@@ -4,8 +4,8 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.DecoderException;
-import net.minecraft.network.PacketByteBuf;
-import net.minecraft.network.handler.PacketInflater;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.CompressionDecoder;
 import org.bleachhack.module.ModuleManager;
 import org.bleachhack.module.mods.AntiChunkBan;
 import org.spongepowered.asm.mixin.Mixin;
@@ -17,7 +17,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import java.util.List;
 import java.util.zip.Inflater;
 
-@Mixin(PacketInflater.class)
+@Mixin(CompressionDecoder.class)
 public class MixinPacketInflater {
 
 	@Shadow private Inflater inflater;
@@ -27,7 +27,7 @@ public class MixinPacketInflater {
 		if (ModuleManager.getModule(AntiChunkBan.class).isEnabled()) {
 			info.cancel();
 			if (byteBuf.readableBytes() != 0) {
-				PacketByteBuf packetByteBuf_1 = new PacketByteBuf(byteBuf);
+				FriendlyByteBuf packetByteBuf_1 = new FriendlyByteBuf(byteBuf);
 				int i = packetByteBuf_1.readVarInt();
 
 				if (i == 0) {

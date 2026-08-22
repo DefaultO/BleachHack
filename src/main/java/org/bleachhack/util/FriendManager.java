@@ -8,9 +8,9 @@
  */
 package org.bleachhack.util;
 
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.util.Formatting;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.ChatFormatting;
 
 import java.util.Collection;
 import java.util.Locale;
@@ -29,12 +29,12 @@ public class FriendManager {
 	}
 	
 	public void add(Entity entity) {
-		if (entity instanceof PlayerEntity)
+		if (entity instanceof Player)
 			add(entity.getName().getString());
 	}
 
 	public void add(String name) {
-		name = Formatting.strip(name).toLowerCase(Locale.ENGLISH);
+		name = ChatFormatting.stripFormatting(name).toLowerCase(Locale.ENGLISH);
 
 		if (!name.isEmpty()) {
 			friends.add(name);
@@ -46,12 +46,12 @@ public class FriendManager {
 	}
 	
 	public void remove(Entity entity) {
-		if (entity instanceof PlayerEntity)
+		if (entity instanceof Player)
 			remove(entity.getName().getString());
 	}
 
 	public void remove(String name) {
-		name = Formatting.strip(name).toLowerCase(Locale.ENGLISH);
+		name = ChatFormatting.stripFormatting(name).toLowerCase(Locale.ENGLISH);
 
 		if (!name.isEmpty()) {
 			friends.remove(name);
@@ -63,14 +63,14 @@ public class FriendManager {
 	}
 	
 	public boolean has(Entity entity) {
-		if (entity instanceof PlayerEntity)
+		if (entity instanceof Player)
 			return has(entity.getName().getString());
 		
 		return false;
 	}
 
 	public boolean has(String name) {
-		name = Formatting.strip(name).toLowerCase(Locale.ENGLISH);
+		name = ChatFormatting.stripFormatting(name).toLowerCase(Locale.ENGLISH);
 
 		if (!name.isEmpty()) {
 			return friends.contains(name);

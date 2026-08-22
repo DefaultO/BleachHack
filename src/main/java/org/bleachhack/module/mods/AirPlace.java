@@ -21,10 +21,10 @@ import org.bleachhack.setting.module.SettingToggle;
 import org.bleachhack.util.render.Renderer;
 import org.bleachhack.util.render.color.QuadColor;
 
-import net.minecraft.network.packet.c2s.play.PlayerInteractBlockC2SPacket;
-import net.minecraft.util.Hand;
-import net.minecraft.util.hit.BlockHitResult;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.network.protocol.game.ServerboundUseItemOnPacket;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.core.BlockPos;
 
 /**
  * @author <a href="https://github.com/lasnikprogram">Lasnik</a>
@@ -54,11 +54,11 @@ public class AirPlace extends Module {
 
 		if (getSetting(1).asMode().getMode() == 0) {
 			if (((AccessorMinecraftClient) mc).getItemUseCooldown() == 4 && isKeyUsePressed) {
-				mc.getNetworkHandler().sendPacket(new PlayerInteractBlockC2SPacket(Hand.MAIN_HAND, (BlockHitResult) mc.crosshairTarget, 0));
+				mc.getNetworkHandler().sendPacket(new ServerboundUseItemOnPacket(InteractionHand.MAIN_HAND, (BlockHitResult) mc.crosshairTarget, 0));
 			}
 		} else if (getSetting(1).asMode().getMode() == 1) {
 			if (!pressed && isKeyUsePressed) {
-				mc.getNetworkHandler().sendPacket(new PlayerInteractBlockC2SPacket(Hand.MAIN_HAND, (BlockHitResult) mc.crosshairTarget, 0));
+				mc.getNetworkHandler().sendPacket(new ServerboundUseItemOnPacket(InteractionHand.MAIN_HAND, (BlockHitResult) mc.crosshairTarget, 0));
 				pressed = true;
 			} else if (!isKeyUsePressed) {
 				pressed = false;

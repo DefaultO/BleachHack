@@ -1,12 +1,12 @@
 package org.bleachhack.util.shader;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gl.Framebuffer;
-import net.minecraft.client.gl.ShaderProgram;
+import net.minecraft.client.Minecraft;
+import com.mojang.blaze3d.pipeline.RenderTarget;
+import com.mojang.blaze3d.opengl.GlProgram;
 import net.minecraft.client.render.*;
 import net.minecraft.client.render.RenderPhase.TextureBase;
-import net.minecraft.util.Identifier;
+import net.minecraft.resources.Identifier;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -17,10 +17,10 @@ public class ColorVertexConsumerProvider {
 
 	private final VertexConsumerProvider.Immediate plainDrawer = VertexConsumerProvider.immediate(new BufferBuilder(256));
 
-	private Supplier<ShaderProgram> shader;
+	private Supplier<GlProgram> shader;
 	private Function<TextureBase, RenderLayer> layerCreator;
 
-	public ColorVertexConsumerProvider(Framebuffer framebuffer, Supplier<ShaderProgram> shader) {
+	public ColorVertexConsumerProvider(RenderTarget framebuffer, Supplier<GlProgram> shader) {
 		this.shader = shader;
 		setFramebuffer(framebuffer);
 	}
@@ -56,7 +56,7 @@ public class ColorVertexConsumerProvider {
 		};
 	}
 
-	public void setFramebuffer(Framebuffer framebuffer) {
+	public void setFramebuffer(RenderTarget framebuffer) {
 		layerCreator = memoizeTexture(texture -> new RenderLayer(
 				"bleachhack_outline", VertexFormats.POSITION_COLOR_TEXTURE, VertexFormat.DrawMode.QUADS, 256, false, false,
 				() -> {
@@ -64,7 +64,7 @@ public class ColorVertexConsumerProvider {
 					RenderSystem.setShader(shader);
 					framebuffer.beginWrite(false);
 				},
-				() -> MinecraftClient.getInstance().getFramebuffer().beginWrite(false)) {});
+				() -> Minecraft.getInstance().getFramebuffer().beginWrite(false)) {});
 	}
 
 	private Function<TextureBase, RenderLayer> memoizeTexture(Function<TextureBase, RenderLayer> function) {

@@ -8,9 +8,9 @@
  */
 package org.bleachhack.event.events;
 
-import net.minecraft.client.render.VertexConsumerProvider;
-import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.entity.Entity;
+import net.minecraft.client.renderer.SubmitNodeCollector;
+import com.mojang.blaze3d.vertex.PoseStack;
+import net.minecraft.world.entity.Entity;
 import org.bleachhack.event.Event;
 
 public class EventEntityRender extends Event {
@@ -18,34 +18,34 @@ public class EventEntityRender extends Event {
 	public static class Single extends EventEntityRender {
 
 		protected Entity entity;
-		protected MatrixStack matrices;
-		protected VertexConsumerProvider vertex;
+		protected PoseStack matrices;
+		protected SubmitNodeCollector vertex;
 
 		public Entity getEntity() {
 			return entity;
 		}
 
-		public MatrixStack getMatrix() {
+		public PoseStack getMatrix() {
 			return matrices;
 		}
 
-		public VertexConsumerProvider getVertex() {
+		public SubmitNodeCollector getVertex() {
 			return vertex;
 		}
 
 		public static class Pre extends Single {
 
-			public Pre(Entity entity, MatrixStack matrices, VertexConsumerProvider vertex) {
+			public Pre(Entity entity, PoseStack matrices, SubmitNodeCollector vertex) {
 				this.entity = entity;
 				this.matrices = matrices;
 				this.vertex = vertex;
 			}
 
-			public void setMatrix(MatrixStack matrices) {
+			public void setMatrix(PoseStack matrices) {
 				this.matrices = matrices;
 			}
 
-			public void setVertex(VertexConsumerProvider vertex) {
+			public void setVertex(SubmitNodeCollector vertex) {
 				this.vertex = vertex;
 			}
 
@@ -56,7 +56,7 @@ public class EventEntityRender extends Event {
 
 		public static class Post extends Single {
 
-			public Post(Entity entity, MatrixStack matrices, VertexConsumerProvider vertex) {
+			public Post(Entity entity, PoseStack matrices, SubmitNodeCollector vertex) {
 				this.entity = entity;
 				this.matrices = matrices;
 				this.vertex = vertex;
@@ -65,17 +65,17 @@ public class EventEntityRender extends Event {
 
 		public static class Label extends Single {
 
-			public Label(Entity entity, MatrixStack matrices, VertexConsumerProvider vertex) {
+			public Label(Entity entity, PoseStack matrices, SubmitNodeCollector vertex) {
 				this.entity = entity;
 				this.matrices = matrices;
 				this.vertex = vertex;
 			}
 
-			public void setMatrix(MatrixStack matrices) {
+			public void setMatrix(PoseStack matrices) {
 				this.matrices = matrices;
 			}
 
-			public void setVertex(VertexConsumerProvider vertex) {
+			public void setVertex(SubmitNodeCollector vertex) {
 				this.vertex = vertex;
 			}
 		}

@@ -1,15 +1,15 @@
 package org.bleachhack.gui.window.widget;
 
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.render.Tessellator;
-import net.minecraft.client.render.VertexConsumerProvider;
-import net.minecraft.text.Text;
-import net.minecraft.util.math.RotationAxis;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+import com.mojang.blaze3d.vertex.Tesselator;
+import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.network.chat.Component;
+import com.mojang.math.Axis;
 
 public class WindowTextWidget extends WindowWidget {
 
-	private Text text;
+	private Component text;
 	private float scale;
 	public boolean shadow;
 	public int color;
@@ -20,7 +20,7 @@ public class WindowTextWidget extends WindowWidget {
 		this(text, shadow, TextAlign.LEFT, x, y, color);
 	}
 
-	public WindowTextWidget(Text text, boolean shadow, int x, int y, int color) {
+	public WindowTextWidget(Component text, boolean shadow, int x, int y, int color) {
 		this(text, shadow, TextAlign.LEFT, x, y, color);
 	}
 
@@ -28,19 +28,19 @@ public class WindowTextWidget extends WindowWidget {
 		this(text, shadow, align, 1f, x, y, color);
 	}
 
-	public WindowTextWidget(Text text, boolean shadow, TextAlign align, int x, int y, int color) {
+	public WindowTextWidget(Component text, boolean shadow, TextAlign align, int x, int y, int color) {
 		this(text, shadow, align, 1f, x, y, color);
 	}
 
 	public WindowTextWidget(String text, boolean shadow, TextAlign align, float scale, int x, int y, int color) {
-		this(Text.literal(text), shadow, align, scale, x, y, color);
+		this(Component.literal(text), shadow, align, scale, x, y, color);
 	}
 
-	public WindowTextWidget(Text text, boolean shadow, TextAlign align, float scale, int x, int y, int color) {
+	public WindowTextWidget(Component text, boolean shadow, TextAlign align, float scale, int x, int y, int color) {
 		this(text, shadow, align, scale, 0f, x, y, color);
 	}
 
-	public WindowTextWidget(Text text, boolean shadow, TextAlign align, float scale, float rotation, int x, int y, int color) {
+	public WindowTextWidget(Component text, boolean shadow, TextAlign align, float scale, float rotation, int x, int y, int color) {
 		super(x, y, x + mc.textRenderer.getWidth(text), (int) (y + 10 * scale));
 		this.text = text;
 		this.shadow = shadow;
@@ -51,7 +51,7 @@ public class WindowTextWidget extends WindowWidget {
 	}
 
 	@Override
-	public void render(DrawContext drawContext, int windowX, int windowY, int mouseX, int mouseY) {
+	public void render(GuiGraphics drawContext, int windowX, int windowY, int mouseX, int mouseY) {
 		super.render(drawContext, windowX, windowY, mouseX, mouseY);
 
 		float offset = mc.textRenderer.getWidth(text) * align.offset * scale;
@@ -59,10 +59,10 @@ public class WindowTextWidget extends WindowWidget {
 		drawContext.getMatrices().push();
 		drawContext.getMatrices().scale(scale, scale, 1f);
 		drawContext.getMatrices().translate((windowX + x1 - offset) / scale, (windowY + y1) / scale, 0);
-		drawContext.getMatrices().multiply(RotationAxis.POSITIVE_Z.rotationDegrees(rotation));
+		drawContext.getMatrices().multiply(Axis.POSITIVE_Z.rotationDegrees(rotation));
 
-		VertexConsumerProvider.Immediate immediate = VertexConsumerProvider.immediate(Tessellator.getInstance().getBuffer());
-		mc.textRenderer.draw(text, 0, 0, color, shadow, drawContext.getMatrices().peek().getPositionMatrix(), immediate, TextRenderer.TextLayerType.NORMAL, 0, 0xf000f0);
+		MultiBufferSource.Immediate immediate = MultiBufferSource.immediate(Tesselator.getInstance().getBuffer());
+		mc.textRenderer.draw(text, 0, 0, color, shadow, drawContext.getMatrices().peek().getPositionMatrix(), immediate, Font.TextLayerType.NORMAL, 0, 0xf000f0);
 		immediate.draw();
 
 		if (text.getStyle() != null && mc.currentScreen != null
@@ -76,11 +76,11 @@ public class WindowTextWidget extends WindowWidget {
 		drawContext.getMatrices().pop();
 	}
 
-	public Text getText() {
+	public Component getText() {
 		return text;
 	}
 
-	public void setText(Text text) {
+	public void setText(Component text) {
 		this.text = text;
 		this.x2 = x1 + mc.textRenderer.getWidth(text);
 	}

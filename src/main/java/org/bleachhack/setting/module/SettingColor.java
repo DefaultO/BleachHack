@@ -8,18 +8,19 @@
  */
 package org.bleachhack.setting.module;
 
-import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.GuiGraphics; // TODO(26.2): GuiGraphics removed; GUI draw pipeline is now GuiGraphicsExtractor + GuiRenderState. Needs window-framework migration.
 import org.bleachhack.gui.clickgui.window.ModuleWindow;
 import org.bleachhack.gui.window.Window;
 import org.bleachhack.setting.SettingDataHandlers;
 import com.mojang.blaze3d.systems.RenderSystem;
 
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.render.BufferBuilder;
-import net.minecraft.client.render.GameRenderer;
-import net.minecraft.client.render.Tessellator;
+import net.minecraft.client.Minecraft;
+// TODO(26.2): immediate-mode rendering removed. Tesselator/BufferBuilder/VertexFormat/GameRenderer.getPositionColorProgram + RenderSystem.enableBlend/defaultBlendFunc/setShader/disableBlend no longer exist. The color/hue square must be rebuilt on the 26.2 pipeline (GuiGraphicsExtractor.fill/fillGradient or a RenderPipeline). Left intact so the maintainer can migrate.
+import com.mojang.blaze3d.vertex.BufferBuilder;
+import net.minecraft.client.renderer.GameRenderer;
+import com.mojang.blaze3d.vertex.Tesselator;
 import net.minecraft.client.render.VertexFormat;
-import net.minecraft.client.render.VertexFormats;
+import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 
 public class SettingColor extends ModuleSetting<float[]> {
 
@@ -27,7 +28,8 @@ public class SettingColor extends ModuleSetting<float[]> {
 		super(text, rgbToHsv(r, g, b), float[]::clone, SettingDataHandlers.FLOAT_ARRAY);
 	}
 
-	public void render(ModuleWindow window, DrawContext drawContext, int x, int y, int len) {
+	// TODO(26.2): render body uses removed immediate-mode APIs (Tesselator/BufferBuilder color square, RenderSystem blend/shader, GuiGraphics.fill/getMatrices/drawTextWithShadow). Migrate to GuiGraphicsExtractor/GuiRenderState with the window framework.
+	public void render(ModuleWindow window, GuiGraphics drawContext, int x, int y, int len) {
 		int sx = x + 3;
 		int sy = y + 2;
 		int ex = x + len - 18;
@@ -45,9 +47,9 @@ public class SettingColor extends ModuleSetting<float[]> {
 		RenderSystem.setShader(GameRenderer::getPositionColorProgram);
 
 		// Color square
-		Tessellator tessellator = Tessellator.getInstance();
-		BufferBuilder bufferBuilder = Tessellator.getInstance().getBuffer();
-		bufferBuilder.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_COLOR);
+		Tesselator tessellator = Tesselator.getInstance();
+		BufferBuilder bufferBuilder = Tesselator.getInstance().getBuffer();
+		bufferBuilder.begin(VertexFormat.DrawMode.QUADS, DefaultVertexFormat.POSITION_COLOR);
 		bufferBuilder.vertex(ex, sy, 0).color(rgb[0], rgb[1], rgb[2], 255).next();
 		bufferBuilder.vertex(sx, sy, 0).color(255, 255, 255, 255).next();
 		bufferBuilder.vertex(sx, ey, 0).color(255, 255, 255, 255).next();
@@ -79,7 +81,7 @@ public class SettingColor extends ModuleSetting<float[]> {
 
 		drawContext.getMatrices().push();
 		drawContext.getMatrices().scale(0.75f, 0.75f, 1f);
-		drawContext.drawTextWithShadow(MinecraftClient.getInstance().textRenderer, getName(), (int) ((sx + 1) / 0.75), (int) ((sy + 1) / 0.75), 0x000000);
+		drawContext.drawTextWithShadow(Minecraft.getInstance().font, getName(), (int) ((sx + 1) / 0.75), (int) ((sy + 1) / 0.75), 0x000000);
 		drawContext.getMatrices().pop();
 
 		// Hue bar

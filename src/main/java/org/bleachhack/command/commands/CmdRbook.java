@@ -18,9 +18,9 @@ import org.bleachhack.command.Command;
 import org.bleachhack.command.CommandCategory;
 import org.bleachhack.util.BleachLogger;
 
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
-import net.minecraft.network.packet.c2s.play.BookUpdateC2SPacket;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.network.protocol.game.ServerboundEditBookPacket;
 
 public class CmdRbook extends Command {
 
@@ -48,7 +48,7 @@ public class CmdRbook extends Command {
 		for (int t = 0; t < pages; t++)
 			textSplit.add(RandomStringUtils.random(pageChars, startChar, endChar, false, false));
 
-		mc.player.networkHandler.sendPacket(new BookUpdateC2SPacket(mc.player.getInventory().selectedSlot, textSplit, Optional.empty()));
+		mc.player.networkHandler.sendPacket(new ServerboundEditBookPacket(mc.player.getInventory().selectedSlot, textSplit, Optional.empty()));
 
 		BleachLogger.info("Written book (" + pages + " pages, " + pageChars + " chars/page)");
 	}

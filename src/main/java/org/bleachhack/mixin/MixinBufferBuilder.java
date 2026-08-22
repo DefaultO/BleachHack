@@ -1,6 +1,6 @@
 package org.bleachhack.mixin;
 
-import net.minecraft.client.render.BufferBuilder;
+import com.mojang.blaze3d.vertex.BufferBuilder;
 import net.minecraft.client.render.BufferVertexConsumer;
 import net.minecraft.client.render.FixedColorVertexConsumer;
 import org.spongepowered.asm.mixin.Mixin;

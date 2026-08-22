@@ -12,7 +12,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import net.minecraft.registry.Registries;
+import net.minecraft.core.registries.BuiltInRegistries;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.bleachhack.command.Command;
@@ -20,16 +20,16 @@ import org.bleachhack.command.CommandCategory;
 import org.bleachhack.command.exception.CmdSyntaxException;
 import org.bleachhack.util.BleachLogger;
 
-import net.minecraft.enchantment.Enchantment;
-import net.minecraft.enchantment.Enchantments;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtList;
+import net.minecraft.world.item.enchantment.Enchantment;
+import net.minecraft.world.item.enchantment.Enchantments;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
 
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Style;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.network.chat.Style;
+import net.minecraft.network.chat.Component;
+import net.minecraft.ChatFormatting;
 
 public class CmdEnchant extends Command {
 
@@ -92,11 +92,11 @@ public class CmdEnchant extends Command {
 		}
 
 		if (args[0].equalsIgnoreCase("list")) {
-			MutableText text = Text.literal("");
+			MutableComponent text = Component.literal("");
 			int i = 0;
 			for (String[] s: enchantments.keySet()) {
-				int color = i % 2 == 0 ? BleachLogger.INFO_COLOR : Formatting.AQUA.getColorValue();
-				text.append(Text.literal("§7[§r" + String.join("§7/§r", s) + "§7] ").setStyle(Style.EMPTY.withColor(color)));
+				int color = i % 2 == 0 ? BleachLogger.INFO_COLOR : ChatFormatting.AQUA.getColorValue();
+				text.append(Component.literal("§7[§r" + String.join("§7/§r", s) + "§7] ").setStyle(Style.EMPTY.withColor(color)));
 				i++;
 			}
 
@@ -108,7 +108,7 @@ public class CmdEnchant extends Command {
 		ItemStack item = mc.player.getInventory().getMainHandStack();
 
 		if (args[0].equalsIgnoreCase("all")) {
-			for (Enchantment e : Registries.ENCHANTMENT) {
+			for (Enchantment e : BuiltInRegistries.ENCHANTMENT) {
 				enchant(item, e, level);
 			}
 
@@ -133,14 +133,14 @@ public class CmdEnchant extends Command {
 		}
 
 		if (item.getNbt() == null)
-			item.setNbt(new NbtCompound());
+			item.setNbt(new CompoundTag());
 		if (!item.getNbt().contains("Enchantments", 9)) {
-			item.getNbt().put("Enchantments", new NbtList());
+			item.getNbt().put("Enchantments", new ListTag());
 		}
 
-		NbtList listnbt = item.getNbt().getList("Enchantments", 10);
-		NbtCompound compoundnbt = new NbtCompound();
-		compoundnbt.putString("id", String.valueOf(Registries.ENCHANTMENT.getId(e)));
+		ListTag listnbt = item.getNbt().getList("Enchantments", 10);
+		CompoundTag compoundnbt = new CompoundTag();
+		compoundnbt.putString("id", String.valueOf(BuiltInRegistries.ENCHANTMENT.getId(e)));
 		compoundnbt.putInt("lvl", level);
 		listnbt.add(compoundnbt);
 	}

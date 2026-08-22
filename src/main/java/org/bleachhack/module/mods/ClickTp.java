@@ -19,14 +19,14 @@ import org.bleachhack.util.render.Renderer;
 import org.bleachhack.util.render.color.QuadColor;
 import org.lwjgl.glfw.GLFW;
 
-import net.minecraft.client.util.InputUtil;
-import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
-import net.minecraft.util.hit.BlockHitResult;
-import net.minecraft.util.hit.HitResult.Type;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
-import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.Vec3d;
+import com.mojang.blaze3d.platform.InputConstants;
+import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.HitResult.Type;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.core.Direction;
+import net.minecraft.world.phys.Vec3;
 
 public class ClickTp extends Module {
 
@@ -56,7 +56,7 @@ public class ClickTp extends Module {
 	public void onWorldRender(EventWorldRender.Post event) {
 		if (pos != null && dir != null) {
 			int[] col = getSetting(4).asColor().getRGBArray();
-			Renderer.drawBoxBoth(new Box(
+			Renderer.drawBoxBoth(new AABB(
 					pos.getX() + (dir == Direction.EAST ? 0.95 : 0), pos.getY() + (dir == Direction.UP ? 0.95 : 0), pos.getZ() + (dir == Direction.SOUTH ? 0.95 : 0),
 					pos.getX() + (dir == Direction.WEST ? 0.05 : 1), pos.getY() + (dir == Direction.DOWN ? 0.05 : 1), pos.getZ() + (dir == Direction.NORTH ? 0.05 : 1)),
 					QuadColor.single(col[0], col[1], col[2], 128), 2.5f);
@@ -65,7 +65,7 @@ public class ClickTp extends Module {
 
 	@BleachSubscribe
 	public void onTick(EventTick event) {
-		if (InputUtil.isKeyPressed(mc.getWindow().getHandle(), GLFW.GLFW_KEY_LEFT_SHIFT)) {
+		if (InputConstants.isKeyPressed(mc.getWindow().getHandle(), GLFW.GLFW_KEY_LEFT_SHIFT)) {
 			pos = null;
 			dir = null;
 			return;
@@ -82,15 +82,15 @@ public class ClickTp extends Module {
 			if (GLFW.glfwGetMouseButton(mc.getWindow().getHandle(), GLFW.GLFW_MOUSE_BUTTON_RIGHT) == 1 && mc.currentScreen == null && !antiSpamClick) {
 				antiSpamClick = true;
 
-				Vec3d tpPos = Vec3d.ofBottomCenter(pos.offset(dir, dir == Direction.DOWN ? 2 : 1));
+				Vec3 tpPos = Vec3.ofBottomCenter(pos.offset(dir, dir == Direction.DOWN ? 2 : 1));
 
 				if (getSetting(2).asToggle().getState()) {
 					mc.player.updatePosition(mc.player.getX(), tpPos.y, mc.player.getZ());
-					mc.player.networkHandler.sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(mc.player.getX(), tpPos.y, mc.player.getZ(), false));
+					mc.player.networkHandler.sendPacket(new ServerboundMovePlayerPacket.PositionAndOnGround(mc.player.getX(), tpPos.y, mc.player.getZ(), false));
 				}
 
 				mc.player.updatePosition(tpPos.x, tpPos.y, tpPos.z);
-				mc.player.networkHandler.sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(tpPos.x, tpPos.y, tpPos.z, false));
+				mc.player.networkHandler.sendPacket(new ServerboundMovePlayerPacket.PositionAndOnGround(tpPos.x, tpPos.y, tpPos.z, false));
 			} else if (GLFW.glfwGetMouseButton(mc.getWindow().getHandle(), GLFW.GLFW_MOUSE_BUTTON_RIGHT) == 0) {
 				antiSpamClick = false;
 			}

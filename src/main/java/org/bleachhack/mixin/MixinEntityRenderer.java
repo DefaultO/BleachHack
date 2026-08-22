@@ -8,11 +8,11 @@
  */
 package org.bleachhack.mixin;
 
-import net.minecraft.client.render.VertexConsumerProvider;
-import net.minecraft.client.render.entity.EntityRenderer;
-import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.entity.Entity;
-import net.minecraft.text.Text;
+import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.entity.EntityRenderer;
+import com.mojang.blaze3d.vertex.PoseStack;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.network.chat.Component;
 import org.bleachhack.BleachHack;
 import org.bleachhack.event.events.EventEntityRender;
 import org.spongepowered.asm.mixin.Mixin;
@@ -24,7 +24,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class MixinEntityRenderer<T extends Entity> {
 
 	@Inject(method = "renderLabelIfPresent", at = @At("HEAD"), cancellable = true)
-	private void renderLabelIfPresent(T entity, Text text, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light, CallbackInfo info) {
+	private void renderLabelIfPresent(T entity, Component text, PoseStack matrices, MultiBufferSource vertexConsumers, int light, CallbackInfo info) {
 		EventEntityRender.Single.Label event = new EventEntityRender.Single.Label(entity, matrices, vertexConsumers);
 		BleachHack.eventBus.post(event);
 

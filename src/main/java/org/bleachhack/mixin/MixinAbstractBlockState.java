@@ -1,7 +1,7 @@
 package org.bleachhack.mixin;
 
-import net.minecraft.block.AbstractBlock;
-import net.minecraft.block.BlockState;
+import net.minecraft.world.level.block.state.BlockBehaviour;
+import net.minecraft.world.level.block.state.BlockState;
 
 import org.bleachhack.BleachHack;
 import org.bleachhack.event.events.EventRenderBlock;
@@ -10,7 +10,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-@Mixin(AbstractBlock.AbstractBlockState.class)
+@Mixin(BlockBehaviour.AbstractBlockState.class)
 public class MixinAbstractBlockState {
 
 	@Inject(method = "isOpaque", at = @At("HEAD"), cancellable = true)

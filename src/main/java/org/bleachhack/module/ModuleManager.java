@@ -9,8 +9,8 @@
 package org.bleachhack.module;
 
 import com.google.gson.annotations.SerializedName;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.util.InputUtil;
+import net.minecraft.client.Minecraft;
+import com.mojang.blaze3d.platform.InputConstants;
 import org.apache.commons.io.IOUtils;
 import org.bleachhack.util.BleachLogger;
 import org.bleachhack.util.collections.NameableStorage;
@@ -81,7 +81,7 @@ public class ModuleManager {
 	}
 
 	public static void handleKey(int key) {
-		if (!InputUtil.isKeyPressed(MinecraftClient.getInstance().getWindow().getHandle(), GLFW.GLFW_KEY_F3)) {
+		if (!InputConstants.isKeyPressed(Minecraft.getInstance().getWindow().getHandle(), GLFW.GLFW_KEY_F3)) {
 			for (Module m: getModules()) {
 				if (m.getKey() == key) {
 					m.toggle();

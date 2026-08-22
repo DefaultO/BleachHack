@@ -9,23 +9,28 @@
 package org.bleachhack.util.world;
 
 import com.google.common.collect.Sets;
-import net.minecraft.block.*;
-import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket;
-import net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket.Mode;
-import net.minecraft.network.packet.c2s.play.HandSwingC2SPacket;
-import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
-import net.minecraft.util.Hand;
-import net.minecraft.util.hit.BlockHitResult;
-import net.minecraft.util.hit.HitResult;
-import net.minecraft.util.math.*;
-import net.minecraft.util.math.Direction.Axis;
-import net.minecraft.world.Heightmap;
-import net.minecraft.world.RaycastContext;
-import net.minecraft.world.chunk.WorldChunk;
+import net.minecraft.world.level.block.*;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.client.Minecraft;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Input;
+import net.minecraft.network.protocol.game.ServerboundPlayerInputPacket;
+import net.minecraft.network.protocol.game.ServerboundSwingPacket;
+import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.HitResult;
+import net.minecraft.world.phys.Vec3;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.core.Direction.Axis;
+import net.minecraft.util.Mth;
+import net.minecraft.world.level.levelgen.Heightmap;
+import net.minecraft.world.level.ClipContext;
+import net.minecraft.world.level.chunk.LevelChunk;
 import org.bleachhack.setting.module.SettingRotate;
 import org.bleachhack.util.InventoryUtils;
 
@@ -35,7 +40,7 @@ import java.util.Set;
 
 public class WorldUtils {
 
-	protected static final MinecraftClient mc = MinecraftClient.getInstance();
+	protected static final Minecraft mc = Minecraft.getInstance();
 
 	public static final Set<Block> RIGHTCLICKABLE_BLOCKS = Sets.newHashSet(
 			Blocks.CHEST, Blocks.TRAPPED_CHEST, Blocks.ENDER_CHEST,
@@ -70,14 +75,14 @@ public class WorldUtils {
 			Blocks.CARTOGRAPHY_TABLE, Blocks.GRINDSTONE, Blocks.LECTERN, Blocks.LOOM,
 			Blocks.STONECUTTER, Blocks.SMITHING_TABLE);
 
-	public static List<WorldChunk> getLoadedChunks() {
-		List<WorldChunk> chunks = new ArrayList<>();
+	public static List<LevelChunk> getLoadedChunks() {
+		List<LevelChunk> chunks = new ArrayList<>();
 
-		int viewDist = mc.options.getViewDistance().getValue();
+		int viewDist = mc.options.renderDistance().get();
 
 		for (int x = -viewDist; x <= viewDist; x++) {
 			for (int z = -viewDist; z <= viewDist; z++) {
-				WorldChunk chunk = mc.world.getChunkManager().getWorldChunk((int) mc.player.getX() / 16 + x, (int) mc.player.getZ() / 16 + z);
+				LevelChunk chunk = mc.level.getChunkSource().getChunk((int) mc.player.getX() / 16 + x, (int) mc.player.getZ() / 16 + z, false);
 
 				if (chunk != null) {
 					chunks.add(chunk);
@@ -90,17 +95,17 @@ public class WorldUtils {
 
 	public static List<BlockEntity> getBlockEntities() {
 		List<BlockEntity> list = new ArrayList<>();
-		for (WorldChunk chunk: getLoadedChunks())
+		for (LevelChunk chunk: getLoadedChunks())
 			list.addAll(chunk.getBlockEntities().values());
 
 		return list;
 	}
 
-	public static boolean doesBoxTouchBlock(Box box, Block block) {
+	public static boolean doesBoxTouchBlock(AABB box, Block block) {
 		for (int x = (int) Math.floor(box.minX); x < Math.ceil(box.maxX); x++) {
 			for (int y = (int) Math.floor(box.minY); y < Math.ceil(box.maxY); y++) {
 				for (int z = (int) Math.floor(box.minZ); z < Math.ceil(box.maxZ); z++) {
-					if (mc.world.getBlockState(new BlockPos(x, y, z)).getBlock() == block) {
+					if (mc.level.getBlockState(new BlockPos(x, y, z)).getBlock() == block) {
 						return true;
 					}
 				}
@@ -110,13 +115,13 @@ public class WorldUtils {
 		return false;
 	}
 
-	public static boolean doesBoxCollide(Box box) {
+	public static boolean doesBoxCollide(AABB box) {
 		for (int x = (int) Math.floor(box.minX); x < Math.ceil(box.maxX); x++) {
 			for (int y = (int) Math.floor(box.minY); y < Math.ceil(box.maxY); y++) {
 				for (int z = (int) Math.floor(box.minZ); z < Math.ceil(box.maxZ); z++) {
 					int fx = x, fy = y, fz = z;
-					if (mc.world.getBlockState(new BlockPos(x, y, z)).getCollisionShape(mc.world, new BlockPos(x, y, z)).getBoundingBoxes().stream()
-							.anyMatch(b -> b.offset(fx, fy, fz).intersects(box))) {
+					if (mc.level.getBlockState(new BlockPos(x, y, z)).getCollisionShape(mc.level, new BlockPos(x, y, z)).toAabbs().stream()
+							.anyMatch(b -> b.move(fx, fy, fz).intersects(box))) {
 						return true;
 					}
 				}
@@ -131,34 +136,34 @@ public class WorldUtils {
 	}
 
 	public static boolean placeBlock(BlockPos pos, int slot, int rotateMode, boolean forceLegit, boolean airPlace, boolean swingHand) {
-		if (!mc.world.isInBuildLimit(pos) || !isBlockEmpty(pos))
+		if (!mc.level.isInWorldBounds(pos) || !isBlockEmpty(pos))
 			return false;
 
 		for (Direction d : Direction.values()) {
-			if (!mc.world.isInBuildLimit(pos.offset(d)))
+			if (!mc.level.isInWorldBounds(pos.relative(d)))
 				continue;
 
-			Block neighborBlock = mc.world.getBlockState(pos.offset(d)).getBlock();
+			Block neighborBlock = mc.level.getBlockState(pos.relative(d)).getBlock();
 
-			if (!airPlace && neighborBlock.getDefaultState().isReplaceable())
+			if (!airPlace && neighborBlock.defaultBlockState().canBeReplaced())
 				continue;
 
-			Vec3d vec = getLegitLookPos(pos.offset(d), d.getOpposite(), true, 5);
+			Vec3 vec = getLegitLookPos(pos.relative(d), d.getOpposite(), true, 5);
 
 			if (vec == null) {
 				if (forceLegit) {
 					continue;
 				}
 
-				vec = getLegitLookPos(pos.offset(d), d.getOpposite(), false, 5);
+				vec = getLegitLookPos(pos.relative(d), d.getOpposite(), false, 5);
 
 				if (vec == null) {
 					continue;
 				}
 			}
 
-			int prevSlot = mc.player.getInventory().selectedSlot;
-			Hand hand = InventoryUtils.selectSlot(slot);
+			int prevSlot = mc.player.getInventory().getSelectedSlot();
+			InteractionHand hand = InventoryUtils.selectSlot(slot);
 
 			if (hand == null) {
 				return false;
@@ -171,22 +176,22 @@ public class WorldUtils {
 			}
 
 			if (RIGHTCLICKABLE_BLOCKS.contains(neighborBlock)) {
-				mc.player.networkHandler.sendPacket(new ClientCommandC2SPacket(mc.player, Mode.PRESS_SHIFT_KEY));
+				sendSneak(true);
 			}
 
 			if (swingHand) {
-				mc.player.swingHand(hand);
+				mc.player.swing(hand);
 			} else {
-				mc.player.networkHandler.sendPacket(new HandSwingC2SPacket(hand));
+				mc.player.connection.send(new ServerboundSwingPacket(hand));
 			}
 
-			mc.interactionManager.interactBlock(mc.player, hand,
-					new BlockHitResult(Vec3d.ofCenter(pos), airPlace ? d : d.getOpposite(), airPlace ? pos : pos.offset(d), false));
+			mc.gameMode.useItemOn(mc.player, hand,
+					new BlockHitResult(Vec3.atCenterOf(pos), airPlace ? d : d.getOpposite(), airPlace ? pos : pos.relative(d), false));
 
 			if (RIGHTCLICKABLE_BLOCKS.contains(neighborBlock))
-				mc.player.networkHandler.sendPacket(new ClientCommandC2SPacket(mc.player, Mode.RELEASE_SHIFT_KEY));
+				sendSneak(false);
 
-			mc.player.getInventory().selectedSlot = prevSlot;
+			mc.player.getInventory().setSelectedSlot(prevSlot);
 
 			return true;
 		}
@@ -194,30 +199,37 @@ public class WorldUtils {
 		return false;
 	}
 
-	public static Vec3d getLegitLookPos(BlockPos pos, Direction dir, boolean raycast, int res) {
-		return getLegitLookPos(new Box(pos), dir, raycast, res, 0.01);
+	// ponytail: 26.2 dropped ServerboundPlayerCommandPacket PRESS/RELEASE_SHIFT_KEY; sneak now rides the input packet.
+	private static void sendSneak(boolean sneak) {
+		Input in = mc.player.input.keyPresses;
+		mc.player.connection.send(new ServerboundPlayerInputPacket(
+				sneak ? new Input(in.forward(), in.backward(), in.left(), in.right(), in.jump(), true, in.sprint()) : in));
 	}
 
-	public static Vec3d getLegitLookPos(Box box, Direction dir, boolean raycast, int res, double extrude) {
-		Vec3d eyePos = mc.player.getEyePos();
-		Vec3d blockPos = new Vec3d(box.minX, box.minY, box.minZ).add(
-				(dir == Direction.WEST ? -extrude : dir.getOffsetX() * box.getLengthX() + extrude),
-				(dir == Direction.DOWN ? -extrude : dir.getOffsetY() * box.getLengthY() + extrude),
-				(dir == Direction.NORTH ? -extrude : dir.getOffsetZ() * box.getLengthZ() + extrude));
+	public static Vec3 getLegitLookPos(BlockPos pos, Direction dir, boolean raycast, int res) {
+		return getLegitLookPos(new AABB(pos), dir, raycast, res, 0.01);
+	}
+
+	public static Vec3 getLegitLookPos(AABB box, Direction dir, boolean raycast, int res, double extrude) {
+		Vec3 eyePos = mc.player.getEyePosition();
+		Vec3 blockPos = new Vec3(box.minX, box.minY, box.minZ).add(
+				(dir == Direction.WEST ? -extrude : dir.getStepX() * box.getXsize() + extrude),
+				(dir == Direction.DOWN ? -extrude : dir.getStepY() * box.getYsize() + extrude),
+				(dir == Direction.NORTH ? -extrude : dir.getStepZ() * box.getZsize() + extrude));
 
 		for (double i = 0; i <= 1; i += 1d / (double) res) {
 			for (double j = 0; j <= 1; j += 1d / (double) res) {
-				Vec3d lookPos = blockPos.add(
-						(dir.getAxis() == Axis.X ? 0 : i * box.getLengthX()),
-						(dir.getAxis() == Axis.Y ? 0 : dir.getAxis() == Axis.Z ? j * box.getLengthY() : i * box.getLengthY()),
-						(dir.getAxis() == Axis.Z ? 0 : j * box.getLengthZ()));
+				Vec3 lookPos = blockPos.add(
+						(dir.getAxis() == Axis.X ? 0 : i * box.getXsize()),
+						(dir.getAxis() == Axis.Y ? 0 : dir.getAxis() == Axis.Z ? j * box.getYsize() : i * box.getYsize()),
+						(dir.getAxis() == Axis.Z ? 0 : j * box.getZsize()));
 
 				if (eyePos.distanceTo(lookPos) > 4.55)
 					continue;
 
 				if (raycast) {
-					if (mc.world.raycast(new RaycastContext(eyePos, lookPos,
-							RaycastContext.ShapeType.COLLIDER, RaycastContext.FluidHandling.NONE, mc.player)).getType() == HitResult.Type.MISS) {
+					if (mc.level.clip(new ClipContext(eyePos, lookPos,
+							ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, mc.player)).getType() == HitResult.Type.MISS) {
 						return lookPos;
 					}
 				} else {
@@ -230,12 +242,12 @@ public class WorldUtils {
 	}
 
 	public static boolean isBlockEmpty(BlockPos pos) {
-		if (!mc.world.getBlockState(pos).isReplaceable()) {
+		if (!mc.level.getBlockState(pos).canBeReplaced()) {
 			return false;
 		}
 
-		Box box = new Box(pos);
-		for (Entity e : mc.world.getEntities()) {
+		AABB box = new AABB(pos);
+		for (Entity e : mc.level.entitiesForRendering()) {
 			if (e instanceof LivingEntity && box.intersects(e.getBoundingBox())) {
 				return false;
 			}
@@ -255,23 +267,23 @@ public class WorldUtils {
 	public static void facePos(double x, double y, double z) {
 		float[] rot = getViewingRotation(mc.player, x, y, z);
 
-		mc.player.setYaw(mc.player.getYaw() + MathHelper.wrapDegrees(rot[0] - mc.player.getYaw()));
-		mc.player.setPitch(mc.player.getPitch() + MathHelper.wrapDegrees(rot[1] - mc.player.getPitch()));
+		mc.player.setYRot(mc.player.getYRot() + Mth.wrapDegrees(rot[0] - mc.player.getYRot()));
+		mc.player.setXRot(mc.player.getXRot() + Mth.wrapDegrees(rot[1] - mc.player.getXRot()));
 	}
 
 	public static void facePosPacket(double x, double y, double z) {
 		float[] rot = getViewingRotation(mc.player, x, y, z);
 
-		if (!mc.player.hasVehicle()) {
-			mc.player.headYaw = mc.player.getYaw() + MathHelper.wrapDegrees(rot[0] - mc.player.getYaw());
-			mc.player.bodyYaw = mc.player.headYaw;
-			mc.player.renderPitch = mc.player.getPitch() + MathHelper.wrapDegrees(rot[1] - mc.player.getPitch());
+		if (!mc.player.isPassenger()) {
+			mc.player.yHeadRot = mc.player.getYRot() + Mth.wrapDegrees(rot[0] - mc.player.getYRot());
+			mc.player.yBodyRot = mc.player.yHeadRot;
+			mc.player.xBob = mc.player.getXRot() + Mth.wrapDegrees(rot[1] - mc.player.getXRot());
 		}
 
-		mc.player.networkHandler.sendPacket(
-				new PlayerMoveC2SPacket.LookAndOnGround(
-						mc.player.getYaw() + MathHelper.wrapDegrees(rot[0] - mc.player.getYaw()),
-						mc.player.getPitch() + MathHelper.wrapDegrees(rot[1] - mc.player.getPitch()), mc.player.isOnGround()));
+		mc.player.connection.send(
+				new ServerboundMovePlayerPacket.Rot(
+						mc.player.getYRot() + Mth.wrapDegrees(rot[0] - mc.player.getYRot()),
+						mc.player.getXRot() + Mth.wrapDegrees(rot[1] - mc.player.getXRot()), mc.player.onGround(), mc.player.horizontalCollision));
 	}
 	
 	public static float[] getViewingRotation(Entity entity, double x, double y, double z) {
@@ -287,12 +299,12 @@ public class WorldUtils {
 	}
 
 	public static int getTopBlockIgnoreLeaves(int x, int z) {
-		int top = mc.world.getTopY(Heightmap.Type.WORLD_SURFACE, x, z) - 1;
+		int top = mc.level.getHeight(Heightmap.Types.WORLD_SURFACE, x, z) - 1;
 
-		while (top > mc.world.getBottomY()) {
-			BlockState state = mc.world.getBlockState(new BlockPos(x, top, z));
+		while (top > mc.level.getMinY()) {
+			BlockState state = mc.level.getBlockState(new BlockPos(x, top, z));
 
-			if (!(state.isAir() || state.getBlock() instanceof LeavesBlock || state.getBlock() instanceof PlantBlock)) {
+			if (!(state.isAir() || state.getBlock() instanceof LeavesBlock || state.getBlock() instanceof VegetationBlock)) {
 				break;
 			}
 

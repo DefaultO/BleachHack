@@ -8,9 +8,9 @@
  */
 package org.bleachhack.event.events;
 
-import net.minecraft.block.BlockState;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.shape.VoxelShape;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.phys.shapes.VoxelShape;
 import org.bleachhack.event.Event;
 
 public class EventBlockShape extends Event {

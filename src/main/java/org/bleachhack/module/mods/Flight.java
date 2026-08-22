@@ -16,10 +16,10 @@ import org.bleachhack.module.ModuleCategory;
 import org.bleachhack.setting.module.SettingMode;
 import org.bleachhack.setting.module.SettingSlider;
 
-import net.minecraft.client.util.InputUtil;
-import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3d;
+import com.mojang.blaze3d.platform.InputConstants;
+import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.phys.Vec3;
 
 public class Flight extends Module {
 
@@ -45,12 +45,12 @@ public class Flight extends Module {
 		float speed = getSetting(1).asSlider().getValueFloat();
 
 		if (mc.player.age % 20 == 0 && getSetting(2).asMode().getMode() == 3 && !(getSetting(0).asMode().getMode() == 1)) {
-			mc.player.networkHandler.sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(mc.player.getX(), mc.player.getY() - 0.069, mc.player.getZ(), false));
-			mc.player.networkHandler.sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(mc.player.getX(), mc.player.getZ() + 0.069, mc.player.getZ(), true));
+			mc.player.networkHandler.sendPacket(new ServerboundMovePlayerPacket.PositionAndOnGround(mc.player.getX(), mc.player.getY() - 0.069, mc.player.getZ(), false));
+			mc.player.networkHandler.sendPacket(new ServerboundMovePlayerPacket.PositionAndOnGround(mc.player.getX(), mc.player.getZ() + 0.069, mc.player.getZ(), true));
 		}
 
 		if (getSetting(0).asMode().getMode() == 0) {
-			Vec3d antiKickVel = Vec3d.ZERO;
+			Vec3 antiKickVel = Vec3.ZERO;
 
 			if (getSetting(2).asMode().getMode() == 1
 					&& mc.player.age % 20 == 0
@@ -70,8 +70,8 @@ public class Flight extends Module {
 
 			mc.player.setVelocity(antiKickVel);
 
-			Vec3d forward = new Vec3d(0, 0, speed).rotateY(-(float) Math.toRadians(mc.player.getYaw()));
-			Vec3d strafe = forward.rotateY((float) Math.toRadians(90));
+			Vec3 forward = new Vec3(0, 0, speed).rotateY(-(float) Math.toRadians(mc.player.getYaw()));
+			Vec3 strafe = forward.rotateY((float) Math.toRadians(90));
 
 			if (mc.options.jumpKey.isPressed())
 				mc.player.setVelocity(mc.player.getVelocity().add(0, speed, 0));
@@ -91,10 +91,10 @@ public class Flight extends Module {
 				return;
 			mc.player.setVelocity(mc.player.getVelocity().x, speed / 3, mc.player.getVelocity().z);
 		} else if (getSetting(0).asMode().getMode() == 2) {
-			if (InputUtil.isKeyPressed(mc.getWindow().getHandle(), InputUtil.fromTranslationKey(mc.options.jumpKey.getBoundKeyTranslationKey()).getCode())) {
+			if (InputConstants.isKeyPressed(mc.getWindow().getHandle(), InputConstants.fromTranslationKey(mc.options.jumpKey.getBoundKeyTranslationKey()).getCode())) {
 				mc.player.jump();
 			} else {
-				if (InputUtil.isKeyPressed(mc.getWindow().getHandle(), InputUtil.fromTranslationKey(mc.options.jumpKey.getBoundKeyTranslationKey()).getCode())) {
+				if (InputConstants.isKeyPressed(mc.getWindow().getHandle(), InputConstants.fromTranslationKey(mc.options.jumpKey.getBoundKeyTranslationKey()).getCode())) {
 					mc.player.updatePosition(mc.player.getX(), mc.player.getY() - speed / 10f, mc.player.getZ());
 				}
 			}
@@ -103,11 +103,11 @@ public class Flight extends Module {
 
 	@BleachSubscribe
 	public void onSendPacket(EventPacket.Send event) {
-		if (getSetting(0).asMode().getMode() == 2 && event.getPacket() instanceof PlayerMoveC2SPacket) {
+		if (getSetting(0).asMode().getMode() == 2 && event.getPacket() instanceof ServerboundMovePlayerPacket) {
 			if (!flyTick) {
 				boolean onGround = true;// mc.player.fallDistance >= 0.1f;
 				mc.player.setOnGround(onGround);
-				((PlayerMoveC2SPacket) event.getPacket()).onGround = onGround;
+				((ServerboundMovePlayerPacket) event.getPacket()).onGround = onGround;
 
 				flyTick = true;
 			} else {

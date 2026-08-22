@@ -1,9 +1,9 @@
 package org.bleachhack.gui.window.widget;
 
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.sound.PositionedSoundInstance;
-import net.minecraft.sound.SoundEvents;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.resources.sounds.SimpleSoundInstance;
+import net.minecraft.sounds.SoundEvents;
 import org.bleachhack.gui.window.Window;
 
 public class WindowButtonWidget extends WindowWidget {
@@ -35,7 +35,7 @@ public class WindowButtonWidget extends WindowWidget {
 	}
 
 	@Override
-	public void render(DrawContext drawContext, int windowX, int windowY, int mouseX, int mouseY) {
+	public void render(GuiGraphics drawContext, int windowX, int windowY, int mouseX, int mouseY) {
 		super.render(drawContext, windowX, windowY, mouseX, mouseY);
 
 		int bx1 = windowX + x1;
@@ -57,7 +57,7 @@ public class WindowButtonWidget extends WindowWidget {
 
 		if (isInBounds(windowX, windowY, mouseX, mouseY)) {
 			action.run();
-			MinecraftClient.getInstance().getSoundManager().play(PositionedSoundInstance.master(SoundEvents.UI_BUTTON_CLICK, 1.0F));
+			Minecraft.getInstance().getSoundManager().play(SimpleSoundInstance.master(SoundEvents.UI_BUTTON_CLICK, 1.0F));
 		}
 	}
 }

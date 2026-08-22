@@ -1,11 +1,11 @@
 package org.bleachhack.util.shader;
 
 import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.resource.Resource;
-import net.minecraft.resource.ResourceManager;
-import net.minecraft.resource.ResourcePack;
-import net.minecraft.util.Identifier;
+import net.minecraft.client.Minecraft;
+import net.minecraft.server.packs.resources.Resource;
+import net.minecraft.server.packs.resources.ResourceManager;
+import net.minecraft.server.packs.PackResources;
+import net.minecraft.resources.Identifier;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -47,11 +47,11 @@ public class OpenResourceManager implements ResourceManager {
 			return parent.getResource(id);
 
 		if ("__url__".equals(id.getNamespace()))
-			return Optional.of(new Resource(MinecraftClient.getInstance().getDefaultResourcePack(), () -> parseURL(id.getPath())));
+			return Optional.of(new Resource(Minecraft.getInstance().getDefaultResourcePack(), () -> parseURL(id.getPath())));
 
 		// Scuffed resource loader
 		Path path = FabricLoader.getInstance().getModContainer(id.getNamespace()).get().findPath("assets/" + id.getNamespace() + "/" + id.getPath()).get();
-		return Optional.of(new Resource(MinecraftClient.getInstance().getDefaultResourcePack(), () -> Files.newInputStream(path)));
+		return Optional.of(new Resource(Minecraft.getInstance().getDefaultResourcePack(), () -> Files.newInputStream(path)));
 	}
 
 	@Override
@@ -70,7 +70,7 @@ public class OpenResourceManager implements ResourceManager {
 	}
 
 	@Override
-	public Stream<ResourcePack> streamResourcePacks() {
+	public Stream<PackResources> streamResourcePacks() {
 		return parent.streamResourcePacks();
 	}
 

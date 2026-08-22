@@ -17,8 +17,8 @@ import org.bleachhack.setting.module.SettingMode;
 import org.bleachhack.setting.module.SettingSlider;
 import org.bleachhack.util.BleachQueue;
 
-import net.minecraft.entity.effect.StatusEffectInstance;
-import net.minecraft.entity.effect.StatusEffects;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
 
 public class Fullbright extends Module {
 
@@ -46,7 +46,7 @@ public class Fullbright extends Module {
 		}
 
 		if (inWorld)
-			mc.player.removeStatusEffect(StatusEffects.NIGHT_VISION);
+			mc.player.removeStatusEffect(MobEffects.NIGHT_VISION);
 	}
 
 	@Override
@@ -64,7 +64,7 @@ public class Fullbright extends Module {
 		}
 
 		if (getSetting(0).asMode().getMode() == 2) {
-			mc.player.addStatusEffect(new StatusEffectInstance(StatusEffects.NIGHT_VISION, 500, 0));
+			mc.player.addStatusEffect(new MobEffectInstance(MobEffects.NIGHT_VISION, 500, 0));
 		}
 	}
 

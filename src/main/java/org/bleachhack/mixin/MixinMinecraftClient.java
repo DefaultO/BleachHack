@@ -8,9 +8,9 @@
  */
 package org.bleachhack.mixin;
 
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.RunArgs;
-import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.main.GameConfig;
+import net.minecraft.client.gui.screens.Screen;
 import org.bleachhack.BleachHack;
 import org.bleachhack.event.events.EventOpenScreen;
 import org.spongepowered.asm.mixin.Mixin;
@@ -19,11 +19,11 @@ import org.spongepowered.asm.mixin.injection.At.Shift;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-@Mixin(MinecraftClient.class)
+@Mixin(Minecraft.class)
 public class MixinMinecraftClient {
 	
-	@Inject(method = "<init>", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/MinecraftClient;setOverlay(Lnet/minecraft/client/gui/screen/Overlay;)V", shift = Shift.BEFORE))
-	private void init(RunArgs args, CallbackInfo callback) {
+	@Inject(method = "<init>", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/Minecraft;setOverlay(Lnet/minecraft/client/gui/screen/Overlay;)V", shift = Shift.BEFORE))
+	private void init(GameConfig args, CallbackInfo callback) {
 		BleachHack.getInstance().postInit();
 	}
 	

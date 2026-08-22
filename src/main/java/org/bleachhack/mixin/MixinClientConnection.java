@@ -8,7 +8,7 @@
  */
 package org.bleachhack.mixin;
 
-import net.minecraft.network.PacketCallbacks;
+import net.minecraft.network.PacketSendListener;
 import org.bleachhack.BleachHack;
 import org.bleachhack.command.Command;
 import org.bleachhack.command.CommandManager;
@@ -21,11 +21,11 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
-import net.minecraft.network.ClientConnection;
-import net.minecraft.network.packet.Packet;
-import net.minecraft.network.packet.c2s.play.ChatMessageC2SPacket;
+import net.minecraft.network.Connection;
+import net.minecraft.network.protocol.Packet;
+import net.minecraft.network.protocol.game.ServerboundChatPacket;
 
-@Mixin(ClientConnection.class)
+@Mixin(Connection.class)
 public class MixinClientConnection {
 
 	@Shadow private Channel channel;
@@ -42,11 +42,11 @@ public class MixinClientConnection {
 		}
 	}
 
-	@Inject(method = "send(Lnet/minecraft/network/packet/Packet;Lnet/minecraft/network/PacketCallbacks;)V", at = @At("HEAD"), cancellable = true)
-	private void send(Packet<?> packet, PacketCallbacks packetCallback, CallbackInfo callback) {
-		if (packet instanceof ChatMessageC2SPacket) {
+	@Inject(method = "send(Lnet/minecraft/network/packet/Packet;Lnet/minecraft/network/PacketSendListener;)V", at = @At("HEAD"), cancellable = true)
+	private void send(Packet<?> packet, PacketSendListener packetCallback, CallbackInfo callback) {
+		if (packet instanceof ServerboundChatPacket) {
 			if (!CommandManager.allowNextMsg) {
-				ChatMessageC2SPacket pack = (ChatMessageC2SPacket) packet;
+				ServerboundChatPacket pack = (ServerboundChatPacket) packet;
 				if (pack.chatMessage().startsWith(Command.getPrefix())) {
 					CommandManager.callCommand(pack.chatMessage().substring(Command.getPrefix().length()));
 					callback.cancel();

@@ -8,19 +8,19 @@
  */
 package org.bleachhack.event.events;
 
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.BlockRenderView;
+import net.minecraft.core.BlockPos;
+import net.minecraft.client.renderer.block.BlockAndTintGetter;
 import org.bleachhack.event.Event;
 
 public class EventBiomeColor extends Event {
 
-	protected BlockRenderView world;
+	protected BlockAndTintGetter world;
 	protected BlockPos pos;
 	protected int color;
 
 	public static class Grass extends EventBiomeColor {
 
-		public Grass(BlockRenderView world, BlockPos pos, int color) {
+		public Grass(BlockAndTintGetter world, BlockPos pos, int color) {
 			this.world = world;
 			this.pos = pos;
 			this.color = color;
@@ -30,7 +30,7 @@ public class EventBiomeColor extends Event {
 
 	public static class Foilage extends EventBiomeColor {
 
-		public Foilage(BlockRenderView world, BlockPos pos, int color) {
+		public Foilage(BlockAndTintGetter world, BlockPos pos, int color) {
 			this.world = world;
 			this.pos = pos;
 			this.color = color;
@@ -40,7 +40,7 @@ public class EventBiomeColor extends Event {
 
 	public static class Water extends EventBiomeColor {
 
-		public Water(BlockRenderView world, BlockPos pos, int color) {
+		public Water(BlockAndTintGetter world, BlockPos pos, int color) {
 			this.world = world;
 			this.pos = pos;
 			this.color = color;
@@ -48,11 +48,11 @@ public class EventBiomeColor extends Event {
 
 	}
 
-	public BlockRenderView getWorld() {
+	public BlockAndTintGetter getWorld() {
 		return world;
 	}
 
-	public void setWorld(BlockRenderView world) {
+	public void setWorld(BlockAndTintGetter world) {
 		this.world = world;
 	}
 

@@ -18,8 +18,8 @@ import org.bleachhack.setting.module.SettingMode;
 import org.bleachhack.setting.module.SettingToggle;
 import org.bleachhack.util.world.WorldUtils;
 
-import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
+import net.minecraft.world.phys.Vec3;
 
 public class AntiVoid extends Module {
 
@@ -54,8 +54,8 @@ public class AntiVoid extends Module {
 
 	@BleachSubscribe
 	public void onSendPacket(EventPacket.Send event) {
-		if (event.getPacket() instanceof PlayerMoveC2SPacket) {
-			PlayerMoveC2SPacket packet = (PlayerMoveC2SPacket) event.getPacket();
+		if (event.getPacket() instanceof ServerboundMovePlayerPacket) {
+			ServerboundMovePlayerPacket packet = (ServerboundMovePlayerPacket) event.getPacket();
 
 			if (getSetting(1).asToggle().getState()
 					&& mc.player.getY() >= mc.world.getBottomY() && packet.getY(mc.player.getY()) < mc.world.getBottomY()) {
@@ -77,7 +77,7 @@ public class AntiVoid extends Module {
 		}
 		
 		if (getSetting(0).asMode().getMode() == 1 && mc.player.getY() < mc.world.getBottomY() && event.getVec().y < 0) {
-			event.setVec(new Vec3d(event.getVec().x, 0, event.getVec().z));
+			event.setVec(new Vec3(event.getVec().x, 0, event.getVec().z));
 			mc.player.addVelocity(0, -mc.player.getVelocity().y, 0);
 		}
 	}

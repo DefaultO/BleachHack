@@ -8,8 +8,8 @@
  */
 package org.bleachhack.mixin;
 
-import net.minecraft.client.gui.Drawable;
-import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.gui.components.Renderable;
+import net.minecraft.client.gui.screens.Screen;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Accessor;
 
@@ -19,9 +19,9 @@ import java.util.List;
 public interface AccessorScreen {
 
 	@Accessor
-	public abstract List<Drawable> getDrawables();
+	public abstract List<Renderable> getDrawables();
 	
 	@Accessor
-	public abstract void setDrawables(List<Drawable> drawables);
+	public abstract void setDrawables(List<Renderable> drawables);
 
 }

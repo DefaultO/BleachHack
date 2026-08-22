@@ -19,20 +19,20 @@ import org.bleachhack.util.InventoryUtils;
 
 import it.unimi.dsi.fastutil.ints.IntArraySet;
 import it.unimi.dsi.fastutil.ints.IntSet;
-import net.minecraft.enchantment.EnchantmentHelper;
-import net.minecraft.enchantment.Enchantments;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
-import net.minecraft.network.packet.c2s.play.CloseHandledScreenC2SPacket;
-import net.minecraft.network.packet.c2s.play.PlayerActionC2SPacket;
-import net.minecraft.network.packet.c2s.play.PlayerInteractItemC2SPacket;
-import net.minecraft.network.packet.c2s.play.PlayerActionC2SPacket.Action;
-import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
-import net.minecraft.network.packet.c2s.play.UpdateSelectedSlotC2SPacket;
-import net.minecraft.screen.slot.SlotActionType;
-import net.minecraft.util.Hand;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
+import net.minecraft.world.item.enchantment.EnchantmentHelper;
+import net.minecraft.world.item.enchantment.Enchantments;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.network.protocol.game.ServerboundContainerClosePacket;
+import net.minecraft.network.protocol.game.ServerboundPlayerActionPacket;
+import net.minecraft.network.protocol.game.ServerboundUseItemPacket;
+import net.minecraft.network.protocol.game.ServerboundPlayerActionPacket.Action;
+import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
+import net.minecraft.network.protocol.game.ServerboundSetCarriedItemPacket;
+import net.minecraft.world.inventory.ClickType;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 
 public class AutoEXP extends Module {
 
@@ -83,8 +83,8 @@ public class AutoEXP extends Module {
 					if (!stack.isEmpty()) {
 						for (int j = 5; j <= 8; j++) {
 							if (mc.player.currentScreenHandler.getSlot(j).canInsert(stack)) {
-								mc.interactionManager.clickSlot(mc.player.currentScreenHandler.syncId, i, 0, SlotActionType.PICKUP, mc.player);
-								mc.interactionManager.clickSlot(mc.player.currentScreenHandler.syncId, j, 0, SlotActionType.PICKUP, mc.player);
+								mc.interactionManager.clickSlot(mc.player.currentScreenHandler.syncId, i, 0, ClickType.PICKUP, mc.player);
+								mc.interactionManager.clickSlot(mc.player.currentScreenHandler.syncId, j, 0, ClickType.PICKUP, mc.player);
 								return;
 							}
 						}
@@ -94,10 +94,10 @@ public class AutoEXP extends Module {
 				if (slot >= 46) {
 					if (slot - 46 != mc.player.getInventory().selectedSlot) {
 						mc.player.getInventory().selectedSlot = slot - 46;
-						mc.player.networkHandler.sendPacket(new UpdateSelectedSlotC2SPacket(slot - 46));
+						mc.player.networkHandler.sendPacket(new ServerboundSetCarriedItemPacket(slot - 46));
 					}
 
-					mc.player.networkHandler.sendPacket(new PlayerActionC2SPacket(Action.SWAP_ITEM_WITH_OFFHAND, BlockPos.ORIGIN, Direction.DOWN));
+					mc.player.networkHandler.sendPacket(new ServerboundPlayerActionPacket(Action.SWAP_ITEM_WITH_OFFHAND, BlockPos.ORIGIN, Direction.DOWN));
 				}
 
 				delay = 0;
@@ -110,10 +110,10 @@ public class AutoEXP extends Module {
 					for (int j = 1; j <= 4; j++) {
 						ItemStack craftingStack = mc.player.currentScreenHandler.getSlot(j).getStack();
 						if (!craftingStack.isDamageable()) {
-							mc.interactionManager.clickSlot(mc.player.currentScreenHandler.syncId, i, 0, SlotActionType.PICKUP, mc.player);
-							mc.interactionManager.clickSlot(mc.player.currentScreenHandler.syncId, j, 0, SlotActionType.PICKUP, mc.player);
+							mc.interactionManager.clickSlot(mc.player.currentScreenHandler.syncId, i, 0, ClickType.PICKUP, mc.player);
+							mc.interactionManager.clickSlot(mc.player.currentScreenHandler.syncId, j, 0, ClickType.PICKUP, mc.player);
 							if (!craftingStack.isEmpty())
-								mc.interactionManager.clickSlot(mc.player.currentScreenHandler.syncId, j, 1, SlotActionType.THROW, mc.player);
+								mc.interactionManager.clickSlot(mc.player.currentScreenHandler.syncId, j, 1, ClickType.THROW, mc.player);
 
 							return;
 						}
@@ -124,10 +124,10 @@ public class AutoEXP extends Module {
 			if (slot > 8 && slot < 45) {
 				if (slot - 36 != mc.player.getInventory().selectedSlot) {
 					mc.player.getInventory().selectedSlot = slot - 36;
-					mc.player.networkHandler.sendPacket(new UpdateSelectedSlotC2SPacket(slot - 36));
+					mc.player.networkHandler.sendPacket(new ServerboundSetCarriedItemPacket(slot - 36));
 				}
 
-				mc.player.networkHandler.sendPacket(new PlayerActionC2SPacket(Action.SWAP_ITEM_WITH_OFFHAND, BlockPos.ORIGIN, Direction.DOWN));
+				mc.player.networkHandler.sendPacket(new ServerboundPlayerActionPacket(Action.SWAP_ITEM_WITH_OFFHAND, BlockPos.ORIGIN, Direction.DOWN));
 				slot += 10; // hack
 				return;
 			}
@@ -138,14 +138,14 @@ public class AutoEXP extends Module {
 				int toThrow = Math.min(getSetting(5).asSlider().getValueInt(), xpNeeded);
 
 				if (toThrow != 0) {
-					mc.player.networkHandler.sendPacket(new PlayerMoveC2SPacket.LookAndOnGround(mc.player.getYaw(), 90, mc.player.isOnGround()));
+					mc.player.networkHandler.sendPacket(new ServerboundMovePlayerPacket.LookAndOnGround(mc.player.getYaw(), 90, mc.player.isOnGround()));
 					for (int t = 0; t < toThrow; t++) {
-						if (InventoryUtils.selectSlot(false, i -> mc.player.getInventory().getStack(i).getItem() == Items.EXPERIENCE_BOTTLE) == Hand.MAIN_HAND) {
+						if (InventoryUtils.selectSlot(false, i -> mc.player.getInventory().getStack(i).getItem() == Items.EXPERIENCE_BOTTLE) == InteractionHand.MAIN_HAND) {
 							// Trying to use without bruh
-							mc.player.networkHandler.sendPacket(new PlayerInteractItemC2SPacket(Hand.MAIN_HAND, 0));
-							ItemStack itemStack2 = mc.player.getMainHandStack().use(mc.world, mc.player, Hand.MAIN_HAND).getValue();
+							mc.player.networkHandler.sendPacket(new ServerboundUseItemPacket(InteractionHand.MAIN_HAND, 0));
+							ItemStack itemStack2 = mc.player.getMainHandStack().use(mc.world, mc.player, InteractionHand.MAIN_HAND).getValue();
 							if (itemStack2 != mc.player.getMainHandStack()) {
-								mc.player.setStackInHand(Hand.MAIN_HAND, itemStack2);
+								mc.player.setStackInHand(InteractionHand.MAIN_HAND, itemStack2);
 							}
 
 							xpNeeded--;
@@ -187,7 +187,7 @@ public class AutoEXP extends Module {
 
 	@BleachSubscribe
 	public void onSendPacket(EventPacket.Send event) {
-		if (slot != -1 && event.getPacket() instanceof CloseHandledScreenC2SPacket) {
+		if (slot != -1 && event.getPacket() instanceof ServerboundContainerClosePacket) {
 			event.setCancelled(true);
 		}
 	}

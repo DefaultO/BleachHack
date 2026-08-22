@@ -9,20 +9,20 @@
 package org.bleachhack.util.render;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.font.TextRenderer;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
 import net.minecraft.client.render.*;
 import net.minecraft.client.render.model.json.ModelTransformationMode;
-import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.item.ItemStack;
-import net.minecraft.text.Text;
-import net.minecraft.util.math.RotationAxis;
+import com.mojang.blaze3d.vertex.PoseStack;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.network.chat.Component;
+import com.mojang.math.Axis;
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.joml.Vector3f;
 
 public class WorldRenderer {
 
-	private static final MinecraftClient mc = MinecraftClient.getInstance();
+	private static final Minecraft mc = Minecraft.getInstance();
 
 	// A Pointer to RenderSystem.shaderLightDirections
 	private static final Vector3f[] shaderLight;
@@ -36,17 +36,17 @@ public class WorldRenderer {
 	}
 
 	/** Draws text in the world. **/
-	public static void drawText(Text text, double x, double y, double z, double scale, boolean shadow) {
+	public static void drawText(Component text, double x, double y, double z, double scale, boolean shadow) {
 		drawText(text, x, y, z, 0, 0, scale, shadow);
 	}
 
 	/** Draws text in the world. **/
-	public static void drawText(Text text, double x, double y, double z, double offX, double offY, double scale, boolean fill) {
-		MatrixStack matrices = matrixFrom(x, y, z);
+	public static void drawText(Component text, double x, double y, double z, double offX, double offY, double scale, boolean fill) {
+		PoseStack matrices = matrixFrom(x, y, z);
 
 		Camera camera = mc.gameRenderer.getCamera();
-		matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(-camera.getYaw()));
-		matrices.multiply(RotationAxis.POSITIVE_X.rotationDegrees(camera.getPitch()));
+		matrices.multiply(Axis.POSITIVE_Y.rotationDegrees(-camera.getYaw()));
+		matrices.multiply(Axis.POSITIVE_X.rotationDegrees(camera.getPitch()));
 
 		RenderSystem.enableBlend();
 		RenderSystem.defaultBlendFunc();
@@ -59,18 +59,18 @@ public class WorldRenderer {
 		VertexConsumerProvider.Immediate immediate = VertexConsumerProvider.immediate(Tessellator.getInstance().getBuffer());
 
 		if (fill) {
-			int opacity = (int) (MinecraftClient.getInstance().options.getTextBackgroundOpacity(0.25F) * 255.0F) << 24;
-			mc.textRenderer.draw(text, -halfWidth, 0f, 553648127, false, matrices.peek().getPositionMatrix(), immediate, TextRenderer.TextLayerType.NORMAL, opacity, 0xf000f0);
+			int opacity = (int) (Minecraft.getInstance().options.getTextBackgroundOpacity(0.25F) * 255.0F) << 24;
+			mc.textRenderer.draw(text, -halfWidth, 0f, 553648127, false, matrices.peek().getPositionMatrix(), immediate, Font.TextLayerType.NORMAL, opacity, 0xf000f0);
 			immediate.draw();
 		} else {
 			matrices.push();
 			matrices.translate(1, 1, 0);
-			mc.textRenderer.draw(text.copy(), -halfWidth, 0f, 0x202020, false, matrices.peek().getPositionMatrix(), immediate, TextRenderer.TextLayerType.NORMAL, 0, 0xf000f0);
+			mc.textRenderer.draw(text.copy(), -halfWidth, 0f, 0x202020, false, matrices.peek().getPositionMatrix(), immediate, Font.TextLayerType.NORMAL, 0, 0xf000f0);
 			immediate.draw();
 			matrices.pop();
 		}
 
-		mc.textRenderer.draw(text, -halfWidth, 0f, -1, false, matrices.peek().getPositionMatrix(), immediate, TextRenderer.TextLayerType.NORMAL, 0, 0xf000f0);
+		mc.textRenderer.draw(text, -halfWidth, 0f, -1, false, matrices.peek().getPositionMatrix(), immediate, Font.TextLayerType.NORMAL, 0, 0xf000f0);
 		immediate.draw();
 
 		RenderSystem.disableBlend();
@@ -82,16 +82,16 @@ public class WorldRenderer {
 			return;
 		}
 
-		MatrixStack matrices = matrixFrom(x, y, z);
+		PoseStack matrices = matrixFrom(x, y, z);
 
 		Camera camera = mc.gameRenderer.getCamera();
-		matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(-camera.getYaw()));
-		matrices.multiply(RotationAxis.POSITIVE_X.rotationDegrees(camera.getPitch()));
+		matrices.multiply(Axis.POSITIVE_Y.rotationDegrees(-camera.getYaw()));
+		matrices.multiply(Axis.POSITIVE_X.rotationDegrees(camera.getPitch()));
 
 		matrices.translate(offX, offY, 0);
 		matrices.scale((float) scale, (float) scale, 0.001f);
 
-		matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(180f));
+		matrices.multiply(Axis.POSITIVE_Y.rotationDegrees(180f));
 
 		mc.getBufferBuilders().getEntityVertexConsumers().draw();
 		
@@ -110,12 +110,12 @@ public class WorldRenderer {
 		RenderSystem.disableBlend();
 	}
 
-	public static MatrixStack matrixFrom(double x, double y, double z) {
-		MatrixStack matrices = new MatrixStack();
+	public static PoseStack matrixFrom(double x, double y, double z) {
+		PoseStack matrices = new PoseStack();
 
 		Camera camera = mc.gameRenderer.getCamera();
-		matrices.multiply(RotationAxis.POSITIVE_X.rotationDegrees(camera.getPitch()));
-		matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(camera.getYaw() + 180.0F));
+		matrices.multiply(Axis.POSITIVE_X.rotationDegrees(camera.getPitch()));
+		matrices.multiply(Axis.POSITIVE_Y.rotationDegrees(camera.getYaw() + 180.0F));
 
 		matrices.translate(x - camera.getPos().x, y - camera.getPos().y, z - camera.getPos().z);
 

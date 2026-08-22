@@ -8,13 +8,13 @@
  */
 package org.bleachhack.module.mods;
 
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.FluidBlock;
-import net.minecraft.client.particle.BlockDustParticle;
-import net.minecraft.util.Hand;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.LiquidBlock;
+import net.minecraft.client.particle.TerrainParticle;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.util.math.*;
-import net.minecraft.util.shape.VoxelShape;
+import net.minecraft.world.phys.shapes.VoxelShape;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.bleachhack.event.events.EventBlockBreakCooldown;
@@ -95,7 +95,7 @@ public class Nuker extends Module {
 									: mc.player.getPos().distanceTo(Vec3d.ofCenter(pos));
 
 					BlockState state = mc.world.getBlockState(pos);
-					if (distTo - 0.5 > getSetting(4).asSlider().getValue() || state.isAir() || state.getBlock() instanceof FluidBlock)
+					if (distTo - 0.5 > getSetting(4).asSlider().getValue() || state.isAir() || state.getBlock() instanceof LiquidBlock)
 						continue;
 
 					if (filterToggler.getState()) {
@@ -144,7 +144,7 @@ public class Nuker extends Module {
 			mc.interactionManager.updateBlockBreakingProgress(pos.getKey(), pos.getValue().getRight());
 			renderBlocks.add(pos.getKey());
 
-			mc.player.swingHand(Hand.MAIN_HAND);
+			mc.player.swingHand(InteractionHand.MAIN_HAND);
 
 			broken++;
 			if (getSetting(0).asMode().getMode() == 0
@@ -210,7 +210,7 @@ public class Nuker extends Module {
 
 	@BleachSubscribe
 	public void onParticle(EventParticle.Normal event) {
-		if (event.getParticle() instanceof BlockDustParticle && getSetting(10).asToggle().getState()) {
+		if (event.getParticle() instanceof TerrainParticle && getSetting(10).asToggle().getState()) {
 			event.setCancelled(true);
 		}
 	}

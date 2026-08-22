@@ -8,10 +8,10 @@
  */
 package org.bleachhack.mixin;
 
-import net.minecraft.block.AbstractBlock;
-import net.minecraft.block.BlockState;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.BlockView;
+import net.minecraft.world.level.block.state.BlockBehaviour;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.BlockGetter;
 import org.bleachhack.BleachHack;
 import org.bleachhack.event.events.EventRenderBlock;
 import org.spongepowered.asm.mixin.Mixin;
@@ -19,11 +19,11 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-@Mixin(AbstractBlock.class)
+@Mixin(BlockBehaviour.class)
 public class MixinAbstractBlock {
 
 	@Inject(method = "getAmbientOcclusionLightLevel", at = @At("HEAD"), cancellable = true)
-	private void getAmbientOcclusionLightLevel(BlockState state, BlockView world, BlockPos pos, CallbackInfoReturnable<Float> callback) {
+	private void getAmbientOcclusionLightLevel(BlockState state, BlockGetter world, BlockPos pos, CallbackInfoReturnable<Float> callback) {
 		EventRenderBlock.Light event = new EventRenderBlock.Light(state);
 		BleachHack.eventBus.post(event);
 

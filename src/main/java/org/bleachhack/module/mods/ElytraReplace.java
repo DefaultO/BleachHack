@@ -14,9 +14,9 @@ import org.bleachhack.module.Module;
 import org.bleachhack.module.ModuleCategory;
 
 import net.minecraft.item.ElytraItem;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
-import net.minecraft.screen.slot.SlotActionType;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.inventory.ClickType;
 
 public class ElytraReplace extends Module {
 
@@ -49,10 +49,10 @@ public class ElytraReplace extends Module {
 				return;
 			}
 
-			mc.interactionManager.clickSlot(mc.player.currentScreenHandler.syncId, 6, 0, SlotActionType.PICKUP, mc.player);
-			mc.interactionManager.clickSlot(mc.player.currentScreenHandler.syncId, elytraSlot < 9 ? (elytraSlot + 36) : (elytraSlot), 0, SlotActionType.PICKUP,
+			mc.interactionManager.clickSlot(mc.player.currentScreenHandler.syncId, 6, 0, ClickType.PICKUP, mc.player);
+			mc.interactionManager.clickSlot(mc.player.currentScreenHandler.syncId, elytraSlot < 9 ? (elytraSlot + 36) : (elytraSlot), 0, ClickType.PICKUP,
 					mc.player);
-			mc.interactionManager.clickSlot(mc.player.currentScreenHandler.syncId, 6, 0, SlotActionType.PICKUP, mc.player);
+			mc.interactionManager.clickSlot(mc.player.currentScreenHandler.syncId, 6, 0, ClickType.PICKUP, mc.player);
 
 			mc.options.jumpKey.setPressed(true); // Make them fly again
 			jump = true;

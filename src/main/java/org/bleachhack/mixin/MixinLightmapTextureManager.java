@@ -8,8 +8,8 @@
  */
 package org.bleachhack.mixin;
 
-import net.minecraft.client.render.LightmapTextureManager;
-import net.minecraft.world.dimension.DimensionType;
+import net.minecraft.client.renderer.LightTexture;
+import net.minecraft.world.level.dimension.DimensionType;
 import org.bleachhack.BleachHack;
 import org.bleachhack.event.events.EventLightTex;
 import org.spongepowered.asm.mixin.Mixin;
@@ -18,7 +18,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-@Mixin(LightmapTextureManager.class)
+@Mixin(LightTexture.class)
 public class MixinLightmapTextureManager {
 
 	@Inject(method = "getBrightness", at = @At("RETURN"), cancellable = true)

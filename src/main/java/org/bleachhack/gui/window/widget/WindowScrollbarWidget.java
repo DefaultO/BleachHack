@@ -1,7 +1,7 @@
 package org.bleachhack.gui.window.widget;
 
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.util.math.MathHelper;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.util.Mth;
 import org.bleachhack.gui.window.Window;
 
 public class WindowScrollbarWidget extends WindowWidget {
@@ -24,7 +24,7 @@ public class WindowScrollbarWidget extends WindowWidget {
 	}
 
 	@Override
-	public void render(DrawContext drawContext, int windowX, int windowY, int mouseX, int mouseY) {
+	public void render(GuiGraphics drawContext, int windowX, int windowY, int mouseX, int mouseY) {
 		super.render(drawContext, windowX, windowY, mouseX, mouseY);
 
 		int[] pos = getCurrentPos(windowX, windowY);
@@ -112,7 +112,7 @@ public class WindowScrollbarWidget extends WindowWidget {
 	}
 
 	public void setPageOffset(int offset) {
-		pageOffset = totalHeight - pageHeight <= 0 ? 0 : MathHelper.clamp(offset, 0, totalHeight - pageHeight);
+		pageOffset = totalHeight - pageHeight <= 0 ? 0 : Mth.clamp(offset, 0, totalHeight - pageHeight);
 	}
 
 	public void moveScrollbar(int yDiff) {

@@ -8,7 +8,7 @@
  */
 package org.bleachhack.module.mods;
 
-import net.minecraft.block.entity.SignText;
+import net.minecraft.world.level.block.entity.SignText;
 import org.bleachhack.command.Command;
 import org.bleachhack.event.events.EventBlockEntityRender;
 import org.bleachhack.event.events.EventEntityRender;
@@ -27,24 +27,24 @@ import org.bleachhack.util.io.BleachFileHelper;
 
 import com.google.gson.JsonElement;
 
-import net.minecraft.block.entity.SignBlockEntity;
+import net.minecraft.world.level.block.entity.SignBlockEntity;
 import net.minecraft.client.particle.CampfireSmokeParticle;
 import net.minecraft.client.particle.ElderGuardianAppearanceParticle;
-import net.minecraft.client.particle.ExplosionLargeParticle;
-import net.minecraft.client.particle.FireworksSparkParticle.FireworkParticle;
-import net.minecraft.entity.ExperienceOrbEntity;
-import net.minecraft.entity.FallingBlockEntity;
-import net.minecraft.entity.ItemEntity;
-import net.minecraft.entity.decoration.ArmorStandEntity;
-import net.minecraft.entity.projectile.thrown.SnowballEntity;
-import net.minecraft.entity.vehicle.AbstractMinecartEntity;
-import net.minecraft.particle.ParticleTypes;
+import net.minecraft.client.particle.HugeExplosionParticle;
+import net.minecraft.client.particle.FireworkParticles.FireworkParticle;
+import net.minecraft.world.entity.ExperienceOrb;
+import net.minecraft.world.entity.item.FallingBlockEntity;
+import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.entity.decoration.ArmorStand;
+import net.minecraft.world.entity.projectile.throwableitemprojectile.Snowball;
+import net.minecraft.world.entity.vehicle.minecart.AbstractMinecart;
+import net.minecraft.core.particles.ParticleTypes;
 
-import net.minecraft.text.Text;
+import net.minecraft.network.chat.Component;
 
 public class NoRender extends Module {
 
-	public Text[] signText = new Text[] { Text.empty(), Text.empty(), Text.empty(), Text.empty() };
+	public Component[] signText = new Component[] { Component.empty(), Component.empty(), Component.empty(), Component.empty() };
 
 	public NoRender() {
 		super("NoRender", KEY_UNBOUND, ModuleCategory.RENDER, "Blocks certain elements from rendering.",
@@ -88,7 +88,7 @@ public class NoRender extends Module {
 
 		if (signText != null) {
 			for (int i = 0; i < Math.min(4, signText.getAsJsonArray().size()); i++) {
-				this.signText[i] = Text.literal(signText.getAsJsonArray().get(i).getAsString());
+				this.signText[i] = Component.literal(signText.getAsJsonArray().get(i).getAsString());
 			}
 		}
 	}
@@ -136,11 +136,11 @@ public class NoRender extends Module {
 
 	@BleachSubscribe
 	public void onEntityRender(EventEntityRender.Single.Pre event) {
-		if ((isEntityToggled(0) && event.getEntity() instanceof ArmorStandEntity)
+		if ((isEntityToggled(0) && event.getEntity() instanceof ArmorStand)
 				|| (isEntityToggled(1) && event.getEntity() instanceof FallingBlockEntity)
-				|| (isEntityToggled(2) && event.getEntity() instanceof AbstractMinecartEntity)
-				|| (isEntityToggled(3) && event.getEntity() instanceof SnowballEntity)
-				|| (isEntityToggled(4) && event.getEntity() instanceof ExperienceOrbEntity)
+				|| (isEntityToggled(2) && event.getEntity() instanceof AbstractMinecart)
+				|| (isEntityToggled(3) && event.getEntity() instanceof Snowball)
+				|| (isEntityToggled(4) && event.getEntity() instanceof ExperienceOrb)
 				|| (isEntityToggled(5) && event.getEntity() instanceof ItemEntity)) {
 			event.setCancelled(true);
 		}
@@ -172,7 +172,7 @@ public class NoRender extends Module {
 	public void onParticle(EventParticle.Normal event) {
 		if ((isWorldToggled(2) && event.getParticle() instanceof ElderGuardianAppearanceParticle)
 				|| (isParticleToggled(0) && event.getParticle() instanceof CampfireSmokeParticle)
-				|| (isParticleToggled(1) && event.getParticle() instanceof ExplosionLargeParticle && Math.abs(event.getParticle().getBoundingBox().hashCode()) % 101 >= getParticleChild(1).getChild(0).asSlider().getValueInt())
+				|| (isParticleToggled(1) && event.getParticle() instanceof HugeExplosionParticle && Math.abs(event.getParticle().getBoundingBox().hashCode()) % 101 >= getParticleChild(1).getChild(0).asSlider().getValueInt())
 				|| (isParticleToggled(2) && event.getParticle() instanceof FireworkParticle)) {
 			event.setCancelled(true);
 		}

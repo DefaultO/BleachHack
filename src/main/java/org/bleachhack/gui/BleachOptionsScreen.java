@@ -8,7 +8,7 @@
  */
 package org.bleachhack.gui;
 
-import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.GuiGraphics;
 import org.bleachhack.gui.window.Window;
 import org.bleachhack.gui.window.WindowScreen;
 import org.bleachhack.gui.window.widget.WindowButtonWidget;
@@ -17,11 +17,11 @@ import org.bleachhack.gui.window.widget.WindowTextWidget;
 import org.bleachhack.gui.window.widget.WindowWidget;
 import org.bleachhack.setting.option.Option;
 
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
-import net.minecraft.text.HoverEvent;
-import net.minecraft.text.Text;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.network.chat.HoverEvent;
+import net.minecraft.network.chat.Component;
 
 
 public class BleachOptionsScreen extends WindowScreen {
@@ -31,7 +31,7 @@ public class BleachOptionsScreen extends WindowScreen {
 	private WindowScrollbarWidget scrollbar;
 
 	public BleachOptionsScreen(Screen parent) {
-		super(Text.literal("BleachHack Options"));
+		super(Component.literal("BleachHack Options"));
 		this.parent = parent;
 	}
 
@@ -84,7 +84,7 @@ public class BleachOptionsScreen extends WindowScreen {
 
 			// Name text (at the end because of... reasons)
 			getWindow(window).addWidget(new WindowTextWidget(
-					Text.literal(entry.getName()).styled(s -> s.withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.literal(entry.getTooltip())))),
+					Component.literal(entry.getName()).styled(s -> s.withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.literal(entry.getTooltip())))),
 					true, x - 107, y, 0xffffff));
 
 
@@ -95,7 +95,7 @@ public class BleachOptionsScreen extends WindowScreen {
 	}
 
 	@Override
-	public void render(DrawContext drawContext, int mouseX, int mouseY, float delta) {
+	public void render(GuiGraphics drawContext, int mouseX, int mouseY, float delta) {
 		this.renderBackground(drawContext, mouseX, mouseY, delta);
 
 		int offset = scrollbar.getOffsetSinceRender();

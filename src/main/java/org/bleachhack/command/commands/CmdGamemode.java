@@ -15,7 +15,7 @@ import org.bleachhack.command.CommandCategory;
 import org.bleachhack.command.exception.CmdSyntaxException;
 import org.bleachhack.util.BleachLogger;
 
-import net.minecraft.world.GameMode;
+import net.minecraft.world.level.GameType;
 
 public class CmdGamemode extends Command {
 
@@ -33,16 +33,16 @@ public class CmdGamemode extends Command {
 		String lower = args[0].toLowerCase(Locale.ENGLISH);
 
 		if (lower.equals("0") || lower.startsWith("su")) {
-			mc.interactionManager.setGameMode(GameMode.SURVIVAL);
+			mc.interactionManager.setGameMode(GameType.SURVIVAL);
 			BleachLogger.info("§l§nClientside§r gamemode has been set to survival.");
 		} else if (lower.equals("1") || lower.startsWith("c")) {
-			mc.interactionManager.setGameMode(GameMode.CREATIVE);
+			mc.interactionManager.setGameMode(GameType.CREATIVE);
 			BleachLogger.info("§l§nClientside§r gamemode has been set to creative.");
 		} else if (lower.equals("2") || lower.startsWith("a")) {
-			mc.interactionManager.setGameMode(GameMode.ADVENTURE);
+			mc.interactionManager.setGameMode(GameType.ADVENTURE);
 			BleachLogger.info("§l§nClientside§r gamemode has been set to adventure.");
 		} else if (lower.equals("3") || lower.startsWith("sp")) {
-			mc.interactionManager.setGameMode(GameMode.SPECTATOR);
+			mc.interactionManager.setGameMode(GameType.SPECTATOR);
 			BleachLogger.info("§l§nClientside§r gamemode has been set to spectator.");
 		} else {
 			throw new CmdSyntaxException("Unknown Gamemode!");

@@ -8,7 +8,7 @@
  */
 package org.bleachhack.event.events;
 
-import net.minecraft.world.dimension.DimensionType;
+import net.minecraft.world.level.dimension.DimensionType;
 import org.bleachhack.event.Event;
 
 public class EventLightTex extends Event {

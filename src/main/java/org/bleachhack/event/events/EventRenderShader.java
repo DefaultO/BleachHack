@@ -8,22 +8,22 @@
  */
 package org.bleachhack.event.events;
 
-import net.minecraft.client.gl.PostEffectProcessor;
+import net.minecraft.client.renderer.PostChain;
 import org.bleachhack.event.Event;
 
 public class EventRenderShader extends Event {
 	
-	private PostEffectProcessor effect;
+	private PostChain effect;
 	
-	public EventRenderShader(PostEffectProcessor effect) {
+	public EventRenderShader(PostChain effect) {
 		this.setEffect(effect);
 	}
 
-	public PostEffectProcessor getEffect() {
+	public PostChain getEffect() {
 		return effect;
 	}
 
-	public void setEffect(PostEffectProcessor effect) {
+	public void setEffect(PostChain effect) {
 		this.effect = effect;
 	}
 

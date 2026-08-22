@@ -8,7 +8,7 @@
  */
 package org.bleachhack.mixin;
 
-import net.minecraft.client.gui.screen.ChatScreen;
+import net.minecraft.client.gui.screens.ChatScreen;
 import org.bleachhack.BleachHack;
 import org.bleachhack.event.events.EventKeyPress;
 import org.spongepowered.asm.mixin.Mixin;

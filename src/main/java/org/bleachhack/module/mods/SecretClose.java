@@ -5,7 +5,7 @@ import org.bleachhack.eventbus.BleachSubscribe;
 import org.bleachhack.module.Module;
 import org.bleachhack.module.ModuleCategory;
 
-import net.minecraft.network.packet.c2s.play.CloseHandledScreenC2SPacket;
+import net.minecraft.network.protocol.game.ServerboundContainerClosePacket;
 
 public class SecretClose extends Module {
 
@@ -15,7 +15,7 @@ public class SecretClose extends Module {
 
 	@BleachSubscribe
 	public void onSendPacket(EventPacket.Send event) {
-		if (event.getPacket() instanceof CloseHandledScreenC2SPacket) {
+		if (event.getPacket() instanceof ServerboundContainerClosePacket) {
 			event.setCancelled(true);
 		}
 	}

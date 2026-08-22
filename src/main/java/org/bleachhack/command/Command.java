@@ -8,9 +8,9 @@
  */
 package org.bleachhack.command;
 
-import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.Minecraft;
 
-import net.minecraft.text.Text;
+import net.minecraft.network.chat.Component;
 import org.apache.commons.lang3.ArrayUtils;
 import org.bleachhack.setting.option.Option;
 import org.bleachhack.util.BleachLogger;
@@ -19,7 +19,7 @@ import java.util.stream.Stream;
 
 public abstract class Command {
 
-	protected final MinecraftClient mc = MinecraftClient.getInstance();
+	protected final Minecraft mc = Minecraft.getInstance();
 
 	private String[] aliases;
 	private String description;
@@ -57,8 +57,8 @@ public abstract class Command {
 		return Stream.of(aliases).anyMatch(alias::equalsIgnoreCase);
 	}
 
-	public Text getHelpTooltip() {
-		return Text.literal("§7Category: " + getCategory() + "\n")
+	public Component getHelpTooltip() {
+		return Component.literal("§7Category: " + getCategory() + "\n")
 				.append("Aliases: §f" + getPrefix() + String.join(" §7/§f " + getPrefix(), getAliases()) + "\n").styled(s -> s.withColor(BleachLogger.INFO_COLOR))
 				.append("Usage: §f" + getSyntax() + "\n").styled(s -> s.withColor(BleachLogger.INFO_COLOR))
 				.append("Description: §f" + getDescription()).styled(s -> s.withColor(BleachLogger.INFO_COLOR));

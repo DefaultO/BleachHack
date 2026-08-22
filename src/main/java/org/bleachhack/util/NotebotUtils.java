@@ -10,16 +10,17 @@ package org.bleachhack.util;
 
 import com.google.common.collect.Multimap;
 import com.google.common.collect.MultimapBuilder;
-import net.minecraft.block.enums.Instrument;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.sound.PositionedSoundInstance;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
-import net.minecraft.sound.SoundCategory;
-import net.minecraft.sound.SoundEvent;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.resources.sounds.SimpleSoundInstance;
+import net.minecraft.world.item.DyeColor;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.level.block.state.properties.NoteBlockInstrument;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.sounds.SoundEvent;
 import net.minecraft.util.Util;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.util.math.random.Random;
+import net.minecraft.world.phys.Vec3;
+import net.minecraft.util.RandomSource;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.bleachhack.module.mods.Notebot.Note;
@@ -43,23 +44,23 @@ public class NotebotUtils {
 	public static final String[] NOTE_NAMES = { "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B" };
 	private static final int[] NOTE_POSES = { 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17 };
 
-	public static final EnumMap<Instrument, ItemStack> INSTRUMENT_TO_ITEM = Util.make(new EnumMap<>(Instrument.class), it -> {
-		it.put(Instrument.HARP, new ItemStack(Items.DIRT));
-		it.put(Instrument.BASEDRUM, new ItemStack(Items.STONE));
-		it.put(Instrument.SNARE, new ItemStack(Items.SAND));
-		it.put(Instrument.HAT, new ItemStack(Items.GLASS));
-		it.put(Instrument.BASS, new ItemStack(Items.OAK_WOOD));
-		it.put(Instrument.FLUTE, new ItemStack(Items.CLAY));
-		it.put(Instrument.BELL, new ItemStack(Items.GOLD_BLOCK));
-		it.put(Instrument.GUITAR, new ItemStack(Items.WHITE_WOOL));
-		it.put(Instrument.CHIME, new ItemStack(Items.PACKED_ICE));
-		it.put(Instrument.XYLOPHONE, new ItemStack(Items.BONE_BLOCK));
-		it.put(Instrument.IRON_XYLOPHONE, new ItemStack(Items.IRON_BLOCK));
-		it.put(Instrument.COW_BELL, new ItemStack(Items.SOUL_SAND));
-		it.put(Instrument.DIDGERIDOO, new ItemStack(Items.PUMPKIN));
-		it.put(Instrument.BIT, new ItemStack(Items.EMERALD_BLOCK));
-		it.put(Instrument.BANJO, new ItemStack(Items.HAY_BLOCK));
-		it.put(Instrument.PLING, new ItemStack(Items.GLOWSTONE));
+	public static final EnumMap<NoteBlockInstrument, ItemStack> INSTRUMENT_TO_ITEM = Util.make(new EnumMap<>(NoteBlockInstrument.class), it -> {
+		it.put(NoteBlockInstrument.HARP, new ItemStack(Items.DIRT));
+		it.put(NoteBlockInstrument.BASEDRUM, new ItemStack(Items.STONE));
+		it.put(NoteBlockInstrument.SNARE, new ItemStack(Items.SAND));
+		it.put(NoteBlockInstrument.HAT, new ItemStack(Items.GLASS));
+		it.put(NoteBlockInstrument.BASS, new ItemStack(Items.OAK_WOOD));
+		it.put(NoteBlockInstrument.FLUTE, new ItemStack(Items.CLAY));
+		it.put(NoteBlockInstrument.BELL, new ItemStack(Items.GOLD_BLOCK));
+		it.put(NoteBlockInstrument.GUITAR, new ItemStack(Items.WOOL.pick(DyeColor.WHITE)));
+		it.put(NoteBlockInstrument.CHIME, new ItemStack(Items.PACKED_ICE));
+		it.put(NoteBlockInstrument.XYLOPHONE, new ItemStack(Items.BONE_BLOCK));
+		it.put(NoteBlockInstrument.IRON_XYLOPHONE, new ItemStack(Items.IRON_BLOCK));
+		it.put(NoteBlockInstrument.COW_BELL, new ItemStack(Items.SOUL_SAND));
+		it.put(NoteBlockInstrument.DIDGERIDOO, new ItemStack(Items.PUMPKIN));
+		it.put(NoteBlockInstrument.BIT, new ItemStack(Items.EMERALD_BLOCK));
+		it.put(NoteBlockInstrument.BANJO, new ItemStack(Items.HAY_BLOCK));
+		it.put(NoteBlockInstrument.PLING, new ItemStack(Items.GLOWSTONE));
 	});
 
 	public static void downloadSongs(boolean log) {
@@ -99,14 +100,14 @@ public class NotebotUtils {
 
 	public static void playNote(Multimap<Integer, Note> song, int tick) {
 		for (Note note: song.get(tick)) {
-			play(Instrument.values()[note.instrument].getSound().value(), (float) Math.pow(2.0D, (note.pitch - 12) / 12.0D));
+			play(NoteBlockInstrument.values()[note.instrument].getSoundEvent().value(), (float) Math.pow(2.0D, (note.pitch - 12) / 12.0D));
 		}
 	}
 
 	private static void play(SoundEvent sound, float pitch) {
-		MinecraftClient mc = MinecraftClient.getInstance();
-		Vec3d vec = mc.player == null ? Vec3d.ZERO : mc.player.getPos();
-		mc.getSoundManager().play(new PositionedSoundInstance(sound, SoundCategory.RECORDS, 3.0F, pitch, Random.create(0L), vec.x, vec.y, vec.z));
+		Minecraft mc = Minecraft.getInstance();
+		Vec3 vec = mc.player == null ? Vec3.ZERO : mc.player.position();
+		mc.getSoundManager().play(new SimpleSoundInstance(sound, SoundSource.RECORDS, 3.0F, pitch, RandomSource.create(0L), vec.x, vec.y, vec.z));
 	}
 
 	public static Song parse(Path path) {

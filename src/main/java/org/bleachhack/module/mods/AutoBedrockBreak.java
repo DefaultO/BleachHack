@@ -19,16 +19,16 @@ import org.bleachhack.util.InventoryUtils;
 import org.bleachhack.util.render.Renderer;
 import org.bleachhack.util.render.color.QuadColor;
 
-import net.minecraft.block.PistonBlock;
-import net.minecraft.item.Items;
-import net.minecraft.network.packet.c2s.play.PlayerInteractBlockC2SPacket;
-import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
-import net.minecraft.util.Hand;
-import net.minecraft.util.hit.BlockHitResult;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
-import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.level.block.piston.PistonBaseBlock;
+import net.minecraft.world.item.Items;
+import net.minecraft.network.protocol.game.ServerboundUseItemOnPacket;
+import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.core.Direction;
+import net.minecraft.world.phys.Vec3;
 
 public class AutoBedrockBreak extends Module {
 
@@ -51,7 +51,7 @@ public class AutoBedrockBreak extends Module {
 		if (pos != null) {
 			switch (step) {
 				case 0:
-					if (!mc.world.isSpaceEmpty(new Box(pos.up().toCenterPos(), pos.add(1, 8, 1).toCenterPos()))) {
+					if (!mc.world.isSpaceEmpty(new AABB(pos.up().toCenterPos(), pos.add(1, 8, 1).toCenterPos()))) {
 						reset();
 						BleachLogger.info("Not enough empty space to break this block!");
 					} else if (InventoryUtils.getSlot(true, i -> mc.player.getInventory().getStack(i).getItem() == Items.PISTON) == -1) {
@@ -72,7 +72,7 @@ public class AutoBedrockBreak extends Module {
 
 					break;
 				case 1:
-					mc.player.networkHandler.sendPacket(new PlayerMoveC2SPacket.Full(mc.player.getX(), mc.player.getY(), mc.player.getZ(), mc.player.getYaw(), 90, mc.player.isOnGround()));
+					mc.player.networkHandler.sendPacket(new ServerboundMovePlayerPacket.Full(mc.player.getX(), mc.player.getY(), mc.player.getZ(), mc.player.getYaw(), 90, mc.player.isOnGround()));
 					// mc.player.setPitch(90) "its jank either way"
 					step++;
 
@@ -98,32 +98,32 @@ public class AutoBedrockBreak extends Module {
 
 					break;
 				case 6:
-					Vec3d leverCenter = Vec3d.ofCenter(pos.up(6));
+					Vec3 leverCenter = Vec3.ofCenter(pos.up(6));
 					if (mc.player.getEyePos().distanceTo(leverCenter) <= 4.75) {
-						mc.interactionManager.interactBlock(mc.player, Hand.MAIN_HAND, new BlockHitResult(leverCenter, Direction.DOWN, pos.up(6), false));
+						mc.interactionManager.interactBlock(mc.player, InteractionHand.MAIN_HAND, new BlockHitResult(leverCenter, Direction.DOWN, pos.up(6), false));
 						step++;
 					}
 
 					break;
 				default:
 					if (mc.world.getBlockState(pos).isAir()
-							|| mc.world.getBlockState(pos).getBlock() instanceof PistonBlock
-							|| (mc.world.getBlockState(pos.up()).getBlock() instanceof PistonBlock
-									&&  mc.world.getBlockState(pos.up()).get(PistonBlock.FACING) != Direction.UP)) {
+							|| mc.world.getBlockState(pos).getBlock() instanceof PistonBaseBlock
+							|| (mc.world.getBlockState(pos.up()).getBlock() instanceof PistonBaseBlock
+									&&  mc.world.getBlockState(pos.up()).get(PistonBaseBlock.FACING) != Direction.UP)) {
 						setEnabled(false);
 						return;
 					}
 
 					if (step >= 82) {
-						mc.player.networkHandler.sendPacket(new PlayerMoveC2SPacket.Full(mc.player.getX(), mc.player.getY(), mc.player.getZ(), mc.player.getYaw(), -90, mc.player.isOnGround()));
+						mc.player.networkHandler.sendPacket(new ServerboundMovePlayerPacket.Full(mc.player.getX(), mc.player.getY(), mc.player.getZ(), mc.player.getYaw(), -90, mc.player.isOnGround()));
 						// mc.player.setPitch(-90) "its jank either way"
 					}
 
 					if (step > 84) {
-						Hand hand = InventoryUtils.selectSlot(true, i -> mc.player.getInventory().getStack(i).getItem() == Items.PISTON);
+						InteractionHand hand = InventoryUtils.selectSlot(true, i -> mc.player.getInventory().getStack(i).getItem() == Items.PISTON);
 						if (hand != null) {
-							mc.player.networkHandler.sendPacket(new PlayerInteractBlockC2SPacket(hand,
-									new BlockHitResult(Vec3d.ofBottomCenter(pos.up()), Direction.DOWN, pos.up(), false), 0));
+							mc.player.networkHandler.sendPacket(new ServerboundUseItemOnPacket(hand,
+									new BlockHitResult(Vec3.ofBottomCenter(pos.up()), Direction.DOWN, pos.up(), false), 0));
 						}
 					}
 
@@ -154,12 +154,12 @@ public class AutoBedrockBreak extends Module {
 	}
 
 	private boolean dirtyPlace(BlockPos pos, int slot, Direction dir) {
-		Vec3d hitPos = Vec3d.ofCenter(pos).add(dir.getOffsetX() * 0.5, dir.getOffsetY() * 0.5, dir.getOffsetZ() * 0.5);
-		if (mc.player.getEyePos().distanceTo(hitPos) >= 4.75 || !mc.world.getOtherEntities(null, new Box(pos)).isEmpty()) {
+		Vec3 hitPos = Vec3.ofCenter(pos).add(dir.getOffsetX() * 0.5, dir.getOffsetY() * 0.5, dir.getOffsetZ() * 0.5);
+		if (mc.player.getEyePos().distanceTo(hitPos) >= 4.75 || !mc.world.getOtherEntities(null, new AABB(pos)).isEmpty()) {
 			return false;
 		}
 
-		Hand hand = InventoryUtils.selectSlot(slot);
+		InteractionHand hand = InventoryUtils.selectSlot(slot);
 		if (hand != null) {
 			mc.interactionManager.interactBlock(mc.player, hand, new BlockHitResult(hitPos, dir, pos, false));
 			return true;

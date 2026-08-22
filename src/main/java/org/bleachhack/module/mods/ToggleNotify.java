@@ -18,7 +18,7 @@ import org.bleachhack.module.ModuleManager;
 import org.bleachhack.setting.module.SettingToggle;
 import org.bleachhack.util.BleachLogger;
 
-import net.minecraft.text.Text;
+import net.minecraft.network.chat.Component;
 
 
 
@@ -81,7 +81,7 @@ public class ToggleNotify extends Module {
 	}
 	
 	private void notify(Module module) {
-		BleachLogger.info(Text.literal(
+		BleachLogger.info(Component.literal(
 				module.getName() + ": " + (module.isEnabled() ? "§aEnabled" : "§cDisabled")));
 	}
 }

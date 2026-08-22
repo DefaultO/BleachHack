@@ -8,11 +8,11 @@
  */
 package org.bleachhack.module.mods;
 
-import net.minecraft.block.Blocks;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
-import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.core.Direction;
+import net.minecraft.world.phys.Vec3;
 import org.apache.commons.lang3.ArrayUtils;
 import org.bleachhack.event.events.EventTick;
 import org.bleachhack.event.events.EventWorldRender;
@@ -41,12 +41,12 @@ public class HoleESP extends Module {
 		super("HoleESP", KEY_UNBOUND, ModuleCategory.RENDER, "Highlights safe and not so safe holes. Used for Crystalpvp.",
 				new SettingSlider("Radius", 1, 20, 10, 0).withDesc("Radius in which holes are getting searched."),
 				new SettingToggle("RenderBottom", true).withDesc("Render the bottom of holes.").withChildren(
-						new SettingMode("Render", "Box+Fill", "Box", "Fill").withDesc("The rendering method."),
-						new SettingSlider("Box", 0.1, 4, 2, 1).withDesc("The thickness of the box lines."),
+						new SettingMode("Render", "AABB+Fill", "AABB", "Fill").withDesc("The rendering method."),
+						new SettingSlider("AABB", 0.1, 4, 2, 1).withDesc("The thickness of the box lines."),
 						new SettingSlider("Fill", 0, 1, 0.3, 2).withDesc("The opacity of the fill.")),
 				new SettingToggle("RenderSides", true).withDesc("Render the sides of holes.").withChildren(
-						new SettingMode("Render", "GlowUp", "GlowDown", "Box+Fill", "Box", "Fill").withDesc("The rendering method."),
-						new SettingSlider("Box", 0.1, 4, 2, 1).withDesc("The thickness of the box lines."),
+						new SettingMode("Render", "GlowUp", "GlowDown", "AABB+Fill", "AABB", "Fill").withDesc("The rendering method."),
+						new SettingSlider("AABB", 0.1, 4, 2, 1).withDesc("The thickness of the box lines."),
 						new SettingSlider("Fill", 0, 1, 0.3, 2).withDesc("The opacity of the fill/glow"),
 						new SettingSlider("Height", 0.1, 8, 1, 1).withDesc("The height to render the sides.")),
 				new SettingToggle("Bedrock", true).withDesc("Shows holes with full bedrock.").withChildren(
@@ -142,20 +142,20 @@ public class HoleESP extends Module {
 				CardinalDirection gradientDir = sideMode == 0 ? CardinalDirection.NORTH : CardinalDirection.SOUTH;
 
 				holes.forEach((pos, color) ->
-						Renderer.drawBoxFill(new Box(new Vec3d(pos.getX(), pos.getY(), pos.getZ()), new Vec3d(pos.getX() + 1, pos.getY(), pos.getZ() + 1)).stretch(0, height, 0),
+						Renderer.drawBoxFill(new AABB(new Vec3(pos.getX(), pos.getY(), pos.getZ()), new Vec3(pos.getX() + 1, pos.getY(), pos.getZ() + 1)).stretch(0, height, 0),
 								QuadColor.gradient(
 										color[0], color[1], color[2], alpha,
 										color[0], color[1], color[2], 0, gradientDir), excludeDirs));
 			} else {
 				if (sideMode == 2 || sideMode == 4) {
 					holes.forEach((pos, color) ->
-							Renderer.drawBoxFill(new Box(new Vec3d(pos.getX(), pos.getY(), pos.getZ()), new Vec3d(pos.getX() + 1, pos.getY(), pos.getZ() + 1)).stretch(0, height, 0),
+							Renderer.drawBoxFill(new AABB(new Vec3(pos.getX(), pos.getY(), pos.getZ()), new Vec3(pos.getX() + 1, pos.getY(), pos.getZ() + 1)).stretch(0, height, 0),
 									QuadColor.single(color[0], color[1], color[2], alpha), excludeDirs));
 				}
 
 				if (sideMode == 2 || sideMode == 3) {
 					holes.forEach((pos, color) ->
-							Renderer.drawBoxOutline(new Box(new Vec3d(pos.getX(), pos.getY(), pos.getZ()), new Vec3d(pos.getX() + 1, pos.getY(), pos.getZ() + 1)).stretch(0, height, 0),
+							Renderer.drawBoxOutline(new AABB(new Vec3(pos.getX(), pos.getY(), pos.getZ()), new Vec3(pos.getX() + 1, pos.getY(), pos.getZ() + 1)).stretch(0, height, 0),
 									QuadColor.single(color[0], color[1], color[2], 255), getSetting(2).asToggle().getChild(1).asSlider().getValueFloat(), excludeDirs));
 				}
 			}

@@ -19,28 +19,28 @@ import org.bleachhack.setting.module.SettingToggle;
 import org.bleachhack.util.world.WorldUtils;
 import org.lwjgl.glfw.GLFW;
 
-import net.minecraft.block.Blocks;
-import net.minecraft.client.gui.screen.ChatScreen;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.screen.ingame.AnvilScreen;
-import net.minecraft.client.gui.screen.ingame.BookEditScreen;
-import net.minecraft.client.gui.screen.ingame.CreativeInventoryScreen;
-import net.minecraft.client.gui.screen.ingame.JigsawBlockScreen;
-import net.minecraft.client.gui.screen.ingame.SignEditScreen;
-import net.minecraft.client.gui.screen.ingame.StructureBlockScreen;
-import net.minecraft.client.option.KeyBinding;
-import net.minecraft.client.util.InputUtil;
-import net.minecraft.entity.effect.StatusEffects;
-import net.minecraft.network.packet.c2s.play.ClickSlotC2SPacket;
-import net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket;
-import net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket.Mode;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.client.gui.screens.ChatScreen;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.inventory.AnvilScreen;
+import net.minecraft.client.gui.screens.inventory.BookEditScreen;
+import net.minecraft.client.gui.screens.inventory.CreativeModeInventoryScreen;
+import net.minecraft.client.gui.screens.inventory.JigsawBlockEditScreen;
+import net.minecraft.client.gui.screens.inventory.SignEditScreen;
+import net.minecraft.client.gui.screens.inventory.StructureBlockEditScreen;
+import net.minecraft.client.KeyMapping;
+import com.mojang.blaze3d.platform.InputConstants;
+import net.minecraft.world.effect.MobEffects;
+import net.minecraft.network.protocol.game.ServerboundContainerClickPacket;
+import net.minecraft.network.protocol.game.ServerboundPlayerCommandPacket;
+import net.minecraft.network.protocol.game.ServerboundPlayerCommandPacket.Mode;
+import net.minecraft.core.BlockPos;
+import net.minecraft.util.Mth;
+import net.minecraft.world.phys.Vec3;
 
 public class NoSlow extends Module {
 
-	private Vec3d addVelocity = Vec3d.ZERO;
+	private Vec3 addVelocity = Vec3.ZERO;
 	private long lastTime;
 
 	public NoSlow() {
@@ -65,12 +65,12 @@ public class NoSlow extends Module {
 			return;
 
 		/* Slowness */
-		if (getSetting(0).asToggle().getState() && (mc.player.getStatusEffect(StatusEffects.SLOWNESS) != null || mc.player.getStatusEffect(StatusEffects.BLINDNESS) != null)) {
+		if (getSetting(0).asToggle().getState() && (mc.player.getStatusEffect(MobEffects.SLOWNESS) != null || mc.player.getStatusEffect(MobEffects.BLINDNESS) != null)) {
 			if (mc.options.forwardKey.isPressed()
 					&& mc.player.getVelocity().x > -0.15 && mc.player.getVelocity().x < 0.15
 					&& mc.player.getVelocity().z > -0.15 && mc.player.getVelocity().z < 0.15) {
 				mc.player.setVelocity(mc.player.getVelocity().add(addVelocity));
-				addVelocity = addVelocity.add(new Vec3d(0, 0, 0.05).rotateY(-(float) Math.toRadians(mc.player.getYaw())));
+				addVelocity = addVelocity.add(new Vec3(0, 0, 0.05).rotateY(-(float) Math.toRadians(mc.player.getYaw())));
 			} else {
 				addVelocity = addVelocity.multiply(0.75, 0.75, 0.75);
 			}
@@ -94,13 +94,13 @@ public class NoSlow extends Module {
 		/* Web */
 		if (getSetting(3).asToggle().getState() && WorldUtils.doesBoxTouchBlock(mc.player.getBoundingBox(), Blocks.COBWEB)) {
 			// still kinda scuffed until i get an actual mixin
-			mc.player.slowMovement(mc.world.getBlockState(mc.player.getBlockPos()), new Vec3d(1.75, 1.75, 1.75));
+			mc.player.slowMovement(mc.world.getBlockState(mc.player.getBlockPos()), new Vec3(1.75, 1.75, 1.75));
 		}
 
 		/* Berry Bush */
 		if (getSetting(4).asToggle().getState() && WorldUtils.doesBoxTouchBlock(mc.player.getBoundingBox(), Blocks.SWEET_BERRY_BUSH)) {
 			// also scuffed
-			mc.player.slowMovement(mc.world.getBlockState(mc.player.getBlockPos()), new Vec3d(1.7, 1.7, 1.7));
+			mc.player.slowMovement(mc.world.getBlockState(mc.player.getBlockPos()), new Vec3(1.7, 1.7, 1.7));
 		}
 
 		// Items handled in MixinPlayerEntity:sendMovementPackets_isUsingItem
@@ -111,15 +111,15 @@ public class NoSlow extends Module {
 		/* Inventory */
 		if (getSetting(6).asToggle().getState() && shouldInvMove(mc.currentScreen)) {
 
-			for (KeyBinding k : new KeyBinding[] { mc.options.forwardKey, mc.options.backKey,
+			for (KeyMapping k : new KeyMapping[] { mc.options.forwardKey, mc.options.backKey,
 					mc.options.leftKey, mc.options.rightKey, mc.options.jumpKey, mc.options.sprintKey }) {
-				k.setPressed(InputUtil.isKeyPressed(mc.getWindow().getHandle(),
-						InputUtil.fromTranslationKey(k.getBoundKeyTranslationKey()).getCode()));
+				k.setPressed(InputConstants.isKeyPressed(mc.getWindow().getHandle(),
+						InputConstants.fromTranslationKey(k.getBoundKeyTranslationKey()).getCode()));
 			}
 
 			if (getSetting(6).asToggle().asToggle().getChild(0).asToggle().getState()) {
-				mc.options.sneakKey.setPressed(InputUtil.isKeyPressed(mc.getWindow().getHandle(),
-						InputUtil.fromTranslationKey(mc.options.sneakKey.getBoundKeyTranslationKey()).getCode()));
+				mc.options.sneakKey.setPressed(InputConstants.isKeyPressed(mc.getWindow().getHandle(),
+						InputConstants.fromTranslationKey(mc.options.sneakKey.getBoundKeyTranslationKey()).getCode()));
 			}
 
 
@@ -142,13 +142,13 @@ public class NoSlow extends Module {
 			float amount = (System.currentTimeMillis() - lastTime) / 10f;
 			lastTime = System.currentTimeMillis();
 
-			if (InputUtil.isKeyPressed(mc.getWindow().getHandle(), GLFW.GLFW_KEY_LEFT))
+			if (InputConstants.isKeyPressed(mc.getWindow().getHandle(), GLFW.GLFW_KEY_LEFT))
 				yaw -= amount;
-			if (InputUtil.isKeyPressed(mc.getWindow().getHandle(), GLFW.GLFW_KEY_RIGHT))
+			if (InputConstants.isKeyPressed(mc.getWindow().getHandle(), GLFW.GLFW_KEY_RIGHT))
 				yaw += amount;
-			if (InputUtil.isKeyPressed(mc.getWindow().getHandle(), GLFW.GLFW_KEY_UP))
+			if (InputConstants.isKeyPressed(mc.getWindow().getHandle(), GLFW.GLFW_KEY_UP))
 				pitch -= amount;
-			if (InputUtil.isKeyPressed(mc.getWindow().getHandle(), GLFW.GLFW_KEY_DOWN))
+			if (InputConstants.isKeyPressed(mc.getWindow().getHandle(), GLFW.GLFW_KEY_DOWN))
 				pitch += amount;
 
 			if (getSetting(6).asToggle().asToggle().getChild(2).asToggle().asToggle().getChild(1).asToggle().getState()) {
@@ -169,7 +169,7 @@ public class NoSlow extends Module {
 			mc.player.setYaw(mc.player.getYaw() + yaw);
 
 			if (getSetting(6).asToggle().asToggle().getChild(2).asToggle().asToggle().getChild(0).asToggle().getState()) {
-				mc.player.setPitch(MathHelper.clamp(mc.player.getPitch() + pitch, -90f, 90f));
+				mc.player.setPitch(Mth.clamp(mc.player.getPitch() + pitch, -90f, 90f));
 			} else {
 				mc.player.setPitch(mc.player.getPitch() + pitch);
 			}
@@ -178,8 +178,8 @@ public class NoSlow extends Module {
 
 	@BleachSubscribe
 	public void onSendPacket(EventPacket.Send event) {
-		if (event.getPacket() instanceof ClickSlotC2SPacket && getSetting(6).asToggle().asToggle().getChild(1).asToggle().getState()) {
-			mc.player.networkHandler.sendPacket(new ClientCommandC2SPacket(mc.player, Mode.STOP_SPRINTING));
+		if (event.getPacket() instanceof ServerboundContainerClickPacket && getSetting(6).asToggle().asToggle().getChild(1).asToggle().getState()) {
+			mc.player.networkHandler.sendPacket(new ServerboundPlayerCommandPacket(mc.player, Mode.STOP_SPRINTING));
 		}
 	}
 
@@ -191,9 +191,9 @@ public class NoSlow extends Module {
 		return !(screen instanceof ChatScreen
 				|| screen instanceof BookEditScreen
 				|| screen instanceof SignEditScreen
-				|| screen instanceof JigsawBlockScreen
-				|| screen instanceof StructureBlockScreen
+				|| screen instanceof JigsawBlockEditScreen
+				|| screen instanceof StructureBlockEditScreen
 				|| screen instanceof AnvilScreen
-				|| screen instanceof CreativeInventoryScreen);
+				|| screen instanceof CreativeModeInventoryScreen);
 	}
 }

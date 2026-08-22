@@ -13,7 +13,7 @@ import org.bleachhack.eventbus.BleachSubscribe;
 import org.bleachhack.module.Module;
 import org.bleachhack.module.ModuleCategory;
 
-import net.minecraft.network.packet.c2s.play.UpdateSignC2SPacket;
+import net.minecraft.network.protocol.game.ServerboundSignUpdatePacket;
 
 public class ColorSigns extends Module {
 
@@ -29,8 +29,8 @@ public class ColorSigns extends Module {
 	 * Paper has a patch for it to correct it so it doesn't work there */
 	@BleachSubscribe
 	public void onPacketSend(EventPacket.Send event) {
-		if (event.getPacket() instanceof UpdateSignC2SPacket) {
-			UpdateSignC2SPacket p = (UpdateSignC2SPacket) event.getPacket();
+		if (event.getPacket() instanceof ServerboundSignUpdatePacket) {
+			ServerboundSignUpdatePacket p = (ServerboundSignUpdatePacket) event.getPacket();
 
 			for (int l = 0; l < p.getText().length; l++) {
 				String newText = p.getText()[l].replaceAll("(?i)§|&([0-9A-FK-OR])", "§§$1$1");

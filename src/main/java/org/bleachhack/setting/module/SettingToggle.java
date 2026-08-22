@@ -13,16 +13,16 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map.Entry;
 
-import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import org.bleachhack.gui.clickgui.window.ClickGuiWindow.Tooltip;
 import org.bleachhack.setting.SettingDataHandlers;
 import org.bleachhack.gui.clickgui.window.ModuleWindow;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.sound.PositionedSoundInstance;
-import net.minecraft.sound.SoundEvents;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.resources.sounds.SimpleSoundInstance;
+import net.minecraft.sounds.SoundEvents;
 
 public class SettingToggle extends ModuleSetting<Boolean> {
 
@@ -37,7 +37,7 @@ public class SettingToggle extends ModuleSetting<Boolean> {
 		return getValue().booleanValue();
 	}
 
-	public void render(ModuleWindow window, DrawContext drawContext, int x, int y, int len) {
+	public void render(ModuleWindow window, GuiGraphicsExtractor drawContext, int x, int y, int len) {
 		String color2 = getValue() ? "§a" : "§c";
 
 		if (window.mouseOver(x, y, x + len, y + 12)) {
@@ -47,7 +47,7 @@ public class SettingToggle extends ModuleSetting<Boolean> {
 		if (!children.isEmpty()) {
 			if (window.rmDown && window.mouseOver(x, y, x + len, y + 12)) {
 				expanded = !expanded;
-				MinecraftClient.getInstance().getSoundManager().play(PositionedSoundInstance.master(SoundEvents.UI_BUTTON_CLICK.value(), 1.0F, 0.3F));
+				Minecraft.getInstance().getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK.value(), 1.0F, 0.3F));
 			}
 
 			if (expanded) {
@@ -62,24 +62,24 @@ public class SettingToggle extends ModuleSetting<Boolean> {
 			}
 
 			if (expanded) {
-				drawContext.drawTextWithShadow(MinecraftClient.getInstance().textRenderer, color2 + "∨",
+				drawContext.text(Minecraft.getInstance().font, color2 + "∨",
 						x + len - 8, y + 3, -1);
 			} else {
-				drawContext.getMatrices().push();
+				drawContext.pose().pushMatrix();
 
-				drawContext.getMatrices().scale(0.75f, 0.75f, 1f);
-				drawContext.drawTextWithShadow(MinecraftClient.getInstance().textRenderer, color2 + "§l>",
+				drawContext.pose().scale(0.75f, 0.75f);
+				drawContext.text(Minecraft.getInstance().font, color2 + "§l>",
 						(int) ((x + len - 7) * 1 / 0.75), (int) ((y + 4) * 1 / 0.75), -1);
 
-				drawContext.getMatrices().pop();
+				drawContext.pose().popMatrix();
 			}
 		}
 
-		drawContext.drawTextWithShadow(MinecraftClient.getInstance().textRenderer, color2 + getName(), x + 3, y + 2, 0xffffff);
+		drawContext.text(Minecraft.getInstance().font, color2 + getName(), x + 3, y + 2, 0xffffffff);
 
 		if (window.mouseOver(x, y, x + len, y + 12) && window.lmDown) {
 			setValue(!getValue());
-			MinecraftClient.getInstance().getSoundManager().play(PositionedSoundInstance.master(SoundEvents.UI_BUTTON_CLICK.value(), 1.0F, 0.3F));
+			Minecraft.getInstance().getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK.value(), 1.0F, 0.3F));
 		}
 	}
 

@@ -19,14 +19,14 @@ import org.bleachhack.setting.module.SettingSlider;
 import org.bleachhack.setting.module.SettingToggle;
 import org.bleachhack.util.world.PlayerCopyEntity;
 
-import net.minecraft.client.gui.screen.ingame.InventoryScreen;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityPose;
-import net.minecraft.entity.passive.AbstractHorseEntity;
-import net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket;
-import net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket.Mode;
-import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.client.gui.screens.inventory.InventoryScreen;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.Pose;
+import net.minecraft.world.entity.animal.equine.AbstractHorse;
+import net.minecraft.network.protocol.game.ServerboundPlayerCommandPacket;
+import net.minecraft.network.protocol.game.ServerboundPlayerCommandPacket.Mode;
+import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
+import net.minecraft.world.phys.Vec3;
 
 public class Freecam extends Module {
 
@@ -66,7 +66,7 @@ public class Freecam extends Module {
 		}
 
 		if (mc.player.isSprinting()) {
-			mc.player.networkHandler.sendPacket(new ClientCommandC2SPacket(mc.player, Mode.STOP_SPRINTING));
+			mc.player.networkHandler.sendPacket(new ServerboundPlayerCommandPacket(mc.player, Mode.STOP_SPRINTING));
 		}
 
 		prevFlying = mc.player.getAbilities().flying;
@@ -84,7 +84,7 @@ public class Freecam extends Module {
 			mc.player.getAbilities().setFlySpeed(prevFlySpeed);
 	
 			mc.player.refreshPositionAndAngles(playerPos[0], playerPos[1], playerPos[2], playerRot[0], playerRot[1]);
-			mc.player.setVelocity(Vec3d.ZERO);
+			mc.player.setVelocity(Vec3.ZERO);
 	
 			if (riding != null && mc.world.getEntityById(riding.getId()) != null) {
 				mc.player.startRiding(riding);
@@ -96,16 +96,16 @@ public class Freecam extends Module {
 
 	@BleachSubscribe
 	public void sendPacket(EventPacket.Send event) {
-		if (event.getPacket() instanceof ClientCommandC2SPacket || event.getPacket() instanceof PlayerMoveC2SPacket) {
+		if (event.getPacket() instanceof ServerboundPlayerCommandPacket || event.getPacket() instanceof ServerboundMovePlayerPacket) {
 			event.setCancelled(true);
 		}
 	}
 
 	@BleachSubscribe
 	public void onOpenScreen(EventOpenScreen event) {
-		if (getSetting(1).asToggle().getState() && riding instanceof AbstractHorseEntity) {
+		if (getSetting(1).asToggle().getState() && riding instanceof AbstractHorse) {
 			if (event.getScreen() instanceof InventoryScreen) {
-				mc.player.networkHandler.sendPacket(new ClientCommandC2SPacket(mc.player, ClientCommandC2SPacket.Mode.OPEN_INVENTORY));
+				mc.player.networkHandler.sendPacket(new ServerboundPlayerCommandPacket(mc.player, ServerboundPlayerCommandPacket.Mode.OPEN_INVENTORY));
 				event.setCancelled(true);
 			}
 		}
@@ -121,6 +121,6 @@ public class Freecam extends Module {
 		mc.player.setOnGround(false);
 		mc.player.getAbilities().setFlySpeed((float) (getSetting(0).asSlider().getValue() / 5));
 		mc.player.getAbilities().flying = true;
-		mc.player.setPose(EntityPose.STANDING);
+		mc.player.setPose(Pose.STANDING);
 	}
 }

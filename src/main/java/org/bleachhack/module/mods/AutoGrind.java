@@ -7,12 +7,12 @@ import org.bleachhack.module.ModuleCategory;
 import org.bleachhack.setting.module.SettingItemList;
 import org.bleachhack.util.BleachLogger;
 
-import net.minecraft.enchantment.EnchantmentHelper;
-import net.minecraft.enchantment.Enchantments;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.screen.GrindstoneScreenHandler;
-import net.minecraft.screen.slot.SlotActionType;
+import net.minecraft.world.item.enchantment.EnchantmentHelper;
+import net.minecraft.world.item.enchantment.Enchantments;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.inventory.GrindstoneMenu;
+import net.minecraft.world.inventory.ClickType;
 
 public class AutoGrind extends Module {
 
@@ -33,10 +33,10 @@ public class AutoGrind extends Module {
 
 	@BleachSubscribe
 	public void onTick(EventTick event) {
-		if (!(mc.player.currentScreenHandler instanceof GrindstoneScreenHandler))
+		if (!(mc.player.currentScreenHandler instanceof GrindstoneMenu))
 			return;
 
-		GrindstoneScreenHandler handler = (GrindstoneScreenHandler) mc.player.currentScreenHandler;
+		GrindstoneMenu handler = (GrindstoneMenu) mc.player.currentScreenHandler;
 
 		// if there's already an item in the grindstone, don't do anything
 		if (!(handler.getSlot(0).getStack().isEmpty() && handler.getSlot(1).getStack().isEmpty()))
@@ -49,7 +49,7 @@ public class AutoGrind extends Module {
 				// if item has grindable enchants
 				if (canGrind(stack)) {
 					// shift-click item into gridstone slot
-					mc.interactionManager.clickSlot(handler.syncId, slot, 0, SlotActionType.QUICK_MOVE, mc.player);
+					mc.interactionManager.clickSlot(handler.syncId, slot, 0, ClickType.QUICK_MOVE, mc.player);
 					// grind
 					doGrind(handler, slot);
 					// wait til next tick before grinding another one
@@ -70,11 +70,11 @@ public class AutoGrind extends Module {
 		return (enchants - curses > 0);
 	}
 
-	private void doGrind(GrindstoneScreenHandler handler, int destinationSlot) {
+	private void doGrind(GrindstoneMenu handler, int destinationSlot) {
 		// pick up from grindstone output slot (2)
-		mc.interactionManager.clickSlot(handler.syncId, 2, 0, SlotActionType.PICKUP, mc.player);
+		mc.interactionManager.clickSlot(handler.syncId, 2, 0, ClickType.PICKUP, mc.player);
 		// click the original slot to put the de-enchanted item back
-		mc.interactionManager.clickSlot(handler.syncId, destinationSlot, 0, SlotActionType.PICKUP, mc.player);
+		mc.interactionManager.clickSlot(handler.syncId, destinationSlot, 0, ClickType.PICKUP, mc.player);
 	}
 
 	private int getEnchantCount(ItemStack stack) {

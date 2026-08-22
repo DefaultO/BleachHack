@@ -1,23 +1,23 @@
 package org.bleachhack.util.render;
 
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.render.Frustum;
-import net.minecraft.util.math.Box;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.culling.Frustum;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
 import org.bleachhack.mixin.AccessorFrustum;
 import org.bleachhack.mixin.AccessorWorldRenderer;
 
 public class FrustumUtils {
 
 	public static Frustum getFrustum() {
-		return ((AccessorWorldRenderer) MinecraftClient.getInstance().worldRenderer).getFrustum();
+		return ((AccessorWorldRenderer) Minecraft.getInstance().worldRenderer).getFrustum();
 	}
 
-	public static boolean isBoxVisible(Box box) {
+	public static boolean isBoxVisible(AABB box) {
 		return getFrustum().isVisible(box);
 	}
 
-	public static boolean isPointVisible(Vec3d vec) {
+	public static boolean isPointVisible(Vec3 vec) {
 		return isPointVisible(vec.x, vec.y, vec.z);
 	}
 

@@ -25,10 +25,10 @@ import org.lwjgl.glfw.GLFW;
 
 import com.google.gson.JsonElement;
 
-import net.minecraft.client.render.debug.DebugRenderer;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.client.renderer.debug.DebugRenderer;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Player;
 
 /**
  * @author <a href="https://github.com/lasnikprogram">Lasnik</a>
@@ -65,7 +65,7 @@ public class EntityMenu extends Module {
 			if (lookingAt.isPresent()) {
 				Entity e = lookingAt.get();
 
-				if (e instanceof LivingEntity && (e instanceof PlayerEntity || !getSetting(0).asToggle().getState())) {
+				if (e instanceof LivingEntity && (e instanceof Player || !getSetting(0).asToggle().getState())) {
 					mc.setScreen(new EntityMenuScreen((LivingEntity) e));
 				}
 			}

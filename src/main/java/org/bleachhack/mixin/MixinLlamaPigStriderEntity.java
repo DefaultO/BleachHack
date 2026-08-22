@@ -8,7 +8,7 @@
  */
 package org.bleachhack.mixin;
 
-import net.minecraft.entity.passive.AbstractHorseEntity;
+import net.minecraft.world.entity.animal.equine.AbstractHorse;
 import org.bleachhack.BleachHack;
 import org.bleachhack.event.events.EventEntityControl;
 import org.spongepowered.asm.mixin.Mixin;
@@ -16,16 +16,16 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-import net.minecraft.entity.EntityType;
-import net.minecraft.entity.passive.AnimalEntity;
-import net.minecraft.entity.passive.PigEntity;
-import net.minecraft.entity.passive.StriderEntity;
-import net.minecraft.world.World;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.animal.Animal;
+import net.minecraft.world.entity.animal.pig.Pig;
+import net.minecraft.world.entity.monster.Strider;
+import net.minecraft.world.level.Level;
 
-@Mixin({AbstractHorseEntity.class, PigEntity.class, StriderEntity.class})
-public abstract class MixinLlamaPigStriderEntity extends AnimalEntity {
+@Mixin({AbstractHorse.class, Pig.class, Strider.class})
+public abstract class MixinLlamaPigStriderEntity extends Animal {
 
-	private MixinLlamaPigStriderEntity(EntityType<? extends AnimalEntity> entityType, World world) {
+	private MixinLlamaPigStriderEntity(EntityType<? extends Animal> entityType, Level world) {
 		super(entityType, world);
 	}
 

@@ -8,8 +8,8 @@
  */
 package org.bleachhack.event.events;
 
-import net.minecraft.client.sound.Sound;
-import net.minecraft.client.sound.SoundInstance;
+import net.minecraft.client.resources.sounds.Sound;
+import net.minecraft.client.resources.sounds.SoundInstance;
 import org.bleachhack.event.Event;
 
 public class EventSoundPlay extends Event {

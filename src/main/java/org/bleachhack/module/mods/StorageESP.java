@@ -9,27 +9,27 @@
 package org.bleachhack.module.mods;
 
 import com.google.gson.JsonSyntaxException;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.ChestBlock;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.ChestBlock;
 import net.minecraft.block.entity.*;
-import net.minecraft.block.enums.ChestType;
-import net.minecraft.client.render.LightmapTextureManager;
-import net.minecraft.client.render.OverlayTexture;
-import net.minecraft.client.render.RenderLayers;
-import net.minecraft.client.render.block.entity.BlockEntityRenderer;
-import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.decoration.ItemFrameEntity;
-import net.minecraft.entity.vehicle.ChestMinecartEntity;
-import net.minecraft.entity.vehicle.FurnaceMinecartEntity;
-import net.minecraft.entity.vehicle.HopperMinecartEntity;
-import net.minecraft.item.Items;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
-import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.Direction.Axis;
-import net.minecraft.util.math.random.Random;
+import net.minecraft.world.level.block.state.properties.ChestType;
+import net.minecraft.client.renderer.LightTexture;
+import net.minecraft.client.renderer.texture.OverlayTexture;
+import net.minecraft.client.renderer.rendertype.RenderTypes;
+import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
+import com.mojang.blaze3d.vertex.PoseStack;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.decoration.ItemFrame;
+import net.minecraft.world.entity.vehicle.minecart.MinecartChest;
+import net.minecraft.world.entity.vehicle.minecart.MinecartFurnace;
+import net.minecraft.world.entity.vehicle.minecart.MinecartHopper;
+import net.minecraft.world.item.Items;
+import net.minecraft.resources.Identifier;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.core.Direction;
+import net.minecraft.core.Direction.Axis;
+import net.minecraft.util.RandomSource;
 
 import org.bleachhack.event.events.EventEntityRender;
 import org.bleachhack.event.events.EventWorldRender;
@@ -60,9 +60,9 @@ public class StorageESP extends Module {
 
 	public StorageESP() {
 		super("StorageESP", KEY_UNBOUND, ModuleCategory.RENDER, "Highlights storage containers in the world.",
-				new SettingMode("Render", "Shader", "Box").withDesc("The Render mode."),
+				new SettingMode("Render", "Shader", "AABB").withDesc("The Render mode."),
 				new SettingSlider("ShaderFill", 1, 255, 50, 0).withDesc("How opaque the fill on shader mode should be."),
-				new SettingSlider("Box", 0, 5, 2, 1).withDesc("How thick the box outline should be."),
+				new SettingSlider("AABB", 0, 5, 2, 1).withDesc("How thick the box outline should be."),
 				new SettingSlider("BoxFill", 0, 255, 50, 0).withDesc("How opaque the fill on box mode should be."),
 
 				new SettingToggle("Chests", true).withDesc("Highlights chests/barrels."),
@@ -114,18 +114,18 @@ public class StorageESP extends Module {
 
 				if (color != null) {
 					BlockEntityRenderer<BlockEntity> renderer = mc.getBlockEntityRenderDispatcher().get(be);
-					MatrixStack matrices = Renderer.matrixFrom(be.getPos().getX(), be.getPos().getY(), be.getPos().getZ());
+					PoseStack matrices = Renderer.matrixFrom(be.getPos().getX(), be.getPos().getY(), be.getPos().getZ());
 					try {
 						if (renderer != null) {
 							renderer.render(be, mc.getTickDelta(), matrices,
 									colorVertexer.createSingleProvider(mc.getBufferBuilders().getEntityVertexConsumers(), color[0], color[1], color[2], getSetting(1).asSlider().getValueInt()),
-									LightmapTextureManager.MAX_LIGHT_COORDINATE, OverlayTexture.DEFAULT_UV);
+									LightTexture.MAX_LIGHT_COORDINATE, OverlayTexture.DEFAULT_UV);
 						} else {
 							BlockState state = be.getCachedState();
 							mc.getBlockRenderManager().getModelRenderer().renderFlat(mc.world,
 									mc.getBlockRenderManager().getModel(state), state, be.getPos(), matrices,
-									colorVertexer.createSingleProvider(mc.getBufferBuilders().getEntityVertexConsumers(), color[0], color[1], color[2], getSetting(1).asSlider().getValueInt()).getBuffer(RenderLayers.getMovingBlockLayer(state)),
-									false, Random.create(0L), 0L, OverlayTexture.DEFAULT_UV);
+									colorVertexer.createSingleProvider(mc.getBufferBuilders().getEntityVertexConsumers(), color[0], color[1], color[2], getSetting(1).asSlider().getValueInt()).getBuffer(RenderTypes.getMovingBlockLayer(state)),
+									false, RandomSource.create(0L), 0L, OverlayTexture.DEFAULT_UV);
 						}
 					} catch (Exception e) {
 						BleachLogger.error("Disabling StorageESP, another mod conflicting with shader mode?");
@@ -145,9 +145,9 @@ public class StorageESP extends Module {
 
 			for (Entity e: mc.world.getEntities()) {
 				int[] color = getColorForEntity(e);
-				Box box = e.getBoundingBox();
+				AABB box = e.getBoundingBox();
 
-				if (e instanceof ItemFrameEntity && ((ItemFrameEntity) e).getHeldItemStack().getItem() == Items.FILLED_MAP) {
+				if (e instanceof ItemFrame && ((ItemFrame) e).getHeldItemStack().getItem() == Items.FILLED_MAP) {
 					Axis axis = e.getHorizontalFacing().getAxis();
 					box = box.expand(axis == Axis.X ? 0 : 0.125, axis == Axis.Y ? 0 : 0.125, axis == Axis.Z ? 0 : 0.125);
 				}
@@ -167,7 +167,7 @@ public class StorageESP extends Module {
 					continue;
 
 				int[] color = getColorForBlock(be);
-				Box box = be.getCachedState().getOutlineShape(mc.world, be.getPos()).getBoundingBox().offset(be.getPos());
+				AABB box = be.getCachedState().getOutlineShape(mc.world, be.getPos()).getBoundingBox().offset(be.getPos());
 
 				Direction dir = getChestDirection(be);
 				if (dir != null) {
@@ -207,16 +207,16 @@ public class StorageESP extends Module {
 	}
 
 	private int[] getColorForEntity(Entity e) {
-		if (e instanceof ChestMinecartEntity && getSetting(11).asToggle().getState()) {
+		if (e instanceof MinecartChest && getSetting(11).asToggle().getState()) {
 			return new int[] { 255, 165, 75 };
-		} else if (e instanceof FurnaceMinecartEntity && getSetting(12).asToggle().getState()) {
+		} else if (e instanceof MinecartFurnace && getSetting(12).asToggle().getState()) {
 			return new int[] { 128, 128, 128 };
-		} else if (e instanceof HopperMinecartEntity && getSetting(13).asToggle().getState()) {
+		} else if (e instanceof MinecartHopper && getSetting(13).asToggle().getState()) {
 			return new int[] { 115, 115, 155 };
-		} else if (e instanceof ItemFrameEntity && getSetting(14).asToggle().getState()) {
-			if (((ItemFrameEntity) e).getHeldItemStack().isEmpty()) {
+		} else if (e instanceof ItemFrame && getSetting(14).asToggle().getState()) {
+			if (((ItemFrame) e).getHeldItemStack().isEmpty()) {
 				return new int[] { 115, 25, 25 };
-			} else if (((ItemFrameEntity) e).getHeldItemStack().getItem() == Items.FILLED_MAP) {
+			} else if (((ItemFrame) e).getHeldItemStack().getItem() == Items.FILLED_MAP) {
 				return new int[] { 25, 25, 128 };
 			} else {
 				return new int[] { 25, 115, 25 };

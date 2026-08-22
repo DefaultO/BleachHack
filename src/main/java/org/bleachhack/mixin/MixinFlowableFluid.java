@@ -8,8 +8,8 @@
  */
 package org.bleachhack.mixin;
 
-import net.minecraft.fluid.FlowableFluid;
-import net.minecraft.util.math.Direction;
+import net.minecraft.world.level.material.FlowingFluid;
+import net.minecraft.core.Direction;
 import org.bleachhack.module.ModuleManager;
 import org.bleachhack.module.mods.NoVelocity;
 import org.spongepowered.asm.mixin.Mixin;
@@ -18,7 +18,7 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 
 import java.util.Iterator;
 
-@Mixin(FlowableFluid.class)
+@Mixin(FlowingFluid.class)
 public class MixinFlowableFluid {
 
 	/** Yeet the first iterator which handles the horizontal fluid movement **/

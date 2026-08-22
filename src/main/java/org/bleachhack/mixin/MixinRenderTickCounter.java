@@ -16,9 +16,9 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-import net.minecraft.client.render.RenderTickCounter;
+import net.minecraft.client.DeltaTracker;
 
-@Mixin(RenderTickCounter.class)
+@Mixin(DeltaTracker.class)
 public class MixinRenderTickCounter {
 
 	@Shadow private float lastFrameDuration;

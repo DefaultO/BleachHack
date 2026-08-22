@@ -31,7 +31,7 @@ import com.jagrosh.discordipc.entities.DiscordBuild;
 import com.jagrosh.discordipc.entities.RichPresence;
 
 import net.minecraft.SharedConstants;
-import net.minecraft.item.ItemStack;
+import net.minecraft.world.item.ItemStack;
 
 public class DiscordRPC extends Module {
 

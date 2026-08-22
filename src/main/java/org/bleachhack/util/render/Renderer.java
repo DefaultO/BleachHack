@@ -9,10 +9,10 @@
 package org.bleachhack.util.render;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.render.*;
-import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.entity.Entity;
+import com.mojang.blaze3d.vertex.PoseStack;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.util.math.*;
 import org.bleachhack.util.Boxes;
 import org.bleachhack.util.render.color.LineColor;
@@ -55,7 +55,7 @@ public class Renderer {
 
 		setup();
 
-		MatrixStack matrices = matrixFrom(box.minX, box.minY, box.minZ);
+		PoseStack matrices = matrixFrom(box.minX, box.minY, box.minZ);
 
 		Tessellator tessellator = Tessellator.getInstance();
 		BufferBuilder buffer = tessellator.getBuffer();
@@ -83,7 +83,7 @@ public class Renderer {
 
 		setup();
 
-		MatrixStack matrices = matrixFrom(box.minX, box.minY, box.minZ);
+		PoseStack matrices = matrixFrom(box.minX, box.minY, box.minZ);
 
 		Tessellator tessellator = Tessellator.getInstance();
 		BufferBuilder buffer = tessellator.getBuffer();
@@ -112,7 +112,7 @@ public class Renderer {
 
 		setup();
 
-		MatrixStack matrices = matrixFrom(x1, y1, z1);
+		PoseStack matrices = matrixFrom(x1, y1, z1);
 
 		Tessellator tessellator = Tessellator.getInstance();
 		BufferBuilder buffer = tessellator.getBuffer();
@@ -140,7 +140,7 @@ public class Renderer {
 
 		setup();
 
-		MatrixStack matrices = matrixFrom(x1, y1, z1);
+		PoseStack matrices = matrixFrom(x1, y1, z1);
 
 		Tessellator tessellator = Tessellator.getInstance();
 		BufferBuilder buffer = tessellator.getBuffer();
@@ -172,7 +172,7 @@ public class Renderer {
 
 		setup();
 
-		MatrixStack matrices = matrixFrom(x1, y1, z1);
+		PoseStack matrices = matrixFrom(x1, y1, z1);
 
 		Tessellator tessellator = Tessellator.getInstance();
 		BufferBuilder buffer = tessellator.getBuffer();
@@ -194,10 +194,10 @@ public class Renderer {
 
 	// -------------------- Utils --------------------
 
-	public static MatrixStack matrixFrom(double x, double y, double z) {
-		MatrixStack matrices = new MatrixStack();
+	public static PoseStack matrixFrom(double x, double y, double z) {
+		PoseStack matrices = new PoseStack();
 
-		Camera camera = MinecraftClient.getInstance().gameRenderer.getCamera();
+		Camera camera = Minecraft.getInstance().gameRenderer.getCamera();
 		matrices.multiply(RotationAxis.POSITIVE_X.rotationDegrees(camera.getPitch()));
 		matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(camera.getYaw() + 180.0F));
 
@@ -207,11 +207,11 @@ public class Renderer {
 	}
 
 	public static Vec3d getInterpolationOffset(Entity e) {
-		if (MinecraftClient.getInstance().isPaused()) {
+		if (Minecraft.getInstance().isPaused()) {
 			return Vec3d.ZERO;
 		}
 
-		double tickDelta = MinecraftClient.getInstance().getTickDelta();
+		double tickDelta = Minecraft.getInstance().getTickDelta();
 		return new Vec3d(
 				e.getX() - MathHelper.lerp(tickDelta, e.lastRenderX, e.getX()),
 				e.getY() - MathHelper.lerp(tickDelta, e.lastRenderY, e.getY()),

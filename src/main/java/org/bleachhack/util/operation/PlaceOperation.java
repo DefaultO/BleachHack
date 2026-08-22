@@ -8,19 +8,15 @@
  */
 package org.bleachhack.util.operation;
 
-import net.minecraft.block.BlockState;
-import net.minecraft.client.render.RenderLayers;
-import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.item.BlockItem;
-import net.minecraft.item.Item;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.util.math.random.Random;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.item.Item;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
 import org.apache.commons.lang3.ArrayUtils;
 import org.bleachhack.util.InventoryUtils;
 import org.bleachhack.util.render.Renderer;
-import org.bleachhack.util.render.WorldRenderer;
 import org.bleachhack.util.render.color.QuadColor;
 import org.bleachhack.util.world.WorldUtils;
 
@@ -34,20 +30,20 @@ public class PlaceOperation extends Operation {
 	}
 
 	public static OperationBlueprint blueprint(int localX, int localY, int localZ, Item... items) {
-		return (origin, dir) -> new PlaceOperation(origin.add(rotate(localX, localY, localZ, dir)), items);
+		return (origin, dir) -> new PlaceOperation(origin.offset(rotate(localX, localY, localZ, dir)), items);
 	}
 
 	@Override
 	public boolean canExecute() {
-		if (mc.player.getEyePos().distanceTo(Vec3d.ofCenter(pos)) > 4.5)
+		if (mc.player.getEyePosition().distanceTo(Vec3.atCenterOf(pos)) > 4.5)
 			return false;
 
-		return InventoryUtils.getSlot(true, i -> ArrayUtils.contains(items, mc.player.getInventory().getStack(i).getItem())) != -1;
+		return InventoryUtils.getSlot(true, i -> ArrayUtils.contains(items, mc.player.getInventory().getItem(i).getItem())) != -1;
 	}
 
 	@Override
 	public boolean execute() {
-		int slot = InventoryUtils.getSlot(true, i -> ArrayUtils.contains(items, mc.player.getInventory().getStack(i).getItem()));
+		int slot = InventoryUtils.getSlot(true, i -> ArrayUtils.contains(items, mc.player.getInventory().getItem(i).getItem()));
 
 		return WorldUtils.placeBlock(pos, slot, 0, false, false, true);
 	}
@@ -65,18 +61,23 @@ public class PlaceOperation extends Operation {
 	public void render() {
 		Item item = getItems()[0];
 		if (item instanceof BlockItem) {
-			MatrixStack matrices = WorldRenderer.matrixFrom(pos.getX(), pos.getY(), pos.getZ());
+			BlockState state = ((BlockItem) item).getBlock().defaultBlockState();
 
-			BlockState state = ((BlockItem) item).getBlock().getDefaultState();
+			// TODO(26.2): ghost block-model preview removed. Minecraft.getBlockRenderManager()
+			// (BlockRenderDispatcher), Minecraft.getBufferBuilders()/getEntityVertexConsumers()
+			// (RenderBuffers/MultiBufferSource), and RenderTypes.getMovingBlockLayer(state) no longer
+			// exist. 26.2 renders moving blocks through the FeatureRenderer/GuiRenderState submit
+			// pipeline (MovingBlockFeatureRenderer + ModelBlockRenderer.tesselateBlock with a
+			// MovingBlockRenderState), which can't be driven inline from here. Needs a rewrite; the
+			// translucent shape fill below is kept so the placement preview is still visible.
+			// PoseStack matrices = WorldRenderer.matrixFrom(pos.getX(), pos.getY(), pos.getZ());
+			// mc.getBlockRenderManager().renderBlock(state, pos, mc.level, matrices,
+			//         mc.getBufferBuilders().getEntityVertexConsumers().getBuffer(RenderTypes.getMovingBlockLayer(state)),
+			//         false, RandomSource.create(0L));
+			// mc.getBufferBuilders().getEntityVertexConsumers().draw(RenderTypes.getMovingBlockLayer(state));
 
-			mc.getBlockRenderManager().renderBlock(state, pos, mc.world, matrices,
-					mc.getBufferBuilders().getEntityVertexConsumers().getBuffer(RenderLayers.getMovingBlockLayer(state)),
-					false, Random.create(0L));
-
-			mc.getBufferBuilders().getEntityVertexConsumers().draw(RenderLayers.getMovingBlockLayer(state));
-
-			for (Box box: state.getOutlineShape(mc.world, pos).getBoundingBoxes()) {
-				Renderer.drawBoxFill(box.offset(pos), QuadColor.single(0.45f, 0.7f, 1f, 0.4f));
+			for (AABB box: state.getShape(mc.level, pos).toAabbs()) {
+				Renderer.drawBoxFill(box.move(pos), QuadColor.single(0.45f, 0.7f, 1f, 0.4f));
 			}
 		} else {
 			Renderer.drawBoxBoth(pos, QuadColor.single(1f, 1f, 0f, 0.3f), 2.5f);

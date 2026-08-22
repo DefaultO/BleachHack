@@ -24,12 +24,12 @@ import org.bleachhack.util.render.Renderer;
 import org.bleachhack.util.render.color.QuadColor;
 import org.bleachhack.util.world.WorldUtils;
 
-import net.minecraft.fluid.FluidState;
-import net.minecraft.fluid.LavaFluid;
-import net.minecraft.fluid.WaterFluid;
-import net.minecraft.item.BlockItem;
-import net.minecraft.item.Item;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.level.material.FluidState;
+import net.minecraft.world.level.material.LavaFluid;
+import net.minecraft.world.level.material.WaterFluid;
+import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.item.Item;
+import net.minecraft.core.BlockPos;
 
 public class LiquidFiller extends Module {
 

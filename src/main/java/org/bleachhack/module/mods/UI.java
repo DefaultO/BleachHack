@@ -9,18 +9,18 @@
 package org.bleachhack.module.mods;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.network.PlayerListEntry;
-import net.minecraft.entity.Entity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.network.packet.s2c.play.WorldTimeUpdateS2CPacket;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.multiplayer.PlayerInfo;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.network.protocol.game.ClientboundSetTimePacket;
 
-import net.minecraft.text.Text;
-import net.minecraft.text.TextColor;
-import net.minecraft.util.Formatting;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.MathHelper;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.TextColor;
+import net.minecraft.ChatFormatting;
+import net.minecraft.core.BlockPos;
+import net.minecraft.util.Mth;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.bleachhack.BleachHack;
 import org.bleachhack.event.events.EventPacket;
@@ -48,15 +48,15 @@ import java.util.stream.Collectors;
 
 public class UI extends Module {
 
-	private List<Text> moduleListText = new ArrayList<>();
-	private Text fpsText = Text.empty();
-	private Text pingText = Text.empty();
-	private Text coordsText = Text.empty();
-	private Text tpsText = Text.empty();
-	private Text durabilityText = Text.empty();
-	private Text serverText = Text.empty();
-	private Text timestampText = Text.empty();
-	DrawContext drawContext = new DrawContext(mc, mc.getBufferBuilders().getEffectVertexConsumers());
+	private List<Component> moduleListText = new ArrayList<>();
+	private Component fpsText = Component.empty();
+	private Component pingText = Component.empty();
+	private Component coordsText = Component.empty();
+	private Component tpsText = Component.empty();
+	private Component durabilityText = Component.empty();
+	private Component serverText = Component.empty();
+	private Component timestampText = Component.empty();
+	GuiGraphics drawContext = new GuiGraphics(mc, mc.getBufferBuilders().getEffectVertexConsumers());
 
 	private long prevTime = 0;
 	private double tps = 20;
@@ -191,7 +191,7 @@ public class UI extends Module {
 
 		for (Module m : ModuleManager.getModules())
 			if (m.isEnabled())
-				moduleListText.add(Text.literal(m.getName()));
+				moduleListText.add(Component.literal(m.getName()));
 
 		moduleListText.sort(Comparator.comparingInt(t -> -mc.textRenderer.getWidth(t)));
 
@@ -199,22 +199,22 @@ public class UI extends Module {
 			int watermarkMode = getSetting(0).asToggle().getChild(3).asToggle().getChild(0).asMode().getMode();
 
 			if (watermarkMode == 0) {
-				moduleListText.add(0, BleachHack.watermark.getText().append(Text.literal(" " + BleachHack.VERSION).styled(s -> s.withColor(TextColor.fromRgb(0xf0f0f0)))));
+				moduleListText.add(0, BleachHack.watermark.getText().append(Component.literal(" " + BleachHack.VERSION).styled(s -> s.withColor(TextColor.fromRgb(0xf0f0f0)))));
 			} else {
-				moduleListText.add(0, Text.literal("§a> BleachHack " + BleachHack.VERSION));
+				moduleListText.add(0, Component.literal("§a> BleachHack " + BleachHack.VERSION));
 			}
 		}
 
 		// FPS
-		int fps = MinecraftClient.currentFps;
-		fpsText = Text.literal("FPS: ")
+		int fps = Minecraft.currentFps;
+		fpsText = Component.literal("FPS: ")
 				.append(colorText(Integer.toString(fps), Math.min(fps, 120) / 360f));
 
 		// Ping
-		PlayerListEntry playerEntry = mc.player.networkHandler.getPlayerListEntry(mc.player.getGameProfile().getId());
+		PlayerInfo playerEntry = mc.player.networkHandler.getPlayerListEntry(mc.player.getGameProfile().getId());
 		int ping = playerEntry == null ? 0 : playerEntry.getLatency();
-		pingText = Text.literal("Ping: ")
-				.append(colorText(Integer.toString(ping), (800 - MathHelper.clamp(ping, 0, 800)) / 2400f));
+		pingText = Component.literal("Ping: ")
+				.append(colorText(Integer.toString(ping), (800 - Mth.clamp(ping, 0, 800)) / 2400f));
 
 		// Coords
 		boolean nether = mc.world.getRegistryKey().getValue().getPath().contains("nether");
@@ -222,18 +222,18 @@ public class UI extends Module {
 		BlockPos pos2 = nether ? BlockPos.ofFloored(mc.player.getPos().multiply(8, 1, 8))
 				: BlockPos.ofFloored(mc.player.getPos().multiply(0.125, 1, 0.125));
 
-		coordsText = Text.literal("XYZ: ")
-				.append(Text.literal(pos.getX() + " " + pos.getY() + " " + pos.getZ()).styled(s -> s.withColor(nether ? 0xb02020 : 0x40f0f0)))
+		coordsText = Component.literal("XYZ: ")
+				.append(Component.literal(pos.getX() + " " + pos.getY() + " " + pos.getZ()).styled(s -> s.withColor(nether ? 0xb02020 : 0x40f0f0)))
 				.append(" [")
-				.append(Text.literal(pos2.getX() + " " + pos2.getY() + " " + pos2.getZ()).styled(s -> s.withColor(nether ? 0x40f0f0 : 0xb02020)))
+				.append(Component.literal(pos2.getX() + " " + pos2.getY() + " " + pos2.getZ()).styled(s -> s.withColor(nether ? 0x40f0f0 : 0xb02020)))
 				.append("]");
 
 		// TPS
 		int time = (int) (System.currentTimeMillis() - lastPacket);
 		String suffix = time >= 7500 ? "...." : time >= 5000 ? "..." : time >= 2500 ? ".." : time >= 1200 ? ".." : "";
 
-		tpsText = Text.literal("TPS: ")
-				.append(colorText(Double.toString(tps), (float) MathHelper.clamp(tps - 2, 0, 16) / 48))
+		tpsText = Component.literal("TPS: ")
+				.append(colorText(Double.toString(tps), (float) Mth.clamp(tps - 2, 0, 16) / 48))
 				.append(suffix);
 
 		// Durability
@@ -242,24 +242,24 @@ public class UI extends Module {
 			int durability = mainhand.getOrCreateNbt().contains("dmg")
 					? NumberUtils.toInt(mainhand.getOrCreateNbt().get("dmg").asString()) : mainhand.getMaxDamage() - mainhand.getDamage();
 
-			durabilityText = Text.literal("Durability: ")
+			durabilityText = Component.literal("Durability: ")
 					.append(colorText(Integer.toString(durability), (float) durability / mainhand.getMaxDamage() / 3f % 1f));
 		} else {
-			durabilityText = Text.literal("Durability: --");
+			durabilityText = Component.literal("Durability: --");
 		}
 
 		// Server
 		String server = mc.getCurrentServerEntry() == null ? "Singleplayer" : mc.getCurrentServerEntry().address;
-		serverText = Text.literal("Server: ")
-				.append(Text.literal(server).styled(s -> s.withColor(Formatting.LIGHT_PURPLE)));
+		serverText = Component.literal("Server: ")
+				.append(Component.literal(server).styled(s -> s.withColor(ChatFormatting.LIGHT_PURPLE)));
 
 		// Timestamp
 		String timeString = ZonedDateTime.now().format(DateTimeFormatter.ofPattern("MMM dd HH:mm:ss"
 				+ (getSetting(7).asToggle().getChild(0).asToggle().getState() ? " zzz" : "")
 				+ (getSetting(7).asToggle().getChild(1).asToggle().getState() ? " yyyy" : "")));
 
-		timestampText = Text.literal("Time: ")
-				.append(Text.literal(timeString).styled(s -> s.withColor(Formatting.YELLOW)));
+		timestampText = Component.literal("Time: ")
+				.append(Component.literal(timeString).styled(s -> s.withColor(ChatFormatting.YELLOW)));
 	}
 
 	@BleachSubscribe
@@ -285,7 +285,7 @@ public class UI extends Module {
 		return new int[] { mc.textRenderer.getWidth(moduleListText.get(0)) + inner + outer, moduleListText.size() * 10 };
 	}
 
-	public void drawModuleList(DrawContext drawContext, int x, int y) {
+	public void drawModuleList(GuiGraphics drawContext, int x, int y) {
 		if (moduleListText.isEmpty()) return;
 
 		int arrayCount = 0;
@@ -295,7 +295,7 @@ public class UI extends Module {
 		boolean rightAlign = x + mc.textRenderer.getWidth(moduleListText.get(0)) / 2 > mc.getWindow().getScaledWidth() / 2;
 
 		int startX = rightAlign ? x + mc.textRenderer.getWidth(moduleListText.get(0)) + 3 + (inner ? 1 : 0) + (outer ? 1 : 0) : x;
-		for (Text t : moduleListText) {
+		for (Component t : moduleListText) {
 			int color = getRainbowFromSettings(arrayCount * 40);
 			int textStart = (rightAlign ? startX - mc.textRenderer.getWidth(t) - 1 : startX + 2) + (inner ? 1 : 0) * (rightAlign ? -1 : 1);
 			int outerX = rightAlign ? textStart - 3 : textStart + mc.textRenderer.getWidth(t) + 1;
@@ -335,7 +335,7 @@ public class UI extends Module {
 		return new int[] { nameLengths.get(0) + 2, nameLengths.size() * 10 + 1 };
 	}
 
-	public void drawPlayerList(DrawContext drawContext, int x, int y) {
+	public void drawPlayerList(GuiGraphics drawContext, int x, int y) {
 		drawContext.drawTextWithShadow(mc.textRenderer, "Players:", x + 1, y + 1, 0xff0000);
 
 		int count = 1;
@@ -367,7 +367,7 @@ public class UI extends Module {
 		return new int[] { 144, 10 };
 	}
 
-	public void drawLagMeter(DrawContext drawContext, int x, int y) {
+	public void drawLagMeter(GuiGraphics drawContext, int x, int y) {
 		long time = System.currentTimeMillis();
 		if (time - lastPacket > 500) {
 			String text = "Server Lagging For: " + String.format(Locale.ENGLISH, "%.2f", (time - lastPacket) / 1000d) + "s";
@@ -377,7 +377,7 @@ public class UI extends Module {
 
 				case 0 -> drawContext.drawTextWithShadow(mc.textRenderer, text, xd, (int) (y + 1 + Math.min((time - lastPacket - 1200) / 20, 0)), 0xd0d0d0);
 				case 1 -> drawContext.drawTextWithShadow(mc.textRenderer, text, xd, y + 1,
-						(MathHelper.clamp((int) (time - lastPacket - 500) / 3, 5, 255) << 24) | 0xd0d0d0);
+						(Mth.clamp((int) (time - lastPacket - 500) / 3, 5, 255) << 24) | 0xd0d0d0);
 				case 2 -> drawContext.drawTextWithShadow(mc.textRenderer, text, xd, y + 1, 0xd0d0d0);
 			}
 		}
@@ -390,7 +390,7 @@ public class UI extends Module {
 		return new int[] { vertical ? 18 : 74, vertical ? 62 : 16 };
 	}
 
-	public void drawArmor(DrawContext drawContext, int x, int y) {
+	public void drawArmor(GuiGraphics drawContext, int x, int y) {
 		boolean vertical = getSetting(9).asToggle().getChild(0).asToggle().getState();
 
 		for (int count = 0; count < mc.player.getInventory().armor.size(); count++) {
@@ -404,7 +404,7 @@ public class UI extends Module {
 			RenderSystem.enableDepthTest();
 			//mc.getItemRenderer().renderInGuiWithOverrides(matrices, is, curX, curY);
 
-			int durcolor = is.isDamageable() ? 0xff000000 | MathHelper.hsvToRgb((float) (is.getMaxDamage() - is.getDamage()) / is.getMaxDamage() / 3.0F, 1.0F, 1.0F) : 0;
+			int durcolor = is.isDamageable() ? 0xff000000 | Mth.hsvToRgb((float) (is.getMaxDamage() - is.getDamage()) / is.getMaxDamage() / 3.0F, 1.0F, 1.0F) : 0;
 
 			drawContext.getMatrices().push();
 			drawContext.getMatrices().translate(0, 0, /*mc.getItemRenderer().zOffset +*/ 200);
@@ -451,7 +451,7 @@ public class UI extends Module {
 		return new int[] { 155, 53 };
 	}
 
-	public void drawInventory(DrawContext drawContext, int x, int y) {
+	public void drawInventory(GuiGraphics drawContext, int x, int y) {
 		if (getSetting(11).asToggle().getState()) {
 			drawContext.fill(x + 155, y, x, y + 53,
 					(getSetting(11).asToggle().getChild(0).asSlider().getValueInt() << 24) | 0x212120);
@@ -475,21 +475,21 @@ public class UI extends Module {
 	public void readPacket(EventPacket.Read event) {
 		lastPacket = System.currentTimeMillis();
 
-		if (event.getPacket() instanceof WorldTimeUpdateS2CPacket) {
+		if (event.getPacket() instanceof ClientboundSetTimePacket) {
 			long time = System.currentTimeMillis();
 			long timeOffset = Math.abs(1000 - (time - prevTime)) + 1000;
-			tps = Math.round(MathHelper.clamp(20 / (timeOffset / 1000d), 0, 20) * 100d) / 100d;
+			tps = Math.round(Mth.clamp(20 / (timeOffset / 1000d), 0, 20) * 100d) / 100d;
 			prevTime = time;
 		}
 	}
 
-	private static Text colorText(String text, float hue) {
-		return Text.literal(text).styled(s -> s.withColor(MathHelper.hsvToRgb(hue, 1f, 1f)));
+	private static Component colorText(String text, float hue) {
+		return Component.literal(text).styled(s -> s.withColor(Mth.hsvToRgb(hue, 1f, 1f)));
 	}
 
 	public static int getRainbow(float sat, float bri, double speed, int offset) {
 		double rainbowState = Math.ceil((System.currentTimeMillis() + offset) / speed) % 360;
-		return 0xff000000 | MathHelper.hsvToRgb((float) (rainbowState / 360.0), sat, bri);
+		return 0xff000000 | Mth.hsvToRgb((float) (rainbowState / 360.0), sat, bri);
 	}
 
 	public static int getRainbowFromSettings(int offset) {

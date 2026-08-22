@@ -10,13 +10,13 @@ package org.bleachhack.mixin;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.screen.TitleScreen;
-import net.minecraft.client.gui.widget.ButtonWidget;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
-import net.minecraft.text.Text;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.TitleScreen;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.network.chat.Component;
 import org.apache.commons.lang3.tuple.Triple;
 import org.bleachhack.BleachHack;
 import org.bleachhack.gui.*;
@@ -37,7 +37,7 @@ public class MixinTitleScreen extends Screen {
 
 	@Unique private static boolean firstLoad = true;
 
-	private MixinTitleScreen(Text title) {
+	private MixinTitleScreen(Component title) {
 		super(title);
 	}
 
@@ -55,7 +55,7 @@ public class MixinTitleScreen extends Screen {
 		}
 
 		if (BleachTitleScreen.customTitleScreen) {
-			MinecraftClient.getInstance().setScreen(
+			Minecraft.getInstance().setScreen(
 					new WindowManagerScreen(
 							Triple.of(new BleachTitleScreen(), "BleachHack", new ItemStack(Items.MUSIC_DISC_CAT)),
 							Triple.of(new AccountManagerScreen(), "Accounts", new ItemStack(Items.PAPER)),
@@ -72,7 +72,7 @@ public class MixinTitleScreen extends Screen {
 						}
 					});
 		} else {
-			addDrawableChild(ButtonWidget.builder(Text.literal("BH"), button -> {
+			addDrawableChild(Button.builder(Component.literal("BH"), button -> {
 				BleachTitleScreen.customTitleScreen = !BleachTitleScreen.customTitleScreen;
 				BleachFileHelper.saveMiscSetting("customTitleScreen", new JsonPrimitive(true));
 				client.setScreen(new TitleScreen(false));

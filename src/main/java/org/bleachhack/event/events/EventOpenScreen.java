@@ -8,7 +8,7 @@
  */
 package org.bleachhack.event.events;
 
-import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.gui.screens.Screen;
 import org.bleachhack.event.Event;
 
 public class EventOpenScreen extends Event {

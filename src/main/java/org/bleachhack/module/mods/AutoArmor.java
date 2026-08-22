@@ -20,17 +20,17 @@ import org.bleachhack.setting.module.SettingSlider;
 import org.bleachhack.setting.module.SettingToggle;
 import org.bleachhack.util.BleachQueue;
 
-import net.minecraft.enchantment.Enchantment;
-import net.minecraft.enchantment.EnchantmentHelper;
+import net.minecraft.world.item.enchantment.Enchantment;
+import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.minecraft.enchantment.ProtectionEnchantment;
-import net.minecraft.entity.EquipmentSlot;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.item.ArmorItem;
 import net.minecraft.item.ElytraItem;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.item.ToolItem;
-import net.minecraft.network.packet.c2s.play.UpdateSelectedSlotC2SPacket;
-import net.minecraft.screen.slot.SlotActionType;
+import net.minecraft.network.protocol.game.ServerboundSetCarriedItemPacket;
+import net.minecraft.world.inventory.ClickType;
 
 public class AutoArmor extends Module {
 
@@ -74,7 +74,7 @@ public class AutoArmor extends Module {
 					int forceMoveSlot = -1;
 					for (int s = 0; s < 36; s++) {
 						if (mc.player.getInventory().getStack(s).isEmpty()) {
-							mc.interactionManager.clickSlot(mc.player.currentScreenHandler.syncId, armorSlot, 1, SlotActionType.QUICK_MOVE, mc.player);
+							mc.interactionManager.clickSlot(mc.player.currentScreenHandler.syncId, armorSlot, 1, ClickType.QUICK_MOVE, mc.player);
 							return;
 						} else if (!(mc.player.getInventory().getStack(s).getItem() instanceof ToolItem)
 								&& !(mc.player.getInventory().getStack(s).getItem() instanceof ArmorItem)
@@ -88,13 +88,13 @@ public class AutoArmor extends Module {
 					if (forceMoveSlot != -1) {
 						//System.out.println(forceMoveSlot);
 						mc.interactionManager.clickSlot(mc.player.currentScreenHandler.syncId,
-								forceMoveSlot < 9 ? 36 + forceMoveSlot : forceMoveSlot, 1, SlotActionType.THROW, mc.player);
-						mc.interactionManager.clickSlot(mc.player.currentScreenHandler.syncId, armorSlot, 1, SlotActionType.QUICK_MOVE, mc.player);
+								forceMoveSlot < 9 ? 36 + forceMoveSlot : forceMoveSlot, 1, ClickType.THROW, mc.player);
+						mc.interactionManager.clickSlot(mc.player.currentScreenHandler.syncId, armorSlot, 1, ClickType.QUICK_MOVE, mc.player);
 						return;
 					}
 
 					/* No spots to move to, yeet the armor to not cause any bruh moments */
-					mc.interactionManager.clickSlot(mc.player.currentScreenHandler.syncId, armorSlot, 1, SlotActionType.THROW, mc.player);
+					mc.interactionManager.clickSlot(mc.player.currentScreenHandler.syncId, armorSlot, 1, ClickType.THROW, mc.player);
 					return;
 				}
 			}
@@ -123,20 +123,20 @@ public class AutoArmor extends Module {
 				if (e.getValue()[1] == -1 && e.getValue()[2] < 9) {
 					if (e.getValue()[2] != mc.player.getInventory().selectedSlot) {
 						mc.player.getInventory().selectedSlot = e.getValue()[2];
-						mc.player.networkHandler.sendPacket(new UpdateSelectedSlotC2SPacket(e.getValue()[2]));
+						mc.player.networkHandler.sendPacket(new ServerboundSetCarriedItemPacket(e.getValue()[2]));
 					}
 
-					mc.interactionManager.clickSlot(mc.player.currentScreenHandler.syncId, 36 + e.getValue()[2], 1, SlotActionType.QUICK_MOVE, mc.player);
+					mc.interactionManager.clickSlot(mc.player.currentScreenHandler.syncId, 36 + e.getValue()[2], 1, ClickType.QUICK_MOVE, mc.player);
 				} else if (mc.player.playerScreenHandler == mc.player.currentScreenHandler) {
 					/* Convert inventory slots to container slots */
 					int armorSlot = (e.getValue()[0] - 34) + (39 - e.getValue()[0]) * 2;
 					int newArmorslot = e.getValue()[2] < 9 ? 36 + e.getValue()[2] : e.getValue()[2];
 
-					mc.interactionManager.clickSlot(mc.player.currentScreenHandler.syncId, newArmorslot, 0, SlotActionType.PICKUP, mc.player);
-					mc.interactionManager.clickSlot(mc.player.currentScreenHandler.syncId, armorSlot, 0, SlotActionType.PICKUP, mc.player);
+					mc.interactionManager.clickSlot(mc.player.currentScreenHandler.syncId, newArmorslot, 0, ClickType.PICKUP, mc.player);
+					mc.interactionManager.clickSlot(mc.player.currentScreenHandler.syncId, armorSlot, 0, ClickType.PICKUP, mc.player);
 
 					if (e.getValue()[1] != -1)
-						mc.interactionManager.clickSlot(mc.player.currentScreenHandler.syncId, newArmorslot, 0, SlotActionType.PICKUP, mc.player);
+						mc.interactionManager.clickSlot(mc.player.currentScreenHandler.syncId, newArmorslot, 0, ClickType.PICKUP, mc.player);
 				}
 
 				return;

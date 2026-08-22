@@ -16,15 +16,15 @@ import com.mojang.authlib.minecraft.MinecraftProfileTexture.Type;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.SharedConstants;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.session.Session;
-import net.minecraft.client.sound.PositionedSoundInstance;
-import net.minecraft.client.util.DefaultSkinHelper;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.text.Text;
-import net.minecraft.util.Identifier;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.User;
+import net.minecraft.client.resources.sounds.SimpleSoundInstance;
+import net.minecraft.client.resources.DefaultPlayerSkin;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.Identifier;
 import org.apache.commons.lang3.tuple.Pair;
 import org.bleachhack.gui.window.Window;
 import org.bleachhack.gui.window.WindowScreen;
@@ -56,7 +56,7 @@ public class AccountManagerScreen extends WindowScreen {
 	private WindowTextWidget loginResult;
 
 	public AccountManagerScreen() {
-		super(Text.literal("Account Manager"));
+		super(Component.literal("Account Manager"));
 	}
 
 	public void init() {
@@ -73,7 +73,7 @@ public class AccountManagerScreen extends WindowScreen {
 		int listW = Math.max(140, w / 3);
 
 		// Right side
-		loginResult = mainWindow.addWidget(new WindowTextWidget(loginResult != null ? loginResult.getText() : Text.empty(), true, listW + 11, 96, 0xc0c0c0));
+		loginResult = mainWindow.addWidget(new WindowTextWidget(loginResult != null ? loginResult.getText() : Component.empty(), true, listW + 11, 96, 0xc0c0c0));
 
 		mainWindow.addWidget(new WindowButtonWidget(w - 70, h - 22, w - 3, h - 3, "Login", () -> {
 			Account account = accounts.get(selected);
@@ -82,7 +82,7 @@ public class AccountManagerScreen extends WindowScreen {
 			}
 
 			AuthenticationException exception = account.login();
-			loginResult.setText(Text.literal(exception == null ? "§aLogin Successful!" : "§c" + exception.getMessage()));
+			loginResult.setText(Component.literal(exception == null ? "§aLogin Successful!" : "§c" + exception.getMessage()));
 			account.success = exception == null ? 2 : 1;
 			saveAccounts();
 		}));
@@ -135,7 +135,7 @@ public class AccountManagerScreen extends WindowScreen {
 				() -> openAddAccWindow(AccountType.MICROSOFT, "Microsoft", new ItemStack(Items.PURPLE_GLAZED_TERRACOTTA))));*/
 	}
 
-	public void render(DrawContext drawContext, int mouseX, int mouseY, float delta) {
+	public void render(GuiGraphics drawContext, int mouseX, int mouseY, float delta) {
 		this.renderBackground(drawContext, mouseX, mouseY, delta);
 
 		drawContext.drawTextWithShadow(textRenderer, "Fabric: " + FabricLoader.getInstance().getModContainer("fabricloader").get().getMetadata().getVersion().getFriendlyString(),
@@ -147,7 +147,7 @@ public class AccountManagerScreen extends WindowScreen {
 		super.render(drawContext, mouseX, mouseY, delta);
 	}
 
-	public void onRenderWindow(DrawContext drawContext, int window, int mouseX, int mouseY) {
+	public void onRenderWindow(GuiGraphics drawContext, int window, int mouseX, int mouseY) {
 		super.onRenderWindow(drawContext, window, mouseX, mouseY);
 
 		if (window == 0) {
@@ -176,7 +176,7 @@ public class AccountManagerScreen extends WindowScreen {
 		}
 	}
 
-	private void drawEntry(DrawContext drawContext, Account acc, int x, int y, int width, int height, int color) {
+	private void drawEntry(GuiGraphics drawContext, Account acc, int x, int y, int width, int height, int color) {
 		Window.fill(drawContext, x, y, x + width, y + height, color);
 
 		if (acc.bindSkin()) {
@@ -226,7 +226,7 @@ public class AccountManagerScreen extends WindowScreen {
 
 			selected = hovered;
 			updateRightside();
-			client.getSoundManager().play(PositionedSoundInstance.master(SoundEvents.UI_BUTTON_CLICK, 1.0F));
+			client.getSoundManager().play(SimpleSoundInstance.master(SoundEvents.UI_BUTTON_CLICK, 1.0F));
 		}
 
 		return super.mouseClicked(mouseX, mouseY, button);
@@ -279,13 +279,13 @@ public class AccountManagerScreen extends WindowScreen {
 		addWindow.addWidget(new WindowButtonWidget(100, h - 20, 157, h - 3, "Add", () -> {
 			Account account = new Account(type, 0, null, null, tf.stream().map(t -> t.textField.getText()).toArray(String[]::new));
 			try {
-				Session session = account.getSession();
+				User session = account.getSession();
 				account.uuid = NO_UUID;
 				account.username = session.getUsername();
 				addAccount(account);
 				getWindow(2).closed = true;
 			} catch (AuthenticationException e) {
-				result.setText(Text.literal("§c" + e.getMessage()));
+				result.setText(Component.literal("§c" + e.getMessage()));
 			}
 		}));
 	}
@@ -295,7 +295,7 @@ public class AccountManagerScreen extends WindowScreen {
 		getWindow(0).getWidgets().removeAll(textWidgets);
 		textFieldWidgets.clear();
 		textWidgets.clear();
-		loginResult.setText(Text.empty());
+		loginResult.setText(Component.empty());
 
 		if (selected != -1) {
 			Account a = accounts.get(selected);
@@ -329,7 +329,7 @@ public class AccountManagerScreen extends WindowScreen {
 
 		if (account.uuid == null) {
 			try {
-				Session session = account.getSession();
+				User session = account.getSession();
 				account.uuid = session.getUuidOrNull().toString();
 				account.username = session.getUsername();
 				account.textures.clear();
@@ -397,7 +397,7 @@ public class AccountManagerScreen extends WindowScreen {
 
 		public AuthenticationException login() {
 			try {
-				Session session = getSession();
+				User session = getSession();
 
 			} catch (AuthenticationException e) {
 				return e;
@@ -405,7 +405,7 @@ public class AccountManagerScreen extends WindowScreen {
             return null;
         }
 
-		public Session getSession() throws AuthenticationException {
+		public User getSession() throws AuthenticationException {
 			return type.createSession(input);
 		}
 
@@ -413,7 +413,7 @@ public class AccountManagerScreen extends WindowScreen {
 			if (textures.containsKey(Type.SKIN)) {
 				RenderSystem.setShaderTexture(0, textures.get(Type.SKIN));
 			} else {
-				RenderSystem.setShaderTexture(0, DefaultSkinHelper.getTexture());
+				RenderSystem.setShaderTexture(0, DefaultPlayerSkin.getTexture());
 			}
 
 			return true;
@@ -441,9 +441,9 @@ public class AccountManagerScreen extends WindowScreen {
 				if (id.length() == 32)
 					id = id.substring(0, 8) + "-" + id.substring(8, 12) + "-" + id.substring(12, 16) + "-" + id.substring(16, 20) + "-" + id.substring(20);
 
-				return new Session(input[0], UUID.fromString(id), "", Optional.empty(), Optional.empty(), Session.AccountType.MOJANG);
+				return new User(input[0], UUID.fromString(id), "", Optional.empty(), Optional.empty(), User.AccountType.MOJANG);
 			} catch (Exception e) {
-				return new Session(input[0], UUID.randomUUID(), "", Optional.empty(), Optional.empty(), Session.AccountType.MOJANG);
+				return new User(input[0], UUID.randomUUID(), "", Optional.empty(), Optional.empty(), User.AccountType.MOJANG);
 			}
 		}, Pair.of("Username", false));
 		/*MOJANG(input -> {
@@ -466,13 +466,13 @@ public class AccountManagerScreen extends WindowScreen {
 			return inputs;
 		}
 
-		public Session createSession(String... input) throws AuthenticationException {
+		public User createSession(String... input) throws AuthenticationException {
 			return sessionCreator.apply(input);
 		}
 	}
 
 	@FunctionalInterface
 	private interface SessionCreator {
-		Session apply(String[] input) throws AuthenticationException;
+		User apply(String[] input) throws AuthenticationException;
 	}
 }

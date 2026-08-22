@@ -30,15 +30,15 @@ import org.bleachhack.util.world.EntityUtils;
 
 import com.google.gson.JsonSyntaxException;
 
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.ItemEntity;
-import net.minecraft.entity.decoration.ArmorStandEntity;
-import net.minecraft.entity.decoration.EndCrystalEntity;
-import net.minecraft.entity.mob.Monster;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.vehicle.AbstractMinecartEntity;
-import net.minecraft.entity.vehicle.BoatEntity;
-import net.minecraft.util.Identifier;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.entity.decoration.ArmorStand;
+import net.minecraft.world.entity.boss.enderdragon.EndCrystal;
+import net.minecraft.world.entity.monster.Enemy;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.vehicle.minecart.AbstractMinecart;
+import net.minecraft.world.entity.vehicle.boat.Boat;
+import net.minecraft.resources.Identifier;
 
 public class ESP extends Module {
 
@@ -130,19 +130,19 @@ public class ESP extends Module {
 		if (e == mc.player)
 			return null;
 
-		if (e instanceof PlayerEntity && getSetting(4).asToggle().getState()) {
+		if (e instanceof Player && getSetting(4).asToggle().getState()) {
 			return getSetting(4).asToggle().getChild(BleachHack.friendMang.has(e) ? 1 : 0).asColor().getRGBArray();
-		} else if (e instanceof Monster && getSetting(5).asToggle().getState()) {
+		} else if (e instanceof Enemy && getSetting(5).asToggle().getState()) {
 			return getSetting(5).asToggle().getChild(0).asColor().getRGBArray();
 		} else if (EntityUtils.isAnimal(e) && getSetting(6).asToggle().getState()) {
 			return getSetting(6).asToggle().getChild(0).asColor().getRGBArray();
 		} else if (e instanceof ItemEntity && getSetting(7).asToggle().getState()) {
 			return getSetting(7).asToggle().getChild(0).asColor().getRGBArray();
-		} else if (e instanceof EndCrystalEntity && getSetting(8).asToggle().getState()) {
+		} else if (e instanceof EndCrystal && getSetting(8).asToggle().getState()) {
 			return getSetting(8).asToggle().getChild(0).asColor().getRGBArray();
-		} else if ((e instanceof BoatEntity || e instanceof AbstractMinecartEntity) && getSetting(9).asToggle().getState()) {
+		} else if ((e instanceof Boat || e instanceof AbstractMinecart) && getSetting(9).asToggle().getState()) {
 			return getSetting(9).asToggle().getChild(0).asColor().getRGBArray();
-		} else if (e instanceof ArmorStandEntity && getSetting(10).asToggle().getState()) {
+		} else if (e instanceof ArmorStand && getSetting(10).asToggle().getState()) {
 			return getSetting(10).asToggle().getChild(0).asColor().getRGBArray();
 		}
 

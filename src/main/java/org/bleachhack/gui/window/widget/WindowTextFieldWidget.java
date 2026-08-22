@@ -1,18 +1,18 @@
 package org.bleachhack.gui.window.widget;
 
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.widget.TextFieldWidget;
-import net.minecraft.text.Text;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.network.chat.Component;
 
 
 public class WindowTextFieldWidget extends WindowWidget {
 
-	public TextFieldWidget textField;
+	public EditBox textField;
 
 	public WindowTextFieldWidget(int x, int y, int width, int height, String text) {
 		super(x, y, x + width, y + height);
-		this.textField = new TextFieldWidget(mc.textRenderer, x, y, width, height, Text.empty());
+		this.textField = new EditBox(mc.textRenderer, x, y, width, height, Component.empty());
 		this.textField.setText(text);
 		this.textField.setMaxLength(32767);
 	}
@@ -22,10 +22,10 @@ public class WindowTextFieldWidget extends WindowWidget {
 	}
 
 	@Override
-	public void render(DrawContext drawContext, int windowX, int windowY, int mouseX, int mouseY) {
+	public void render(GuiGraphics drawContext, int windowX, int windowY, int mouseX, int mouseY) {
 		textField.setX(windowX + x1);
 		textField.setY(windowY + y1);
-		textField.render(drawContext, mouseX, mouseY, MinecraftClient.getInstance().getTickDelta());
+		textField.render(drawContext, mouseX, mouseY, Minecraft.getInstance().getTickDelta());
 
 		super.render(drawContext, windowX, windowY, mouseX, mouseY);
 	}

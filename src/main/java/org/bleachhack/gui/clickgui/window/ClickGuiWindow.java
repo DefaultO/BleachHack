@@ -8,17 +8,17 @@
  */
 package org.bleachhack.gui.clickgui.window;
 
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.sound.PositionedSoundInstance;
-import net.minecraft.item.ItemStack;
-import net.minecraft.sound.SoundEvents;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.resources.sounds.SimpleSoundInstance;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.sounds.SoundEvents;
 import org.bleachhack.gui.window.Window;
 
 public abstract class ClickGuiWindow extends Window {
 
-	protected MinecraftClient mc = MinecraftClient.getInstance();
+	protected Minecraft mc = Minecraft.getInstance();
 
 	public int mouseX;
 	public int mouseY;
@@ -39,7 +39,7 @@ public abstract class ClickGuiWindow extends Window {
 		return false;
 	}
 
-	protected void drawBackground(DrawContext drawContext, int mouseX, int mouseY, TextRenderer textRend) {
+	protected void drawBackground(GuiGraphics drawContext, int mouseX, int mouseY, Font textRend) {
 		/* background */
 		drawContext.fill(x1, y1 + 1, x1 + 1, y2 - 1, 0xff6060b0);
 		horizontalGradient(x1 + 1, y1, x2 - 1, y1 + 1, 0xff6060b0, 0xff8070b0);
@@ -56,11 +56,11 @@ public abstract class ClickGuiWindow extends Window {
 		drawContext.drawText(textRend, hiding ? "+" : "_", x2 - 11, y1 + (hiding ? 3 : 1), 0xffffff, false);
 	}
 
-	public void render(DrawContext drawContext, int mouseX, int mouseY) {
+	public void render(GuiGraphics drawContext, int mouseX, int mouseY) {
 		super.render(drawContext, mouseX, mouseY);
 
 		if (rmDown && mouseOver(x1, y1, x1 + (x2 - x1), y1 + 13)) {
-			mc.getSoundManager().play(PositionedSoundInstance.master(SoundEvents.UI_BUTTON_CLICK, 1.0F));
+			mc.getSoundManager().play(SimpleSoundInstance.master(SoundEvents.UI_BUTTON_CLICK, 1.0F));
 			hiding = !hiding;
 		}
 	}

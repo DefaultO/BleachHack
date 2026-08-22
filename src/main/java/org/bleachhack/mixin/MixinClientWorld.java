@@ -8,10 +8,10 @@
  */
 package org.bleachhack.mixin;
 
-import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.render.DimensionEffects;
-import net.minecraft.client.world.ClientWorld;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.world.phys.Vec3;
 import org.bleachhack.BleachHack;
 import org.bleachhack.event.events.EventSkyRender;
 import org.bleachhack.event.events.EventTick;
@@ -25,7 +25,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-@Mixin(ClientWorld.class)
+@Mixin(ClientLevel.class)
 public class MixinClientWorld {
 
 	@Shadow @Final private DimensionEffects dimensionEffects;
@@ -41,24 +41,24 @@ public class MixinClientWorld {
 	}
 
 	@Inject(method = "getSkyColor", at = @At("HEAD"), cancellable = true)
-	public void getSkyColor(Vec3d cameraPos, float tickDelta, CallbackInfoReturnable<Vec3d> ci) {
+	public void getSkyColor(Vec3 cameraPos, float tickDelta, CallbackInfoReturnable<Vec3> ci) {
 		EventSkyRender.Color.SkyColor event = new EventSkyRender.Color.SkyColor(tickDelta);
 		BleachHack.eventBus.post(event);
 
 		if (event.isCancelled()) {
-			ci.setReturnValue(Vec3d.ZERO);
+			ci.setReturnValue(Vec3.ZERO);
 		} else if (event.getColor() != null) {
 			ci.setReturnValue(event.getColor());
 		}
 	}
 
 	@Inject(method = "getCloudsColor", at = @At("HEAD"), cancellable = true)
-	private void getCloudsColor(float f, CallbackInfoReturnable<Vec3d> ci) {
+	private void getCloudsColor(float f, CallbackInfoReturnable<Vec3> ci) {
 		EventSkyRender.Color.CloudColor event = new EventSkyRender.Color.CloudColor(f);
 		BleachHack.eventBus.post(event);
 
 		if (event.isCancelled()) {
-			ci.setReturnValue(Vec3d.ZERO);
+			ci.setReturnValue(Vec3.ZERO);
 		} else if (event.getColor() != null) {
 			ci.setReturnValue(event.getColor());
 		}
@@ -66,7 +66,7 @@ public class MixinClientWorld {
 
 	@Overwrite
 	public DimensionEffects getDimensionEffects() {
-		if (MinecraftClient.getInstance().world == null) {
+		if (Minecraft.getInstance().world == null) {
 			return dimensionEffects;
 		}
 

@@ -8,23 +8,23 @@
  */
 package org.bleachhack.event.events;
 
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.util.Identifier;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.resources.Identifier;
 import org.bleachhack.event.Event;
 
 public class EventRenderOverlay extends Event {
 
-	private DrawContext context;
+	private GuiGraphicsExtractor context;
 	private Identifier texture;
 	private float opacity;
 	
-	public EventRenderOverlay(DrawContext context, Identifier texture, float opacity) {
+	public EventRenderOverlay(GuiGraphicsExtractor context, Identifier texture, float opacity) {
 		this.context = context;
 		this.texture = texture;
 		this.opacity = opacity;
 	}
 
-	public DrawContext getMatrices() {
+	public GuiGraphicsExtractor getMatrices() {
 		return context;
 	}
 

@@ -15,17 +15,17 @@ import org.bleachhack.module.Module;
 import org.bleachhack.module.ModuleCategory;
 import org.bleachhack.setting.module.SettingToggle;
 
-import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
-import net.minecraft.enchantment.EnchantmentHelper;
-import net.minecraft.enchantment.Enchantments;
-import net.minecraft.item.ItemStack;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.item.enchantment.EnchantmentHelper;
+import net.minecraft.world.item.enchantment.Enchantments;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.item.SwordItem;
-import net.minecraft.network.packet.c2s.play.PlayerActionC2SPacket;
-import net.minecraft.network.packet.c2s.play.PlayerActionC2SPacket.Action;
-import net.minecraft.network.packet.c2s.play.UpdateSelectedSlotC2SPacket;
-import net.minecraft.screen.slot.SlotActionType;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.network.protocol.game.ServerboundPlayerActionPacket;
+import net.minecraft.network.protocol.game.ServerboundPlayerActionPacket.Action;
+import net.minecraft.network.protocol.game.ServerboundSetCarriedItemPacket;
+import net.minecraft.world.inventory.ClickType;
+import net.minecraft.core.BlockPos;
 
 public class AutoTool extends Module {
 
@@ -41,8 +41,8 @@ public class AutoTool extends Module {
 
 	@BleachSubscribe
 	public void onPacketSend(EventPacket.Send event) {
-		if (event.getPacket() instanceof PlayerActionC2SPacket) {
-			PlayerActionC2SPacket p = (PlayerActionC2SPacket) event.getPacket();
+		if (event.getPacket() instanceof ServerboundPlayerActionPacket) {
+			ServerboundPlayerActionPacket p = (ServerboundPlayerActionPacket) event.getPacket();
 
 			if (p.getAction() == Action.START_DESTROY_BLOCK) {
 				if (mc.player.isCreative() || mc.player.isSpectator())
@@ -57,14 +57,14 @@ public class AutoTool extends Module {
 				if (slot != mc.player.getInventory().selectedSlot) {
 					if (slot < 9) {
 						mc.player.getInventory().selectedSlot = slot;
-						mc.player.networkHandler.sendPacket(new UpdateSelectedSlotC2SPacket(slot));
+						mc.player.networkHandler.sendPacket(new ServerboundSetCarriedItemPacket(slot));
 					} else if (mc.player.playerScreenHandler == mc.player.currentScreenHandler) {
 						boolean itemInHand = !mc.player.getInventory().getMainHandStack().isEmpty();
-						mc.interactionManager.clickSlot(mc.player.currentScreenHandler.syncId, slot, 0, SlotActionType.PICKUP, mc.player);
-						mc.interactionManager.clickSlot(mc.player.currentScreenHandler.syncId, 36 + mc.player.getInventory().selectedSlot, 0, SlotActionType.PICKUP, mc.player);
+						mc.interactionManager.clickSlot(mc.player.currentScreenHandler.syncId, slot, 0, ClickType.PICKUP, mc.player);
+						mc.interactionManager.clickSlot(mc.player.currentScreenHandler.syncId, 36 + mc.player.getInventory().selectedSlot, 0, ClickType.PICKUP, mc.player);
 
 						if (itemInHand)
-							mc.interactionManager.clickSlot(mc.player.currentScreenHandler.syncId, slot, 0, SlotActionType.PICKUP, mc.player);
+							mc.interactionManager.clickSlot(mc.player.currentScreenHandler.syncId, slot, 0, ClickType.PICKUP, mc.player);
 					}
 				}
 			} else if (p.getAction() == Action.STOP_DESTROY_BLOCK) {
@@ -85,7 +85,7 @@ public class AutoTool extends Module {
 	public void onTick(EventTick event) {
 		if (queueSlot != -1) {
 			mc.player.getInventory().selectedSlot = queueSlot;
-			mc.player.networkHandler.sendPacket(new UpdateSelectedSlotC2SPacket(queueSlot));
+			mc.player.networkHandler.sendPacket(new ServerboundSetCarriedItemPacket(queueSlot));
 			queueSlot = -1;
 		}
 	}

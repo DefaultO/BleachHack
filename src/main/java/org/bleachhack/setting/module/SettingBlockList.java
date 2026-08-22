@@ -12,17 +12,17 @@ import java.util.Collection;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.item.ItemStack;
-import net.minecraft.registry.Registries;
+import net.minecraft.client.gui.GuiGraphics; // TODO(26.2): GuiGraphics removed; GUI draw pipeline is now GuiGraphicsExtractor + GuiRenderState. Needs window-framework migration.
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.core.registries.BuiltInRegistries;
 import org.bleachhack.setting.SettingDataHandlers;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 
-import net.minecraft.block.Block;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.item.Items;
-import net.minecraft.text.Text;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.client.Minecraft;
+import net.minecraft.world.item.Items;
+import net.minecraft.network.chat.Component;
 
 public class SettingBlockList extends SettingList<Block> {
 
@@ -36,12 +36,13 @@ public class SettingBlockList extends SettingList<Block> {
 
 	private static Collection<Block> getAllBlocks(Predicate<Block> filter) {
 		return filter == null
-				? Registries.BLOCK.stream().collect(Collectors.toList())
-						: Registries.BLOCK.stream().filter(filter).collect(Collectors.toList());
+				? BuiltInRegistries.BLOCK.stream().collect(Collectors.toList())
+						: BuiltInRegistries.BLOCK.stream().filter(filter).collect(Collectors.toList());
 	}
 
 	@Override
-	public void renderItem(MinecraftClient mc, DrawContext drawContext, Block item, int x, int y, int w, int h) {
+	// TODO(26.2): render body uses removed APIs (GuiGraphics.drawItem, RenderSystem.getModelViewStack/applyModelViewMatrix). Migrate to GuiGraphicsExtractor + Matrix3x2fStack pose() with the window framework.
+	public void renderItem(Minecraft mc, GuiGraphics drawContext, Block item, int x, int y, int w, int h) {
 		if (item == null || item.asItem() == Items.AIR) {
 			super.renderItem(mc, drawContext, item, x, y, w, h);
 		} else {
@@ -60,7 +61,7 @@ public class SettingBlockList extends SettingList<Block> {
 	}
 
 	@Override
-	public Text getName(Block item) {
+	public Component getName(Block item) {
 		return item.getName();
 	}
 }

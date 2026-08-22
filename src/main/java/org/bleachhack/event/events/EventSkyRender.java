@@ -8,25 +8,29 @@
  */
 package org.bleachhack.event.events;
 
-import net.minecraft.client.render.DimensionEffects;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.phys.Vec3;
 import org.bleachhack.event.Event;
 
 public class EventSkyRender extends Event {
 
+	// TODO(26.2): DimensionEffects (yarn) / DimensionSpecialEffects no longer exists. Sky rendering was
+	// split into SkyRenderer + DimensionType.Skybox + EnvironmentAttributes; there is no drop-in
+	// replacement type. This Properties holder (and its producers MixinClientWorld/MixinDimensionEffects
+	// and consumer Ambience, which subclasses DimensionEffects) needs a coordinated rewrite.
+	// Typed as Object to keep the holder shape intact without gutting the feature.
 	public static class Properties extends EventSkyRender {
 
-		private DimensionEffects sky;
+		private Object sky;
 
-		public Properties(DimensionEffects sky) {
+		public Properties(Object sky) {
 			this.setSky(sky);
 		}
 
-		public DimensionEffects getSky() {
+		public Object getSky() {
 			return sky;
 		}
 
-		public void setSky(DimensionEffects sky) {
+		public void setSky(Object sky) {
 			this.sky = sky;
 		}
 	}
@@ -34,7 +38,7 @@ public class EventSkyRender extends Event {
 	public static class Color extends EventSkyRender {
 
 		private float tickDelta;
-		private Vec3d color = null;
+		private Vec3 color = null;
 
 		public Color(float tickDelta) {
 			this.tickDelta = tickDelta;
@@ -44,11 +48,11 @@ public class EventSkyRender extends Event {
 			return tickDelta;
 		}
 
-		public void setColor(Vec3d color) {
+		public void setColor(Vec3 color) {
 			this.color = color;
 		}
 
-		public Vec3d getColor() {
+		public Vec3 getColor() {
 			return color;
 		}
 

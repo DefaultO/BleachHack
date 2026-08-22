@@ -12,20 +12,20 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.SharedConstants;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.TitleScreen;
-import net.minecraft.client.gui.screen.multiplayer.MultiplayerScreen;
-import net.minecraft.client.gui.screen.option.OptionsScreen;
-import net.minecraft.client.gui.screen.world.SelectWorldScreen;
-import net.minecraft.client.realms.gui.screen.RealmsMainScreen;
-import net.minecraft.client.resource.language.I18n;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Text;
-import net.minecraft.text.TextColor;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.screens.TitleScreen;
+import net.minecraft.client.gui.screens.multiplayer.JoinMultiplayerScreen;
+import net.minecraft.client.gui.screens.options.OptionsScreen;
+import net.minecraft.client.gui.screens.worldselection.SelectWorldScreen;
+import com.mojang.realmsclient.RealmsMainScreen;
+import net.minecraft.client.resources.language.I18n;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.TextColor;
 import net.minecraft.util.Util;
-import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.Mth;
 import org.bleachhack.BleachHack;
 import org.bleachhack.gui.effect.ParticleManager;
 import org.bleachhack.gui.window.Window;
@@ -58,7 +58,7 @@ public class BleachTitleScreen extends WindowScreen {
 	}
 
 	public BleachTitleScreen() {
-		super(Text.translatable("narrator.screen.title"));
+		super(Component.translatable("narrator.screen.title"));
 	}
 
 	@Override
@@ -72,14 +72,14 @@ public class BleachTitleScreen extends WindowScreen {
 
 		int w = getWindow(0).x2 - getWindow(0).x1;
 		int h = getWindow(0).y2 - getWindow(0).y1;
-		int maxY = MathHelper.clamp(h / 4 + 119, 0, h - 22);
+		int maxY = Mth.clamp(h / 4 + 119, 0, h - 22);
 
 		getWindow(0).addWidget(new WindowButtonWidget(w / 2 - 100, h / 4 + 38, w / 2 + 100, h / 4 + 58, I18n.translate("menu.singleplayer"), () ->
 			client.setScreen(new SelectWorldScreen(client.currentScreen))
 		));
 
 		getWindow(0).addWidget(new WindowButtonWidget(w / 2 - 100, h / 4 + 62, w / 2 + 100, h / 4 + 82, I18n.translate("menu.multiplayer"), () ->
-			client.setScreen(new MultiplayerScreen(client.currentScreen))
+			client.setScreen(new JoinMultiplayerScreen(client.currentScreen))
 		));
 
 		getWindow(0).addWidget(new WindowButtonWidget(w / 2 - 100, h / 4 + 86, w / 2 + 100, h / 4 + 106, I18n.translate("menu.online"), () ->
@@ -100,39 +100,39 @@ public class BleachTitleScreen extends WindowScreen {
 			client.scheduleStop()
 		));
 
-		// Main Text
-		getWindow(0).addWidget(new WindowTextWidget(Text.empty(), true, WindowTextWidget.TextAlign.MIDDLE, 3f, w / 2, h / 4 - 25, 0)
+		// Main Component
+		getWindow(0).addWidget(new WindowTextWidget(Component.empty(), true, WindowTextWidget.TextAlign.MIDDLE, 3f, w / 2, h / 4 - 25, 0)
 				.withRenderEvent((widget, ms, wx, wy) -> {
-					MutableText bhText = Text.literal("");
+					MutableComponent bhText = Component.literal("");
 
 					int i = 0;
 					for (char c: "BleachHack".toCharArray()) {
 						int fi = i++;
 						bhText.append(
-								Text.literal(String.valueOf(c)).styled(s -> s.withColor(TextColor.fromRgb(UI.getRainbowFromSettings(fi)))));
+								Component.literal(String.valueOf(c)).styled(s -> s.withColor(TextColor.fromRgb(UI.getRainbowFromSettings(fi)))));
 					}
 
 					((WindowTextWidget) widget).setText(bhText);
 				}));
 
-		// Version Text
+		// Version Component
 		getWindow(0).addWidget(new WindowTextWidget(BleachHack.VERSION, true, WindowTextWidget.TextAlign.MIDDLE, 1.5f, w / 2, h / 4 - 6, 0xffc050));
 
 		// Splash
-		getWindow(0).addWidget(new WindowTextWidget(Text.empty(), true, WindowTextWidget.TextAlign.MIDDLE, 2f, -20f, w / 2 + 80, h / 4 + 6, 0xffff00)
+		getWindow(0).addWidget(new WindowTextWidget(Component.empty(), true, WindowTextWidget.TextAlign.MIDDLE, 2f, -20f, w / 2 + 80, h / 4 + 6, 0xffff00)
 				.withRenderEvent((widget, ms, wx, wy) -> {
 					if (splash != null) {
 						WindowTextWidget windgetText = (WindowTextWidget) widget;
-						windgetText.setText(Text.literal(splash));
+						windgetText.setText(Component.literal(splash));
 						windgetText.color = (windgetText.color & 0x00ffffff) | ((splashTicks * 17) << 24);
 
-						float scale = 1.8F - MathHelper.abs(MathHelper.sin(Util.getMeasuringTimeMs() % 1000L / 1000.0F * 6.2831855F) * 0.1F);
+						float scale = 1.8F - Mth.abs(Mth.sin(Util.getMeasuringTimeMs() % 1000L / 1000.0F * 6.2831855F) * 0.1F);
 						scale = scale * 66.0F / (textRenderer.getWidth(splash) + 32);
 						windgetText.setScale(scale);
 					}
 				}));
 
-		// Update Text
+		// Update Component
 		JsonObject updateJson = BleachHack.getUpdateJson();
 		if (updateJson != null && updateJson.has("version") && updateJson.get("version").getAsInt() > BleachHack.INTVERSION) {
 			getWindow(0).addWidget(new WindowTextWidget("§6§nUpdate§6", true, 4, h - 12, 0xffffff)
@@ -143,7 +143,7 @@ public class BleachTitleScreen extends WindowScreen {
 	}
 
 	@Override
-	public void render(DrawContext drawContext, int mouseX, int mouseY, float delta) {
+	public void render(GuiGraphics drawContext, int mouseX, int mouseY, float delta) {
 		this.renderBackground(drawContext, mouseX, mouseY, delta);
 
 		int copyWidth = this.textRenderer.getWidth("Copyright Mojang AB. Do not distribute!") + 2;

@@ -2,21 +2,21 @@ package org.bleachhack.util.shader;
 
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gl.Framebuffer;
-import net.minecraft.client.gl.PostEffectProcessor;
-import net.minecraft.client.gl.ShaderProgram;
+import net.minecraft.client.Minecraft;
+import com.mojang.blaze3d.pipeline.RenderTarget;
+import net.minecraft.client.renderer.PostChain;
+import com.mojang.blaze3d.opengl.GlProgram;
 import net.minecraft.client.render.*;
 
 public class ShaderEffectWrapper {
 
-	private static MinecraftClient mc = MinecraftClient.getInstance();
+	private static Minecraft mc = Minecraft.getInstance();
 
-	private PostEffectProcessor shader;
+	private PostChain shader;
 	private int lastWidth = -1;
 	private int lastHeight = -1;
 
-	public ShaderEffectWrapper(PostEffectProcessor effect) {
+	public ShaderEffectWrapper(PostChain effect) {
 		this.shader = effect;
 	}
 
@@ -30,18 +30,18 @@ public class ShaderEffectWrapper {
 		mc.getFramebuffer().beginWrite(false);
 	}
 	
-	public Framebuffer getFramebuffer(String framebuffer) {
+	public RenderTarget getFramebuffer(String framebuffer) {
 		return shader.getSecondaryTarget(framebuffer);
 	}
 
 	public void clearFramebuffer(String framebuffer) {
-		getFramebuffer(framebuffer).clear(MinecraftClient.IS_SYSTEM_MAC);
+		getFramebuffer(framebuffer).clear(Minecraft.IS_SYSTEM_MAC);
 		mc.getFramebuffer().beginWrite(false);
 	}
 
 	public void drawFramebufferToMain(String framebuffer) {
-		Framebuffer buffer = getFramebuffer(framebuffer);
-		ShaderProgram blitshader = mc.gameRenderer.blitScreenProgram;
+		RenderTarget buffer = getFramebuffer(framebuffer);
+		GlProgram blitshader = mc.gameRenderer.blitScreenProgram;
 		blitshader.addSampler("DiffuseSampler", buffer.getColorAttachment());
 
 		double w = mc.getWindow().getFramebufferWidth();
@@ -80,11 +80,11 @@ public class ShaderEffectWrapper {
 		lastHeight = mc.getWindow().getFramebufferHeight();
 	}
 	
-	public PostEffectProcessor getShader() {
+	public PostChain getShader() {
 		return shader;
 	}
 
-	public void setShader(PostEffectProcessor shader) {
+	public void setShader(PostChain shader) {
 		this.shader = shader;
 	}
 }

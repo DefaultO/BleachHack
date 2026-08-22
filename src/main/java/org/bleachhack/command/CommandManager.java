@@ -9,10 +9,10 @@
 package org.bleachhack.command;
 
 import com.google.gson.annotations.SerializedName;
-import net.minecraft.text.HoverEvent;
+import net.minecraft.network.chat.HoverEvent;
 
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Text;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.network.chat.Component;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.ArrayUtils;
@@ -109,7 +109,7 @@ public class CommandManager {
 				} catch (CmdSyntaxException e) {
 					BleachLogger.error(e.getMessage());
 
-					MutableText text = Text.literal(Command.getPrefix() + c.getAliases()[0] + ": §f" + c.getDescription())
+					MutableComponent text = Component.literal(Command.getPrefix() + c.getAliases()[0] + ": §f" + c.getDescription())
 							.styled(s -> s.withColor(BleachLogger.INFO_COLOR));
 
 					BleachLogger.info(

@@ -20,15 +20,15 @@ import org.bleachhack.util.render.Renderer;
 import org.bleachhack.util.render.color.LineColor;
 import org.bleachhack.util.world.EntityUtils;
 
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.ItemEntity;
-import net.minecraft.entity.decoration.ArmorStandEntity;
-import net.minecraft.entity.decoration.EndCrystalEntity;
-import net.minecraft.entity.mob.Monster;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.vehicle.AbstractMinecartEntity;
-import net.minecraft.entity.vehicle.BoatEntity;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.entity.decoration.ArmorStand;
+import net.minecraft.world.entity.boss.enderdragon.EndCrystal;
+import net.minecraft.world.entity.monster.Enemy;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.vehicle.minecart.AbstractMinecart;
+import net.minecraft.world.entity.vehicle.boat.Boat;
+import net.minecraft.world.phys.Vec3;
 
 public class Tracers extends Module {
 
@@ -69,8 +69,8 @@ public class Tracers extends Module {
 			int[] col = getColor(e);
 
 			if (col != null) {
-				Vec3d vec = e.getPos().subtract(Renderer.getInterpolationOffset(e));
-				Vec3d vec2 = new Vec3d(0, 0, 75)
+				Vec3 vec = e.getPos().subtract(Renderer.getInterpolationOffset(e));
+				Vec3 vec2 = new Vec3(0, 0, 75)
 						.rotateX(-(float) Math.toRadians(mc.gameRenderer.getCamera().getPitch()))
 						.rotateY(-(float) Math.toRadians(mc.gameRenderer.getCamera().getYaw()))
 						.add(mc.cameraEntity.getEyePos());
@@ -86,19 +86,19 @@ public class Tracers extends Module {
 		if (e == mc.player)
 			return null;
 
-		if (e instanceof PlayerEntity && getSetting(0).asToggle().getState()) {
+		if (e instanceof Player && getSetting(0).asToggle().getState()) {
 			return getSetting(0).asToggle().getChild(BleachHack.friendMang.has(e) ? 1 : 0).asColor().getRGBArray();
-		} else if (e instanceof Monster && getSetting(1).asToggle().getState()) {
+		} else if (e instanceof Enemy && getSetting(1).asToggle().getState()) {
 			return getSetting(1).asToggle().getChild(0).asColor().getRGBArray();
 		} else if (EntityUtils.isAnimal(e) && getSetting(2).asToggle().getState()) {
 			return getSetting(2).asToggle().getChild(0).asColor().getRGBArray();
 		} else if (e instanceof ItemEntity && getSetting(3).asToggle().getState()) {
 			return getSetting(3).asToggle().getChild(0).asColor().getRGBArray();
-		} else if (e instanceof EndCrystalEntity && getSetting(4).asToggle().getState()) {
+		} else if (e instanceof EndCrystal && getSetting(4).asToggle().getState()) {
 			return getSetting(4).asToggle().getChild(0).asColor().getRGBArray();
-		} else if ((e instanceof BoatEntity || e instanceof AbstractMinecartEntity) && getSetting(5).asToggle().getState()) {
+		} else if ((e instanceof Boat || e instanceof AbstractMinecart) && getSetting(5).asToggle().getState()) {
 			return getSetting(5).asToggle().getChild(0).asColor().getRGBArray();
-		} else if (e instanceof ArmorStandEntity && getSetting(6).asToggle().getState()) {
+		} else if (e instanceof ArmorStand && getSetting(6).asToggle().getState()) {
 			return getSetting(6).asToggle().getChild(0).asColor().getRGBArray();
 		}
 

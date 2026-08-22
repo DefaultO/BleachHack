@@ -9,13 +9,13 @@
 package org.bleachhack.gui;
 
 import net.minecraft.block.enums.Instrument;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.render.DiffuseLighting;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
-import net.minecraft.text.Text;
+import net.minecraft.client.gui.GuiGraphics;
+import com.mojang.blaze3d.platform.Lighting;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.network.chat.Component;
 import net.minecraft.util.Util;
-import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.Mth;
 import org.apache.commons.lang3.StringUtils;
 import org.bleachhack.gui.window.Window;
 import org.bleachhack.gui.window.WindowScreen;
@@ -41,7 +41,7 @@ public class NotebotScreen extends WindowScreen {
 	private int playTick;
 
 	public NotebotScreen() {
-		super(Text.literal("Notebot Gui"));
+		super(Component.literal("Notebot Gui"));
 	}
 
 	public void init() {
@@ -71,12 +71,12 @@ public class NotebotScreen extends WindowScreen {
 		Util.getOperatingSystem().open(URI.create("https://www.youtube.com/watch?v=Z6O80jItoAk"))));
 	}
 
-	public void render(DrawContext drawContext, int mouseX, int mouseY, float delta) {
+	public void render(GuiGraphics drawContext, int mouseX, int mouseY, float delta) {
 		renderBackground(drawContext, mouseX, mouseY, delta);
 		super.render(drawContext, mouseX, mouseY, delta);
 	}
 
-	public void onRenderWindow(DrawContext drawContext, int window, int mouseX, int mouseY) {
+	public void onRenderWindow(GuiGraphics drawContext, int window, int mouseX, int mouseY) {
 		super.onRenderWindow(drawContext, window, mouseX, mouseY);
 
 		if (window == 0) {
@@ -130,9 +130,9 @@ public class NotebotScreen extends WindowScreen {
 						drawContext.drawTextWithShadow(textRenderer, StringUtils.capitalize(e.getKey().asString()) + " x" + count,
 								textX, y + 74 + c2 * 10, 0x50f050);
 
-						DiffuseLighting.enableGuiDepthLighting();
+						Lighting.enableGuiDepthLighting();
 						drawContext.drawItem(e.getValue(), textX + 55, y + 70 + c2 * 10);
-						DiffuseLighting.disableGuiDepthLighting();
+						Lighting.disableGuiDepthLighting();
 
 						c2++;
 					}
@@ -142,7 +142,7 @@ public class NotebotScreen extends WindowScreen {
 				fillButton(drawContext, x + w - w / 4 + 5, y + h - 15, x + w - 5, y + h - 5, 0xff308030, 0xff207020, mouseX, mouseY);
 				fillButton(drawContext, x + w - w / 4 - w / 8, y + h - 27, x + w - w / 4 + w / 8, y + h - 17, 0xff303080, 0xff202070, mouseX, mouseY);
 
-				int pixels = (int) Math.round(MathHelper.clamp((w / 4d) * ((double) playTick / (double) entry.length), 0, w / 4d));
+				int pixels = (int) Math.round(Mth.clamp((w / 4d) * ((double) playTick / (double) entry.length), 0, w / 4d));
 				drawContext.fill(x + w - w / 4 - w / 8, y + h - 27, (x + w - w / 4 - w / 8) + pixels, y + h - 17, 0x507050ff);
 
 				drawContext.drawTextWithShadow(textRenderer, "Delete", (int) (x + w - w / 2.8), y + h - 14, 0xff0000);
@@ -215,7 +215,7 @@ public class NotebotScreen extends WindowScreen {
 		return super.mouseClicked(mouseX, mouseY, button);
 	}
 
-	private void fillButton(DrawContext drawContext, int x1, int y1, int x2, int y2, int color, int colorHover, int mouseX, int mouseY) {
+	private void fillButton(GuiGraphics drawContext, int x1, int y1, int x2, int y2, int color, int colorHover, int mouseX, int mouseY) {
 		drawContext.fill(x1, y1, x2, y2, (mouseX > x1 && mouseX < x2 && mouseY > y1 && mouseY < y2 ? colorHover : color));
 	}
 }

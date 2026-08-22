@@ -19,15 +19,15 @@ import org.bleachhack.setting.module.SettingMode;
 import org.bleachhack.setting.module.SettingSlider;
 import org.bleachhack.setting.module.SettingToggle;
 
-import net.minecraft.entity.Entity;
-import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
-import net.minecraft.network.packet.c2s.play.VehicleMoveC2SPacket;
-import net.minecraft.network.packet.s2c.play.PlayerPositionLookS2CPacket;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
+import net.minecraft.network.protocol.game.ServerboundMoveVehiclePacket;
+import net.minecraft.network.protocol.game.ClientboundPlayerPositionPacket;
+import net.minecraft.world.phys.Vec3;
 
 public class PacketFly extends Module {
 
-	private Vec3d cachedPos;
+	private Vec3 cachedPos;
 	private int timer = 0;
 
 	public PacketFly() {
@@ -51,7 +51,7 @@ public class PacketFly extends Module {
 
 	@BleachSubscribe
 	public void onMovementPackets(EventSendMovementPackets event) {
-		mc.player.setVelocity(Vec3d.ZERO);
+		mc.player.setVelocity(Vec3.ZERO);
 		event.setCancelled(true);
 	}
 
@@ -62,8 +62,8 @@ public class PacketFly extends Module {
 
 	@BleachSubscribe
 	public void onReadPacket(EventPacket.Read event) {
-		if (event.getPacket() instanceof PlayerPositionLookS2CPacket) {
-			PlayerPositionLookS2CPacket p = (PlayerPositionLookS2CPacket) event.getPacket();
+		if (event.getPacket() instanceof ClientboundPlayerPositionPacket) {
+			ClientboundPlayerPositionPacket p = (ClientboundPlayerPositionPacket) event.getPacket();
 
 			p.yaw = mc.player.getYaw();
 			p.pitch = mc.player.getPitch();
@@ -77,15 +77,15 @@ public class PacketFly extends Module {
 
 	@BleachSubscribe
 	public void onSendPacket(EventPacket.Send event) {
-		if (event.getPacket() instanceof PlayerMoveC2SPacket.LookAndOnGround) {
+		if (event.getPacket() instanceof ServerboundMovePlayerPacket.LookAndOnGround) {
 			event.setCancelled(true);
 			return;
 		}
 
-		if (event.getPacket() instanceof PlayerMoveC2SPacket.Full) {
+		if (event.getPacket() instanceof ServerboundMovePlayerPacket.Full) {
 			event.setCancelled(true);
-			PlayerMoveC2SPacket p = (PlayerMoveC2SPacket) event.getPacket();
-			mc.player.networkHandler.sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(p.getX(0), p.getY(0), p.getZ(0), p.isOnGround()));
+			ServerboundMovePlayerPacket p = (ServerboundMovePlayerPacket) event.getPacket();
+			mc.player.networkHandler.sendPacket(new ServerboundMovePlayerPacket.PositionAndOnGround(p.getX(0), p.getY(0), p.getZ(0), p.isOnGround()));
 		}
 	}
 
@@ -98,8 +98,8 @@ public class PacketFly extends Module {
 		double vspeed = getSetting(2).asSlider().getValue();
 		timer++;
 
-		Vec3d forward = new Vec3d(0, 0, hspeed).rotateY(-(float) Math.toRadians(mc.player.getYaw()));
-		Vec3d moveVec = Vec3d.ZERO;
+		Vec3 forward = new Vec3(0, 0, hspeed).rotateY(-(float) Math.toRadians(mc.player.getYaw()));
+		Vec3 moveVec = Vec3.ZERO;
 
 		if (mc.player.input.pressingForward) {
 			moveVec = moveVec.add(forward);
@@ -132,15 +132,15 @@ public class PacketFly extends Module {
 			//target.noClip = true;
 			target.updatePositionAndAngles(cachedPos.x, cachedPos.y, cachedPos.z, mc.player.getYaw(), mc.player.getPitch());
 			if (target != mc.player) {
-				mc.player.networkHandler.sendPacket(new VehicleMoveC2SPacket(target));
+				mc.player.networkHandler.sendPacket(new ServerboundMoveVehiclePacket(target));
 			} else {
-				mc.player.networkHandler.sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(cachedPos.x, cachedPos.y, cachedPos.z, false));
-				mc.player.networkHandler.sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(cachedPos.x, cachedPos.y - 0.01, cachedPos.z, true));
+				mc.player.networkHandler.sendPacket(new ServerboundMovePlayerPacket.PositionAndOnGround(cachedPos.x, cachedPos.y, cachedPos.z, false));
+				mc.player.networkHandler.sendPacket(new ServerboundMovePlayerPacket.PositionAndOnGround(cachedPos.x, cachedPos.y - 0.01, cachedPos.z, true));
 			}
 		} else if (getSetting(0).asMode().getMode() == 1) {
-			//moveVec = Vec3d.ZERO;
+			//moveVec = Vec3.ZERO;
 			/*if (mc.player.headYaw != mc.player.yaw) {
-				mc.player.networkHandler.sendPacket(new PlayerMoveC2SPacket.LookOnly(
+				mc.player.networkHandler.sendPacket(new ServerboundMovePlayerPacket.LookOnly(
 						mc.player.headYaw, mc.player.pitch, mc.player.isOnGround()));
 				return;
 			}*/
@@ -151,14 +151,14 @@ public class PacketFly extends Module {
 				mouseY = -0.062;*/
 
 			if (timer > getSetting(3).asSlider().getValue()) {
-				moveVec = new Vec3d(0, -vspeed, 0);
+				moveVec = new Vec3(0, -vspeed, 0);
 				timer = 0;
 			}
 
-			mc.player.networkHandler.sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(
+			mc.player.networkHandler.sendPacket(new ServerboundMovePlayerPacket.PositionAndOnGround(
 					mc.player.getX() + moveVec.x, mc.player.getY() + moveVec.y, mc.player.getZ() + moveVec.z, false));
 
-			mc.player.networkHandler.sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(
+			mc.player.networkHandler.sendPacket(new ServerboundMovePlayerPacket.PositionAndOnGround(
 					mc.player.getX() + moveVec.x, mc.player.getY() - 420.69, mc.player.getZ() + moveVec.z, true));
 		}
 	}

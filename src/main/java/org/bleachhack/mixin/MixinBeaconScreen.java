@@ -8,15 +8,15 @@
  */
 package org.bleachhack.mixin;
 
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.Drawable;
-import net.minecraft.client.gui.screen.ingame.BeaconScreen;
-import net.minecraft.client.gui.screen.ingame.HandledScreen;
-import net.minecraft.client.gui.widget.ButtonWidget;
-import net.minecraft.client.gui.widget.ClickableWidget;
-import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.screen.BeaconScreenHandler;
-import net.minecraft.text.Text;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.Renderable;
+import net.minecraft.client.gui.screens.inventory.BeaconScreen;
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.AbstractWidget;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.inventory.BeaconMenu;
+import net.minecraft.network.chat.Component;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -24,26 +24,26 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(BeaconScreen.class)
-public abstract class MixinBeaconScreen extends HandledScreen<BeaconScreenHandler> {
+public abstract class MixinBeaconScreen extends AbstractContainerScreen<BeaconMenu> {
 
 	@Unique private boolean unlocked = false;
 
-	private MixinBeaconScreen(BeaconScreenHandler handler, PlayerInventory inventory, Text title) {
+	private MixinBeaconScreen(BeaconMenu handler, Inventory inventory, Component title) {
 		super(handler, inventory, title);
 	}
 
 	@Inject(method = "init", at = @At("RETURN"))
 	private void init(CallbackInfo callback) {
-		addDrawableChild(ButtonWidget.builder(Text.literal("Unlock"), button -> unlocked = true)
+		addDrawableChild(Button.builder(Component.literal("Unlock"), button -> unlocked = true)
 				.position((width - backgroundWidth) / 2 + 2, (height - backgroundHeight) / 2 - 15).size(46, 14).build());
 	}
 
 	@Inject(method = "render", at = @At("HEAD"))
-	private void render(DrawContext context, int mouseX, int mouseY, float delta, CallbackInfo ci) {
+	private void render(GuiGraphics context, int mouseX, int mouseY, float delta, CallbackInfo ci) {
 		if (unlocked) {
-			for (Drawable b: ((AccessorScreen) this).getDrawables()) {
-				if (b instanceof ClickableWidget) {
-					((ClickableWidget) b).active = true;
+			for (Renderable b: ((AccessorScreen) this).getDrawables()) {
+				if (b instanceof AbstractWidget) {
+					((AbstractWidget) b).active = true;
 				}
 			}
 		}

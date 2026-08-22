@@ -8,17 +8,17 @@
  */
 package org.bleachhack.event.events;
 
-import net.minecraft.client.util.math.MatrixStack;
+import com.mojang.blaze3d.vertex.PoseStack;
 import org.bleachhack.event.Event;
 
 public class EventWorldRender extends Event {
 
 	protected float partialTicks;
-	protected MatrixStack matrices;
+	protected PoseStack matrices;
 	
 	public static class Pre extends EventWorldRender {
 
-		public Pre(float partialTicks, MatrixStack matrices) {
+		public Pre(float partialTicks, PoseStack matrices) {
 			this.partialTicks = partialTicks;
 			this.matrices = matrices;
 		}
@@ -27,7 +27,7 @@ public class EventWorldRender extends Event {
 	
 	public static class Post extends EventWorldRender {
 
-		public Post(float partialTicks, MatrixStack matrices) {
+		public Post(float partialTicks, PoseStack matrices) {
 			this.partialTicks = partialTicks;
 			this.matrices = matrices;
 		}
@@ -38,7 +38,7 @@ public class EventWorldRender extends Event {
 		return partialTicks;
 	}
 	
-	public MatrixStack getMatrices() {
+	public PoseStack getMatrices() {
 		return matrices;
 	}
 }

@@ -7,7 +7,7 @@ import org.bleachhack.module.Module;
 import org.bleachhack.module.ModuleCategory;
 import org.bleachhack.setting.module.SettingMode;
 
-import net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket;
+import net.minecraft.network.protocol.game.ServerboundPlayerCommandPacket;
 
 public class Sneak extends Module {
 
@@ -24,7 +24,7 @@ public class Sneak extends Module {
 		mc.options.sneakKey.setPressed(false);
 
 		if (inWorld)
-			mc.player.networkHandler.sendPacket(new ClientCommandC2SPacket(mc.player, ClientCommandC2SPacket.Mode.RELEASE_SHIFT_KEY));
+			mc.player.networkHandler.sendPacket(new ServerboundPlayerCommandPacket(mc.player, ServerboundPlayerCommandPacket.Mode.RELEASE_SHIFT_KEY));
 	
 		super.onDisable(inWorld);
 	}
@@ -35,7 +35,7 @@ public class Sneak extends Module {
 
 		if (getSetting(0).asMode().getMode() == 1) {
 			if (inWorld)
-				mc.player.networkHandler.sendPacket(new ClientCommandC2SPacket(mc.player, ClientCommandC2SPacket.Mode.PRESS_SHIFT_KEY));
+				mc.player.networkHandler.sendPacket(new ServerboundPlayerCommandPacket(mc.player, ServerboundPlayerCommandPacket.Mode.PRESS_SHIFT_KEY));
 
 			packetSent = true;
 		}
@@ -46,16 +46,16 @@ public class Sneak extends Module {
 		if (getSetting(0).asMode().getMode() == 0) {
 			mc.options.sneakKey.setPressed(true);
 		} else if (getSetting(0).asMode().getMode() == 1 && !packetSent) {
-			mc.player.networkHandler.sendPacket(new ClientCommandC2SPacket(mc.player, ClientCommandC2SPacket.Mode.PRESS_SHIFT_KEY));
+			mc.player.networkHandler.sendPacket(new ServerboundPlayerCommandPacket(mc.player, ServerboundPlayerCommandPacket.Mode.PRESS_SHIFT_KEY));
 			packetSent = true;
 		}
 	}
 
 	@BleachSubscribe
 	public void onSendPacket(EventPacket.Send event) {
-		if (event.getPacket() instanceof ClientCommandC2SPacket) {
-			ClientCommandC2SPacket p = (ClientCommandC2SPacket) event.getPacket();
-			if (p.getMode() == ClientCommandC2SPacket.Mode.RELEASE_SHIFT_KEY)
+		if (event.getPacket() instanceof ServerboundPlayerCommandPacket) {
+			ServerboundPlayerCommandPacket p = (ServerboundPlayerCommandPacket) event.getPacket();
+			if (p.getMode() == ServerboundPlayerCommandPacket.Mode.RELEASE_SHIFT_KEY)
 				event.setCancelled(true);
 		}
 	}

@@ -19,13 +19,13 @@ import org.bleachhack.util.BleachLogger;
 import org.bleachhack.util.world.DamageUtils;
 import org.bleachhack.util.world.EntityUtils;
 
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.decoration.EndCrystalEntity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.Items;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.boss.enderdragon.EndCrystal;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.Items;
 
-import net.minecraft.text.Text;
+import net.minecraft.network.chat.Component;
 
 public class AutoLog extends Module {
 
@@ -58,7 +58,7 @@ public class AutoLog extends Module {
 
 	@BleachSubscribe
 	public void onTick(EventTick event) {
-		Text logText = getLogText();
+		Component logText = getLogText();
 		
 		if (smartDisabled && logText == null) {
 			smartDisabled = false;
@@ -71,7 +71,7 @@ public class AutoLog extends Module {
 		}
 	}
 
-	private Text getLogText() {
+	private Component getLogText() {
 		boolean hasTotem = mc.player.getMainHandStack().getItem() == Items.TOTEM_OF_UNDYING 
 				|| mc.player.getOffHandStack().getItem() == Items.TOTEM_OF_UNDYING;
 
@@ -81,7 +81,7 @@ public class AutoLog extends Module {
 			int health = getSetting(0).asToggle().getChild(0).asSlider().getValueInt();
 
 			if ((getSetting(0).asToggle().getChild(1).asToggle().getState() || !hasTotem) && playerHealth <= health) {
-				return Text.literal("[AutoLog] Your health (" + playerHealth + " HP) was lower than " + health + " HP.");
+				return Component.literal("[AutoLog] Your health (" + playerHealth + " HP) was lower than " + health + " HP.");
 			}
 
 			if (getSetting(0).asToggle().getChild(2).asToggle().getState() &&  mc.player.getVehicle() instanceof LivingEntity) {
@@ -89,13 +89,13 @@ public class AutoLog extends Module {
 				int vehicleHealth = (int) (vehicle.getHealth() + vehicle.getAbsorptionAmount());
 
 				if (vehicleHealth < health) {
-					return Text.literal("[AutoLog] Your vehicle health (" + vehicleHealth + " HP) was lower than " + health + " HP.");
+					return Component.literal("[AutoLog] Your vehicle health (" + vehicleHealth + " HP) was lower than " + health + " HP.");
 				}
 			}
 		}
 
 		if (getSetting(1).asToggle().getState() && !hasTotem) {
-			for (PlayerEntity player: mc.world.getPlayers()) {
+			for (Player player: mc.world.getPlayers()) {
 				if ((!getSetting(1).asToggle().getChild(0).asToggle().getState() && BleachHack.friendMang.has(player))
 						|| player == mc.player) {
 					continue;
@@ -104,15 +104,15 @@ public class AutoLog extends Module {
 				int attackDamage = (int) DamageUtils.getAttackDamage(player, mc.player);
 
 				if (player.distanceTo(mc.player) <= 6 && attackDamage >= playerHealth) {
-					return Text.literal("[AutoLog] " + player.getDisplayName().getString() + " could kill you (dealing " + attackDamage + " damage).");
+					return Component.literal("[AutoLog] " + player.getDisplayName().getString() + " could kill you (dealing " + attackDamage + " damage).");
 				}
 			}
 		}
 
 		if (getSetting(2).asToggle().getState()) {
 			for (Entity e: mc.world.getEntities()) {
-				if (e instanceof EndCrystalEntity && mc.player.distanceTo(e) <= getSetting(2).asToggle().getChild(0).asSlider().getValue()) {
-					return Text.literal("[AutoLog] End crystal appeared within range.");
+				if (e instanceof EndCrystal && mc.player.distanceTo(e) <= getSetting(2).asToggle().getChild(0).asSlider().getValue()) {
+					return Component.literal("[AutoLog] End crystal appeared within range.");
 				}
 			}
 		}
@@ -122,14 +122,14 @@ public class AutoLog extends Module {
 					? getSetting(3).asToggle().getChild(0).asToggle().getChild(0).asSlider().getValue()
 							: Double.MAX_VALUE;
 
-			for (PlayerEntity player: mc.world.getPlayers()) {
+			for (Player player: mc.world.getPlayers()) {
 				if (!EntityUtils.isOtherServerPlayer(player)
 						|| (!getSetting(3).asToggle().getChild(1).asToggle().getState() && BleachHack.friendMang.has(player))) {
 					continue;
 				}
 
 				if (player.distanceTo(mc.player) <= range) {
-					return Text.literal("[AutoLog] " + player.getDisplayName().getString() + " appeared " + (int) player.distanceTo(mc.player) + " blocks away.");
+					return Component.literal("[AutoLog] " + player.getDisplayName().getString() + " appeared " + (int) player.distanceTo(mc.player) + " blocks away.");
 				}
 			}
 		}
@@ -137,7 +137,7 @@ public class AutoLog extends Module {
 		return null;
 	}
 
-	private void log(Text reason) {
+	private void log(Component reason) {
 		mc.player.networkHandler.getConnection().disconnect(reason);
 
 		if (getSetting(4).asToggle().getState()) {

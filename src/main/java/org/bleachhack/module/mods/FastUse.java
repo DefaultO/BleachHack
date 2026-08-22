@@ -20,8 +20,8 @@ import org.bleachhack.setting.module.SettingToggle;
 
 import com.google.common.collect.Sets;
 
-import net.minecraft.item.Item;
-import net.minecraft.item.Items;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.Items;
 
 public class FastUse extends Module {
 

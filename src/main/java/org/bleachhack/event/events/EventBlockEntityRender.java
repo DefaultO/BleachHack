@@ -8,9 +8,9 @@
  */
 package org.bleachhack.event.events;
 
-import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.client.render.VertexConsumerProvider;
-import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.client.renderer.SubmitNodeCollector;
+import com.mojang.blaze3d.vertex.PoseStack;
 import org.bleachhack.event.Event;
 
 public class EventBlockEntityRender extends Event {
@@ -18,24 +18,24 @@ public class EventBlockEntityRender extends Event {
 	public static class Single extends EventBlockEntityRender {
 
 		protected BlockEntity blockEntity;
-		protected MatrixStack matrices;
-		protected VertexConsumerProvider vertex;
+		protected PoseStack matrices;
+		protected SubmitNodeCollector vertex;
 
 		public BlockEntity getBlockEntity() {
 			return blockEntity;
 		}
 
-		public MatrixStack getMatrices() {
+		public PoseStack getMatrices() {
 			return matrices;
 		}
 
-		public VertexConsumerProvider getVertex() {
+		public SubmitNodeCollector getVertex() {
 			return vertex;
 		}
 
 		public static class Pre extends Single {
 
-			public Pre(BlockEntity blockEntity, MatrixStack matrices, VertexConsumerProvider vertex) {
+			public Pre(BlockEntity blockEntity, PoseStack matrices, SubmitNodeCollector vertex) {
 				this.blockEntity = blockEntity;
 				this.matrices = matrices;
 				this.vertex = vertex;
@@ -45,17 +45,17 @@ public class EventBlockEntityRender extends Event {
 				this.blockEntity = blockEntity;
 			}
 
-			public void setMatrices(MatrixStack matrices) {
+			public void setMatrices(PoseStack matrices) {
 				this.matrices = matrices;
 			}
 
-			public void setVertex(VertexConsumerProvider vertex) {
+			public void setVertex(SubmitNodeCollector vertex) {
 				this.vertex = vertex;
 			}
 		}
 
 		public static class Post extends Single {
-			public Post(BlockEntity blockEntity, MatrixStack matrices, VertexConsumerProvider vertexConsumers) {
+			public Post(BlockEntity blockEntity, PoseStack matrices, SubmitNodeCollector vertexConsumers) {
 				this.blockEntity = blockEntity;
 				this.matrices = matrices;
 				this.vertex = vertexConsumers;

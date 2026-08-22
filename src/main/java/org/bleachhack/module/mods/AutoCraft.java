@@ -9,9 +9,9 @@ import org.bleachhack.setting.module.SettingSlider;
 import org.bleachhack.setting.module.SettingToggle;
 import org.bleachhack.util.BleachLogger;
 
-import net.minecraft.item.Item;
-import net.minecraft.screen.CraftingScreenHandler;
-import net.minecraft.screen.slot.SlotActionType;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.inventory.CraftingMenu;
+import net.minecraft.world.inventory.ClickType;
 
 public class AutoCraft extends Module {
 
@@ -49,14 +49,14 @@ public class AutoCraft extends Module {
 			return;
 		}
 
-		if (!(mc.player.currentScreenHandler instanceof CraftingScreenHandler))
+		if (!(mc.player.currentScreenHandler instanceof CraftingMenu))
 			return;
 
 		// quick hack
-		CraftingScreenHandler handler = (CraftingScreenHandler) mc.player.currentScreenHandler;
+		CraftingMenu handler = (CraftingMenu) mc.player.currentScreenHandler;
 		mc.player.getRecipeBook().setGuiOpen(handler.getCategory(), true);
 
-		CraftingScreenHandler currentScreenHandler = (CraftingScreenHandler) mc.player.currentScreenHandler;
+		CraftingMenu currentScreenHandler = (CraftingMenu) mc.player.currentScreenHandler;
 		var recipeResultCollectionList = mc.player.getRecipeBook().getOrderedResults();
 
 		boolean craftAll = getSetting(1).asToggle().getState();
@@ -68,7 +68,7 @@ public class AutoCraft extends Module {
 				if (getSetting(0).asList(Item.class).contains(output)) {
 					mc.interactionManager.clickRecipe(currentScreenHandler.syncId, recipe, craftAll);
 					mc.interactionManager.clickSlot(currentScreenHandler.syncId, 0, 0,
-							drop ? SlotActionType.THROW : SlotActionType.QUICK_MOVE, mc.player);
+							drop ? ClickType.THROW : ClickType.QUICK_MOVE, mc.player);
 
 					crafted++;
 					return;

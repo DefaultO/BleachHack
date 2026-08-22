@@ -14,8 +14,8 @@ import org.bleachhack.module.Module;
 import org.bleachhack.module.ModuleCategory;
 import org.bleachhack.setting.module.SettingSlider;
 
-import net.minecraft.network.packet.c2s.common.KeepAliveC2SPacket;
-import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
+import net.minecraft.network.protocol.common.ServerboundKeepAlivePacket;
+import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
 
 public class PlayerCrash extends Module {
 
@@ -27,8 +27,8 @@ public class PlayerCrash extends Module {
 	@BleachSubscribe
 	public void onTick(EventTick event) {
 		for (int i = 0; i < getSetting(0).asSlider().getValue(); i++) {
-			mc.player.networkHandler.sendPacket(new PlayerMoveC2SPacket.OnGroundOnly(Math.random() >= 0.5));
-			mc.player.networkHandler.sendPacket(new KeepAliveC2SPacket((int) (Math.random() * 8)));
+			mc.player.networkHandler.sendPacket(new ServerboundMovePlayerPacket.OnGroundOnly(Math.random() >= 0.5));
+			mc.player.networkHandler.sendPacket(new ServerboundKeepAlivePacket((int) (Math.random() * 8)));
 		}
 	}
 

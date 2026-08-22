@@ -28,23 +28,23 @@ import org.bleachhack.util.world.ProjectileSimulator;
 
 import com.google.common.collect.Streams;
 
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.projectile.PersistentProjectileEntity;
-import net.minecraft.entity.projectile.thrown.EggEntity;
-import net.minecraft.entity.projectile.thrown.EnderPearlEntity;
-import net.minecraft.entity.projectile.thrown.ExperienceBottleEntity;
-import net.minecraft.entity.projectile.thrown.SnowballEntity;
-import net.minecraft.entity.projectile.thrown.ThrownEntity;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.util.shape.VoxelShape;
-import net.minecraft.util.shape.VoxelShapes;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.projectile.arrow.AbstractArrow;
+import net.minecraft.world.entity.projectile.throwableitemprojectile.ThrownEgg;
+import net.minecraft.world.entity.projectile.throwableitemprojectile.ThrownEnderpearl;
+import net.minecraft.world.entity.projectile.throwableitemprojectile.ThrownExperienceBottle;
+import net.minecraft.world.entity.projectile.throwableitemprojectile.Snowball;
+import net.minecraft.world.entity.projectile.ThrowableProjectile;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.phys.shapes.VoxelShape;
+import net.minecraft.world.phys.shapes.Shapes;
 
 public class Trajectories extends Module {
 
-	private List<Triple<List<Vec3d>, Entity, BlockPos>> poses = new ArrayList<>();
+	private List<Triple<List<Vec3>, Entity, BlockPos>> poses = new ArrayList<>();
 
 	public Trajectories() {
 		super("Trajectories", KEY_UNBOUND, ModuleCategory.RENDER, "Shows the trajectories of projectiles.",
@@ -76,20 +76,20 @@ public class Trajectories extends Module {
 
 		if (getSetting(4).asToggle().getState()) {
 			for (Entity e : mc.world.getEntities()) {
-				if (e instanceof ThrownEntity || e instanceof PersistentProjectileEntity) {
+				if (e instanceof ThrowableProjectile || e instanceof AbstractArrow) {
 					if (!getSetting(4).asToggle().getChild(0).asToggle().getState()
-							&& (e instanceof SnowballEntity || e instanceof EggEntity || e instanceof EnderPearlEntity)) {
+							&& (e instanceof Snowball || e instanceof ThrownEgg || e instanceof ThrownEnderpearl)) {
 						continue;
 					}
 
-					if (!getSetting(4).asToggle().getChild(1).asToggle().getState() && e instanceof ExperienceBottleEntity) {
+					if (!getSetting(4).asToggle().getChild(1).asToggle().getState() && e instanceof ThrownExperienceBottle) {
 						continue;
 					}
 
 					if (!Streams.stream(mc.world.getBlockCollisions(e, e.getBoundingBox())).allMatch(VoxelShape::isEmpty))
 						continue;
 
-					Triple<List<Vec3d>, Entity, BlockPos> p = ProjectileSimulator.simulate(e);
+					Triple<List<Vec3>, Entity, BlockPos> p = ProjectileSimulator.simulate(e);
 
 					if (p.getLeft().size() >= 2)
 						poses.add(p);
@@ -98,7 +98,7 @@ public class Trajectories extends Module {
 		}
 
 		if (getSetting(5).asToggle().getState()) {
-			for (PlayerEntity e : mc.world.getPlayers()) {
+			for (Player e : mc.world.getPlayers()) {
 				if (e == mc.player)
 					continue;
 
@@ -118,7 +118,7 @@ public class Trajectories extends Module {
 		int[] col = getSetting(6).asColor().getRGBArray();
 		int opacity = (int) (getSetting(8).asSlider().getValueFloat() * 255);
 
-		for (Triple<List<Vec3d>, Entity, BlockPos> t : poses) {
+		for (Triple<List<Vec3>, Entity, BlockPos> t : poses) {
 			if (t.getLeft().size() >= 2) {
 				if (getSetting(0).asMode().getMode() == 0) {
 					for (int i = 1; i < t.getLeft().size(); i++) {
@@ -129,16 +129,16 @@ public class Trajectories extends Module {
 								getSetting(7).asSlider().getValueFloat());
 					}
 				} else {
-					for (Vec3d v : t.getLeft()) {
-						Renderer.drawBoxFill(new Box(v, v).expand(0.08), QuadColor.single(col[0], col[1], col[2], opacity));
+					for (Vec3 v : t.getLeft()) {
+						Renderer.drawBoxFill(new AABB(v, v).expand(0.08), QuadColor.single(col[0], col[1], col[2], opacity));
 					}
 				}
 			}
 
-			VoxelShape hitbox = t.getMiddle() != null ? VoxelShapes.cuboid(t.getMiddle().getBoundingBox())
+			VoxelShape hitbox = t.getMiddle() != null ? Shapes.cuboid(t.getMiddle().getBoundingBox())
 					: t.getRight() != null ? mc.world.getBlockState(t.getRight()).getCollisionShape(mc.world, t.getRight()).offset(t.getRight().getX(), t.getRight().getY(), t.getRight().getZ())
 							: null;
-			Vec3d lastVec = !t.getLeft().isEmpty() ? t.getLeft().get(t.getLeft().size() - 1)
+			Vec3 lastVec = !t.getLeft().isEmpty() ? t.getLeft().get(t.getLeft().size() - 1)
 					: mc.player.getEyePos();
 
 			if (hitbox != null) {
@@ -146,7 +146,7 @@ public class Trajectories extends Module {
 				Renderer.drawLine(lastVec.x, lastVec.y + 0.25, lastVec.z, lastVec.x, lastVec.y - 0.25, lastVec.z, LineColor.single(col[0], col[1], col[2], 255), 1.75f);
 				Renderer.drawLine(lastVec.x, lastVec.y, lastVec.z + 0.25, lastVec.x, lastVec.y, lastVec.z - 0.25, LineColor.single(col[0], col[1], col[2], 255), 1.75f);
 
-				for (Box box: hitbox.getBoundingBoxes()) {
+				for (AABB box: hitbox.getBoundingBoxes()) {
 					Renderer.drawBoxOutline(box, QuadColor.single(col[0], col[1], col[2], 190), 1f);
 				}
 			}

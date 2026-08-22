@@ -15,7 +15,7 @@ import org.bleachhack.module.Module;
 import org.bleachhack.module.ModuleCategory;
 import org.bleachhack.setting.module.SettingToggle;
 
-import net.minecraft.network.packet.c2s.play.HandSwingC2SPacket;
+import net.minecraft.network.protocol.game.ServerboundSwingPacket;
 
 public class NoSwing extends Module {
 
@@ -34,7 +34,7 @@ public class NoSwing extends Module {
 
 	@BleachSubscribe
 	public void onSendPacket(EventPacket.Send event) {
-		if (event.getPacket() instanceof HandSwingC2SPacket && getSetting(1).asToggle().getState()) {
+		if (event.getPacket() instanceof ServerboundSwingPacket && getSetting(1).asToggle().getState()) {
 			event.setCancelled(true);
 		}
 	}

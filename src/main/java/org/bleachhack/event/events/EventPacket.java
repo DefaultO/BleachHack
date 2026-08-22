@@ -8,7 +8,7 @@
  */
 package org.bleachhack.event.events;
 
-import net.minecraft.network.packet.Packet;
+import net.minecraft.network.protocol.Packet;
 import org.bleachhack.event.Event;
 
 /**

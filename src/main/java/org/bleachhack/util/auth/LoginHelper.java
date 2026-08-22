@@ -12,7 +12,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mojang.authlib.exceptions.AuthenticationException;
-import net.minecraft.client.session.Session;
+import net.minecraft.client.User;
 import org.bleachhack.util.BleachLogger;
 import org.bleachhack.util.io.BleachOnlineMang;
 
@@ -39,7 +39,7 @@ public final class LoginHelper {
 	private static final Pattern MS_REDIRECT_PATTERN = Pattern.compile("urlPost:'(.*?)'");
 	private static final Pattern MS_ACCESS_TOKEN_PATTERN = Pattern.compile("accessToken=(.*?)(&|$)");
 
-	/*public static Session createMojangSession(String email, String password) throws AuthenticationException {
+	/*public static User createMojangSession(String email, String password) throws AuthenticationException {
 		YggdrasilUserAuthentication auth = (YggdrasilUserAuthentication) new YggdrasilAuthenticationService(
 				Proxy.NO_PROXY, "").createUserAuthentication(Agent.MINECRAFT);
 
@@ -58,13 +58,13 @@ public final class LoginHelper {
 			throw e;
 		}
 
-		return new Session(auth.getSelectedProfile().getName(),
+		return new User(auth.getSelectedProfile().getName(),
 				auth.getSelectedProfile().getId().toString(),
 				auth.getAuthenticatedToken(),
-				Optional.empty(), Optional.empty(), Session.AccountType.MOJANG);
+				Optional.empty(), Optional.empty(), User.AccountType.MOJANG);
 	}*/
 
-	public static Session createMicrosoftSession(String email, String password) throws AuthenticationException {
+	public static User createMicrosoftSession(String email, String password) throws AuthenticationException {
 		JsonObject xsts = getXboxToken(email, password).get(1).getAsJsonObject().get("Item2").getAsJsonObject();
 		return getSessionFromXsts(
 				xsts.get("DisplayClaims").getAsJsonObject().get("xui").getAsJsonArray().get(0).getAsJsonObject().get("uhs").getAsString(),
@@ -137,7 +137,7 @@ public final class LoginHelper {
 		return JsonParser.parseString(new String(Base64.getDecoder().decode(accessMatcher.group(1)))).getAsJsonArray();
 	}
 
-	private static Session getSessionFromXsts(String xstsId, String xstsToken) throws AuthenticationException {
+	private static User getSessionFromXsts(String xstsId, String xstsToken) throws AuthenticationException {
 		HttpResponse<String> mcResponse = BleachOnlineMang.sendRequest(
 				MC_AUTH_URL,
 				"POST",
@@ -172,7 +172,8 @@ public final class LoginHelper {
 		if (String.valueOf(id).length() == 32)
 			id = UUID.fromString(String.valueOf(id).substring(0, 8) + "-" + String.valueOf(id).substring(8, 12) + "-" + String.valueOf(id).substring(12, 16) + "-" + String.valueOf(id).substring(16, 20) + "-" + String.valueOf(id).substring(20));
 
-		return new Session(profileJson.get("name").getAsString(), id, mcToken, Optional.empty(), Optional.empty(), Session.AccountType.MSA);
+		// TODO(26.2): User.AccountType was removed; the User class no longer tracks account type (MSA).
+		return new User(profileJson.get("name").getAsString(), id, mcToken, Optional.empty(), Optional.empty());
 	}
 
 	private static void throwIfInvalid(HttpResponse<?> response, boolean checkStatus, String reason) throws AuthenticationException {
@@ -189,7 +190,7 @@ public final class LoginHelper {
 		}
 	}
 
-	public static Session createMojangSession(String s, String s1) {
+	public static User createMojangSession(String s, String s1) {
         return null;
     }
 }

@@ -17,8 +17,8 @@ import org.bleachhack.setting.module.SettingMode;
 import org.bleachhack.setting.module.SettingSlider;
 import org.bleachhack.setting.module.SettingToggle;
 
-import net.minecraft.entity.effect.StatusEffectInstance;
-import net.minecraft.entity.effect.StatusEffects;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
 
 public class SpeedMine extends Module {
 
@@ -35,7 +35,7 @@ public class SpeedMine extends Module {
 	@Override
 	public void onDisable(boolean inWorld) {
 		if (inWorld)
-			mc.player.removeStatusEffect(StatusEffects.HASTE);
+			mc.player.removeStatusEffect(MobEffects.HASTE);
 
 		super.onDisable(inWorld);
 	}
@@ -43,7 +43,7 @@ public class SpeedMine extends Module {
 	@BleachSubscribe
 	public void onTick(EventTick event) {
 		if (this.getSetting(0).asMode().getMode() == 0) {
-			mc.player.addStatusEffect(new StatusEffectInstance(StatusEffects.HASTE, 1, getSetting(1).asSlider().getValueInt() - 1));
+			mc.player.addStatusEffect(new MobEffectInstance(MobEffects.HASTE, 1, getSetting(1).asSlider().getValueInt() - 1));
 		}
 	}
 

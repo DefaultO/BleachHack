@@ -8,33 +8,33 @@
  */
 package org.bleachhack.event.events;
 
-import net.minecraft.util.Hand;
-import net.minecraft.util.hit.BlockHitResult;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import org.bleachhack.event.Event;
 
 public class EventInteract extends Event {
 
 	public static class InteractItem extends EventInteract {
 
-		protected Hand hand;
+		protected InteractionHand hand;
 
-		public Hand getHand() {
+		public InteractionHand getHand() {
 			return hand;
 		}
 
-		public InteractItem(Hand hand) {
+		public InteractItem(InteractionHand hand) {
 			this.hand = hand;
 		}
 	}
 
 	public static class InteractBlock extends EventInteract {
 
-		protected Hand hand;
+		protected InteractionHand hand;
 		protected BlockHitResult hitResult;
 
-		public Hand getHand() {
+		public InteractionHand getHand() {
 			return hand;
 		}
 
@@ -42,7 +42,7 @@ public class EventInteract extends Event {
 			return hitResult;
 		}
 
-		public InteractBlock(Hand hand, BlockHitResult hitResult) {
+		public InteractBlock(InteractionHand hand, BlockHitResult hitResult) {
 			this.hand = hand;
 			this.hitResult = hitResult;
 		}

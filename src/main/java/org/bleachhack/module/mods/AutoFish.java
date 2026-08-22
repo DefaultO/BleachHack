@@ -12,11 +12,11 @@ import org.bleachhack.module.ModuleCategory;
 import org.bleachhack.setting.module.SettingMode;
 import org.bleachhack.util.InventoryUtils;
 
-import net.minecraft.enchantment.EnchantmentHelper;
-import net.minecraft.entity.projectile.FishingBobberEntity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
-import net.minecraft.util.Hand;
+import net.minecraft.world.item.enchantment.EnchantmentHelper;
+import net.minecraft.world.entity.projectile.FishingHook;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.InteractionHand;
 
 public class AutoFish extends Module {
 
@@ -41,9 +41,9 @@ public class AutoFish extends Module {
 		if (mc.player.fishHook != null) {
 			threwRod = false;
 
-			boolean caughtFish = mc.player.fishHook.getDataTracker().get(FishingBobberEntity.CAUGHT_FISH);
+			boolean caughtFish = mc.player.fishHook.getDataTracker().get(FishingHook.CAUGHT_FISH);
 			if (!reeledFish && caughtFish) {
-				Hand hand = getHandWithRod();
+				InteractionHand hand = getHandWithRod();
 				if (hand != null) {
 					// reel back
 					mc.interactionManager.interactItem(mc.player, hand);
@@ -56,7 +56,7 @@ public class AutoFish extends Module {
 		}
 
 		if (!threwRod && mc.player.fishHook == null && getSetting(0).asMode().getMode() != 2) {
-			Hand newHand = getSetting(0).asMode().getMode() == 1 ? InventoryUtils.selectSlot(getBestRodSlot()) : getHandWithRod();
+			InteractionHand newHand = getSetting(0).asMode().getMode() == 1 ? InventoryUtils.selectSlot(getBestRodSlot()) : getHandWithRod();
 			if (newHand != null) {
 				// throw again
 				mc.interactionManager.interactItem(mc.player, newHand);
@@ -66,9 +66,9 @@ public class AutoFish extends Module {
 		}
 	}
 
-	private Hand getHandWithRod() {
-		return mc.player.getMainHandStack().getItem() == Items.FISHING_ROD ? Hand.MAIN_HAND
-				: mc.player.getOffHandStack().getItem() == Items.FISHING_ROD ? Hand.OFF_HAND
+	private InteractionHand getHandWithRod() {
+		return mc.player.getMainHandStack().getItem() == Items.FISHING_ROD ? InteractionHand.MAIN_HAND
+				: mc.player.getOffHandStack().getItem() == Items.FISHING_ROD ? InteractionHand.OFF_HAND
 						: null;
 	}
 

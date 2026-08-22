@@ -8,10 +8,10 @@
  */
 package org.bleachhack.util.operation;
 
-import net.minecraft.util.Hand;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.world.phys.Vec3;
 import org.bleachhack.util.render.Renderer;
 import org.bleachhack.util.render.color.QuadColor;
 
@@ -22,14 +22,14 @@ public class RemoveOperation extends Operation {
 	}
 
 	public static OperationBlueprint blueprint(int localX, int localY, int localZ) {
-		return (origin, dir) -> new RemoveOperation(origin.add(rotate(localX, localY, localZ, dir)));
+		return (origin, dir) -> new RemoveOperation(origin.offset(rotate(localX, localY, localZ, dir)));
 	}
 
 	@Override
 	public boolean canExecute() {
-		if (mc.player.getEyePos().distanceTo(Vec3d.ofCenter(pos)) < 4.5) {
+		if (mc.player.getEyePosition().distanceTo(Vec3.atCenterOf(pos)) < 4.5) {
 			for (Direction d: Direction.values()) {
-				if (!mc.world.getBlockState(pos.offset(d)).isSideSolidFullSquare(mc.world, pos.offset(d), d.getOpposite())) {
+				if (!mc.level.getBlockState(pos.relative(d)).isFaceSturdy(mc.level, pos.relative(d), d.getOpposite())) {
 					return true;
 				}
 			}
@@ -41,11 +41,11 @@ public class RemoveOperation extends Operation {
 	@Override
 	public boolean execute() {
 		for (Direction d: Direction.values()) {
-			if (!mc.world.getBlockState(pos.offset(d)).isSideSolidFullSquare(mc.world, pos.offset(d), d.getOpposite())) {
-				mc.interactionManager.updateBlockBreakingProgress(pos, d);
-				mc.player.swingHand(Hand.MAIN_HAND);
+			if (!mc.level.getBlockState(pos.relative(d)).isFaceSturdy(mc.level, pos.relative(d), d.getOpposite())) {
+				mc.gameMode.continueDestroyBlock(pos, d);
+				mc.player.swing(InteractionHand.MAIN_HAND);
 
-				return mc.world.getBlockState(pos).isAir();
+				return mc.level.getBlockState(pos).isAir();
 			}
 		}
 
@@ -54,7 +54,7 @@ public class RemoveOperation extends Operation {
 
 	@Override
 	public boolean verify() {
-		return mc.world.getBlockState(pos).isAir();
+		return mc.level.getBlockState(pos).isAir();
 	}
 
 	@Override

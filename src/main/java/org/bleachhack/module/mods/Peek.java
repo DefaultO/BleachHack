@@ -11,7 +11,7 @@ package org.bleachhack.module.mods;
 import java.util.Arrays;
 import java.util.List;
 
-import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.GuiGraphics;
 import org.bleachhack.event.events.EventRenderTooltip;
 import org.bleachhack.eventbus.BleachSubscribe;
 import org.bleachhack.module.Module;
@@ -23,38 +23,38 @@ import org.bleachhack.util.ItemContentUtils;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 
-import net.minecraft.block.AbstractFurnaceBlock;
-import net.minecraft.block.BarrelBlock;
-import net.minecraft.block.Block;
-import net.minecraft.block.ChestBlock;
-import net.minecraft.block.DispenserBlock;
-import net.minecraft.block.HopperBlock;
-import net.minecraft.block.ShulkerBoxBlock;
-import net.minecraft.client.gui.screen.ingame.BookScreen;
-import net.minecraft.client.gui.screen.ingame.HandledScreen;
-import net.minecraft.client.gui.tooltip.TooltipComponent;
-import net.minecraft.client.render.BufferBuilder;
+import net.minecraft.world.level.block.AbstractFurnaceBlock;
+import net.minecraft.world.level.block.BarrelBlock;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.ChestBlock;
+import net.minecraft.world.level.block.DispenserBlock;
+import net.minecraft.world.level.block.HopperBlock;
+import net.minecraft.world.level.block.ShulkerBoxBlock;
+import net.minecraft.client.gui.screens.inventory.BookViewScreen;
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.client.gui.screens.inventory.tooltip.ClientTooltipComponent;
+import com.mojang.blaze3d.vertex.BufferBuilder;
 import net.minecraft.client.render.BufferRenderer;
-import net.minecraft.client.render.GameRenderer;
-import net.minecraft.client.render.RenderLayer;
-import net.minecraft.client.render.Tessellator;
-import net.minecraft.client.render.VertexConsumer;
-import net.minecraft.client.render.VertexConsumerProvider;
+import net.minecraft.client.renderer.GameRenderer;
+import net.minecraft.client.renderer.rendertype.RenderType;
+import com.mojang.blaze3d.vertex.Tesselator;
+import com.mojang.blaze3d.vertex.VertexConsumer;
+import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.render.VertexFormat;
-import net.minecraft.client.render.VertexFormats;
-import net.minecraft.item.BlockItem;
-import net.minecraft.item.FilledMapItem;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
-import net.minecraft.item.map.MapState;
-import net.minecraft.screen.slot.Slot;
-import net.minecraft.text.Text;
-import net.minecraft.util.Identifier;
+import com.mojang.blaze3d.vertex.DefaultVertexFormat;
+import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.item.MapItem;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.level.saveddata.maps.MapItemSavedData;
+import net.minecraft.world.inventory.Slot;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.Identifier;
 import org.joml.Matrix4f;
 
 public class Peek extends Module {
 
-	private static final RenderLayer MAP_BACKGROUND_CHECKERBOARD = RenderLayer.getText(new Identifier("textures/map/map_background_checkerboard.png"));
+	private static final RenderType MAP_BACKGROUND_CHECKERBOARD = RenderType.getText(new Identifier("textures/map/map_background_checkerboard.png"));
 
 	private List<List<String>> pages;
 	private int slotX = -1;
@@ -73,11 +73,11 @@ public class Peek extends Module {
 
 	@BleachSubscribe
 	public void drawScreen(EventRenderTooltip event) {
-		if (!(event.getScreen() instanceof HandledScreen)) {
+		if (!(event.getScreen() instanceof AbstractContainerScreen)) {
 			return;
 		}
 
-		Slot slot = ((HandledScreen<?>) event.getScreen()).focusedSlot;
+		Slot slot = ((AbstractContainerScreen<?>) event.getScreen()).focusedSlot;
 		if (slot == null)
 			return;
 
@@ -93,7 +93,7 @@ public class Peek extends Module {
 		event.drawContext().getMatrices().translate(0, 0, 400);
 
 		if (getSetting(0).asToggle().getState()) {
-			List<TooltipComponent> components = drawShulkerToolTip(event.drawContext(), slot, event.getMouseX(), event.getMouseY());
+			List<ClientTooltipComponent> components = drawShulkerToolTip(event.drawContext(), slot, event.getMouseX(), event.getMouseY());
 			if (components != null) {
 				if (components.isEmpty()) {
 					event.setCancelled(true);
@@ -109,7 +109,7 @@ public class Peek extends Module {
 		event.drawContext().getMatrices().pop();
 	}
 
-	public List<TooltipComponent> drawShulkerToolTip(DrawContext context, Slot slot, int mouseX, int mouseY) {
+	public List<ClientTooltipComponent> drawShulkerToolTip(GuiGraphics context, Slot slot, int mouseX, int mouseY) {
 		if (!(slot.getStack().getItem() instanceof BlockItem)) {
 			return null;
 		}
@@ -156,7 +156,7 @@ public class Peek extends Module {
 		}
 
 		if (mode == 1) {
-			return Arrays.asList(TooltipComponent.of(slot.getStack().getName().asOrderedText()));
+			return Arrays.asList(ClientTooltipComponent.of(slot.getStack().getName().asOrderedText()));
 		} else if (mode == 2) {
 			return List.of();
 		}
@@ -164,7 +164,7 @@ public class Peek extends Module {
 		return null;
 	}
 
-	public void drawBookToolTip(DrawContext drawContext, Slot slot, int mouseX, int mouseY) {
+	public void drawBookToolTip(GuiGraphics drawContext, Slot slot, int mouseX, int mouseY) {
 		if (slot.getStack().getItem() != Items.WRITABLE_BOOK && slot.getStack().getItem() != Items.WRITTEN_BOOK)
 			return;
 
@@ -190,19 +190,19 @@ public class Peek extends Module {
 
 		RenderSystem.setShader(GameRenderer::getPositionTexProgram);
 		RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
-		RenderSystem.setShaderTexture(0, BookScreen.BOOK_TEXTURE);
-		drawContext.drawTexture(BookScreen.BOOK_TEXTURE, mouseX, mouseY - 143, 0,
+		RenderSystem.setShaderTexture(0, BookViewScreen.BOOK_TEXTURE);
+		drawContext.drawTexture(BookViewScreen.BOOK_TEXTURE, mouseX, mouseY - 143, 0,
 				0, 0,
 				134, 134,
 				179, 179);
 
-		Text pageIndexText = Text.translatable("book.pageIndicator", pageCount + 1, pages.size());
+		Component pageIndexText = Component.translatable("book.pageIndicator", pageCount + 1, pages.size());
 		int pageIndexLength = mc.textRenderer.getWidth(pageIndexText);
 
 		drawContext.getMatrices().push();
 		drawContext.getMatrices().scale(0.7f, 0.7f, 1f);
 
-		//VertexConsumerProvider.Immediate immediate = VertexConsumerProvider.immediate(Tessellator.getInstance().getBuffer());
+		//MultiBufferSource.Immediate immediate = MultiBufferSource.immediate(Tesselator.getInstance().getBuffer());
 		//mc.textRenderer.draw(pageIndexText.toString(), (mouseX + 123 - pageIndexLength) * 1.43f, (mouseY - 133) * 1.43f, 0x000000, false, drawContext.getMatrices(), immediate, TextRenderer.TextLayerType.NORMAL, 0, 0);
 
 
@@ -222,13 +222,13 @@ public class Peek extends Module {
 
 	}
 
-	public void drawMapToolTip(DrawContext drawContext, Slot slot, int mouseX, int mouseY) {
+	public void drawMapToolTip(GuiGraphics drawContext, Slot slot, int mouseX, int mouseY) {
 		if (slot.getStack().getItem() != Items.FILLED_MAP) {
 			return;
 		}
 
-		Integer id = FilledMapItem.getMapId(slot.getStack());
-		MapState mapState = FilledMapItem.getMapState(id, mc.world);
+		Integer id = MapItem.getMapId(slot.getStack());
+		MapItemSavedData mapState = MapItem.getMapState(id, mc.world);
 
 		if (mapState == null) {
 			return;
@@ -240,7 +240,7 @@ public class Peek extends Module {
 		drawContext.getMatrices().translate(mouseX + 14, mouseY - 18 - 135 * scale, 0);
 		drawContext.getMatrices().scale(scale, scale, 0.0078125f);
 
-		VertexConsumerProvider.Immediate immediate = VertexConsumerProvider.immediate(Tessellator.getInstance().getBuffer());
+		MultiBufferSource.Immediate immediate = MultiBufferSource.immediate(Tesselator.getInstance().getBuffer());
 		VertexConsumer backgroundVertexer = immediate.getBuffer(MAP_BACKGROUND_CHECKERBOARD);
 		Matrix4f matrix4f = drawContext.getMatrices().peek().getPositionMatrix();
 		backgroundVertexer.vertex(matrix4f, -7f, 135f, -10f).color(255, 255, 255, 255).texture(0f, 1f).light(0xf000f0).next();
@@ -255,7 +255,7 @@ public class Peek extends Module {
 
 	}
 
-	private void renderTooltipBox(DrawContext drawContext, int x1, int y1, int x2, int y2, boolean wrap) {
+	private void renderTooltipBox(GuiGraphics drawContext, int x1, int y1, int x2, int y2, boolean wrap) {
 		int xStart = x1 + 12;
 		int yStart = y1 - 12;
 		if (wrap) {
@@ -265,9 +265,9 @@ public class Peek extends Module {
 				yStart = mc.currentScreen.height - y2 - 6;
 		}
 
-		Tessellator tessellator = Tessellator.getInstance();
+		Tesselator tessellator = Tesselator.getInstance();
 		BufferBuilder bufferBuilder = tessellator.getBuffer();
-		bufferBuilder.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_COLOR);
+		bufferBuilder.begin(VertexFormat.DrawMode.QUADS, DefaultVertexFormat.POSITION_COLOR);
 
 		Matrix4f matrix4f = drawContext.getMatrices().peek().getPositionMatrix();
 		fillGradient(matrix4f, bufferBuilder, xStart - 3, yStart - 4, xStart + x2 + 3, yStart - 3, -267386864, -267386864);

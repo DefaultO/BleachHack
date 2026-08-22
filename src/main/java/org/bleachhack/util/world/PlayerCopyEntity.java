@@ -8,43 +8,43 @@
  */
 package org.bleachhack.util.world;
 
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.network.OtherClientPlayerEntity;
-import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.player.RemotePlayer;
+import net.minecraft.world.entity.player.Player;
 
 import java.util.UUID;
 
-public class PlayerCopyEntity extends OtherClientPlayerEntity {
+public class PlayerCopyEntity extends RemotePlayer {
 
 	private boolean ghost;
 
 	public PlayerCopyEntity() {
-		this(MinecraftClient.getInstance().player);
+		this(Minecraft.getInstance().player);
 	}
 
-	public PlayerCopyEntity(PlayerEntity player) {
+	public PlayerCopyEntity(Player player) {
 		this(player, player.getX(), player.getY(), player.getZ());
 	}
 
-	public PlayerCopyEntity(PlayerEntity player, double x, double y, double z) {
-		super(MinecraftClient.getInstance().world, player.getGameProfile());
+	public PlayerCopyEntity(Player player, double x, double y, double z) {
+		super(Minecraft.getInstance().level, player.getGameProfile());
 
-		copyFrom(player);
+		restoreFrom(player);
 
 		// Cache the player textures, then switch to a random uuid
 		// because the world doesn't allow duplicate uuids in 1.17+
-		getPlayerListEntry();
-		dataTracker.set(PLAYER_MODEL_PARTS, player.getDataTracker().get(PLAYER_MODEL_PARTS));
-		setUuid(UUID.randomUUID());
+		getPlayerInfo();
+		getEntityData().set(DATA_PLAYER_MODE_CUSTOMISATION, player.getEntityData().get(DATA_PLAYER_MODE_CUSTOMISATION));
+		setUUID(UUID.randomUUID());
 	}
 
 	public void spawn() {
 		unsetRemoved();
-		MinecraftClient.getInstance().world.addEntity(this);
+		Minecraft.getInstance().level.addEntity(this);
 	}
 
 	public void despawn() {
-		MinecraftClient.getInstance().world.removeEntity(this.getId(), RemovalReason.DISCARDED);
+		Minecraft.getInstance().level.removeEntity(this.getId(), RemovalReason.DISCARDED);
 	}
 
 	public void setGhost(boolean ghost) {
@@ -57,7 +57,7 @@ public class PlayerCopyEntity extends OtherClientPlayerEntity {
 	}
 
 	@Override
-	public boolean isInvisibleTo(PlayerEntity player) {
+	public boolean isInvisibleTo(Player player) {
 		return ghost ? false : super.isInvisibleTo(player);
 	}
 }

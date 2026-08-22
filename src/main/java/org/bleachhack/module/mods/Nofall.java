@@ -14,8 +14,8 @@ import org.bleachhack.module.Module;
 import org.bleachhack.module.ModuleCategory;
 import org.bleachhack.setting.module.SettingMode;
 
-import net.minecraft.block.Blocks;
-import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
 
 public class Nofall extends Module {
 
@@ -29,14 +29,14 @@ public class Nofall extends Module {
 		if (mc.player.fallDistance > 2.5f && getSetting(0).asMode().getMode() == 0) {
 			if (mc.player.isFallFlying())
 				return;
-			mc.player.networkHandler.sendPacket(new PlayerMoveC2SPacket.OnGroundOnly(true));
+			mc.player.networkHandler.sendPacket(new ServerboundMovePlayerPacket.OnGroundOnly(true));
 		}
 
 		if (mc.player.fallDistance > 2.5f && getSetting(0).asMode().getMode() == 1 &&
 				mc.world.getBlockState(mc.player.getBlockPos().add(
 						0, (int) (-1.5 + (mc.player.getVelocity().y * 0.1)), 0)).getBlock() != Blocks.AIR) {
-			mc.player.networkHandler.sendPacket(new PlayerMoveC2SPacket.OnGroundOnly(false));
-			mc.player.networkHandler.sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(
+			mc.player.networkHandler.sendPacket(new ServerboundMovePlayerPacket.OnGroundOnly(false));
+			mc.player.networkHandler.sendPacket(new ServerboundMovePlayerPacket.PositionAndOnGround(
 					mc.player.getX(), mc.player.getY() - 420.69, mc.player.getZ(), true));
 			mc.player.fallDistance = 0;
 		}

@@ -8,25 +8,25 @@
  */
 package org.bleachhack.module.mods;
 
-import net.minecraft.block.ChestBlock;
-import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.block.entity.ChestBlockEntity;
-import net.minecraft.client.gui.screen.ingame.HandledScreen;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.network.packet.c2s.play.CloseHandledScreenC2SPacket;
-import net.minecraft.network.packet.c2s.play.PlayerInteractBlockC2SPacket;
-import net.minecraft.network.packet.s2c.play.InventoryS2CPacket;
-import net.minecraft.network.packet.s2c.play.ScreenHandlerSlotUpdateS2CPacket;
-import net.minecraft.screen.GenericContainerScreenHandler;
-import net.minecraft.screen.ScreenHandler;
-import net.minecraft.screen.slot.SlotActionType;
-import net.minecraft.text.Text;
-import net.minecraft.util.Hand;
-import net.minecraft.util.hit.BlockHitResult;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.level.block.ChestBlock;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.ChestBlockEntity;
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.network.protocol.game.ServerboundContainerClosePacket;
+import net.minecraft.network.protocol.game.ServerboundUseItemOnPacket;
+import net.minecraft.network.protocol.game.ClientboundContainerSetContentPacket;
+import net.minecraft.network.protocol.game.ClientboundContainerSetSlotPacket;
+import net.minecraft.world.inventory.ChestMenu;
+import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.inventory.ClickType;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.world.phys.Vec3;
 import org.apache.commons.lang3.RandomUtils;
 import org.bleachhack.event.events.EventOpenScreen;
 import org.bleachhack.event.events.EventPacket;
@@ -118,7 +118,7 @@ public class AutoSteal extends Module {
 										&& currentItems.get(fi).equals(mc.player.getInventory().getStack(j)))) != 1;
 
 						if (openSlot) {
-							mc.interactionManager.clickSlot(currentSyncId, i, 0, SlotActionType.QUICK_MOVE, mc.player);
+							mc.interactionManager.clickSlot(currentSyncId, i, 0, ClickType.QUICK_MOVE, mc.player);
 							currentItems.set(i, ItemStack.EMPTY);
 
 							lastSteal = currentTime + RandomUtils.nextInt(0, getSetting(2).asSlider().getValueInt() + 1);
@@ -130,21 +130,21 @@ public class AutoSteal extends Module {
 
 				if (getSetting(0).asMode().getMode() >= 1 || getSetting(3).asToggle().getState()) {
 					mc.setScreen(null);
-					mc.player.networkHandler.sendPacket(new CloseHandledScreenC2SPacket(currentSyncId));
+					mc.player.networkHandler.sendPacket(new ServerboundContainerClosePacket(currentSyncId));
 				}
 			}
 		} else if (currentItems == null && currentSyncId == -1 && getSetting(3).asToggle().getState()) {
 			for (BlockEntity be: WorldUtils.getBlockEntities()) {
 				if (!opened.containsKey(be.getPos())
 						&& be instanceof ChestBlockEntity
-						&& mc.player.getEyePos().distanceTo(Vec3d.ofCenter(be.getPos())) <= getSetting(3).asToggle().getChild(0).asSlider().getValue() + 0.25) {
+						&& mc.player.getEyePos().distanceTo(Vec3.ofCenter(be.getPos())) <= getSetting(3).asToggle().getChild(0).asSlider().getValue() + 0.25) {
 
-					Vec3d lookVec = Vec3d.ofCenter(be.getPos(), 1);
+					Vec3 lookVec = Vec3.ofCenter(be.getPos(), 1);
 					if (getSetting(3).asToggle().getChild(2).asRotate().getState()) {
 						WorldUtils.facePosAuto(lookVec.x, lookVec.y, lookVec.z, getSetting(3).asToggle().getChild(2).asRotate());
 					}
 
-					mc.interactionManager.interactBlock(mc.player, Hand.MAIN_HAND,
+					mc.interactionManager.interactBlock(mc.player, InteractionHand.MAIN_HAND,
 							new BlockHitResult(lookVec, Direction.UP, be.getPos(), false));
 					opened.put(be.getPos(), getSetting(3).asToggle().getChild(1).asSlider().getValueInt() * 20);
 					return;
@@ -167,7 +167,7 @@ public class AutoSteal extends Module {
 					}
 				}
 
-				Vec3d startPos = new Vec3d(currentPos.getX() + 0.5, currentPos.getY() + 1 + (renderItems.size() / 9) * 0.4, currentPos.getZ() + 0.5);
+				Vec3 startPos = new Vec3(currentPos.getX() + 0.5, currentPos.getY() + 1 + (renderItems.size() / 9) * 0.4, currentPos.getZ() + 0.5);
 
 				for (int i = 0; i < renderItems.size(); i++) {
 					WorldRenderer.drawGuiItem(startPos.x, startPos.y - i / 9 * 0.4, startPos.z, (4.5 - i % 9) * 0.3, 0, 0.3, renderItems.get(i));
@@ -175,13 +175,13 @@ public class AutoSteal extends Module {
 					if (renderItems.get(i).getCount() > 1) {
 						double w = mc.textRenderer.getWidth(renderItems.get(i).getCount() + "") / 220d;
 						WorldRenderer.drawText(
-								Text.literal(renderItems.get(i).getCount() + ""),
+								Component.literal(renderItems.get(i).getCount() + ""),
 								startPos.x, startPos.y - i / 9 * 0.4 - 0.04, startPos.z, (4.5 - i % 9) * 0.3 - w, 0, 0.5, false);
 					}
 				}
 			} else if (getSetting(0).asMode().getMode() == 2) {
 				WorldRenderer.drawText(
-						Text.literal("[" + currentItems.stream().filter(i -> !i.isEmpty() && !isBlacklisted(i.getItem())).count() + "]"),
+						Component.literal("[" + currentItems.stream().filter(i -> !i.isEmpty() && !isBlacklisted(i.getItem())).count() + "]"),
 						currentPos.getX() + 0.5, currentPos.getY() + 1.2, currentPos.getZ() + 0.5, 0.8, false);
 			}
 		}
@@ -192,10 +192,10 @@ public class AutoSteal extends Module {
 		currentSyncId = -1;
 
 		if (mc.player != null) {
-			if (event.getScreen() instanceof HandledScreen) {
-				ScreenHandler handler = ((HandledScreen<?>) event.getScreen()).getScreenHandler();
+			if (event.getScreen() instanceof AbstractContainerScreen) {
+				AbstractContainerMenu handler = ((AbstractContainerScreen<?>) event.getScreen()).getScreenHandler();
 
-				if (handler instanceof GenericContainerScreenHandler) {
+				if (handler instanceof ChestMenu) {
 					currentSyncId = handler.syncId;
 					lastOpen = currentTime;
 
@@ -204,24 +204,24 @@ public class AutoSteal extends Module {
 					}
 				} else {
 					currentItems = null;
-					mc.player.networkHandler.sendPacket(new CloseHandledScreenC2SPacket(currentSyncId));
+					mc.player.networkHandler.sendPacket(new ServerboundContainerClosePacket(currentSyncId));
 				}
 			} else {
 				currentItems = null;
-				mc.player.networkHandler.sendPacket(new CloseHandledScreenC2SPacket(currentSyncId));
+				mc.player.networkHandler.sendPacket(new ServerboundContainerClosePacket(currentSyncId));
 			}
 		}
 	}
 
 	@BleachSubscribe
 	public void onSendPacket(EventPacket.Send event) {
-		if (event.getPacket() instanceof CloseHandledScreenC2SPacket) {
+		if (event.getPacket() instanceof ServerboundContainerClosePacket) {
 			currentItems = null;
 			currentSyncId = -1;
 		}
 
-		if (event.getPacket() instanceof PlayerInteractBlockC2SPacket) {
-			BlockPos pos = ((PlayerInteractBlockC2SPacket) event.getPacket()).getBlockHitResult().getBlockPos();
+		if (event.getPacket() instanceof ServerboundUseItemOnPacket) {
+			BlockPos pos = ((ServerboundUseItemOnPacket) event.getPacket()).getBlockHitResult().getBlockPos();
 
 			if (mc.world.getBlockState(pos).getBlock() instanceof ChestBlock) {
 				currentPos = pos;
@@ -231,15 +231,15 @@ public class AutoSteal extends Module {
 
 	@BleachSubscribe
 	public void onReadPacket(EventPacket.Read event) {
-		if (event.getPacket() instanceof InventoryS2CPacket) {
-			InventoryS2CPacket packet = (InventoryS2CPacket) event.getPacket();
+		if (event.getPacket() instanceof ClientboundContainerSetContentPacket) {
+			ClientboundContainerSetContentPacket packet = (ClientboundContainerSetContentPacket) event.getPacket();
 
 			if ((lastOpen - currentTime >= 2 || currentItems == null) && packet.getContents().size() == 63 || packet.getContents().size() == 90) {
 				currentItems = packet.getContents().subList(0, packet.getContents().size() - 36);
 				//currentSyncId = -1;
 			}
-		} else if (currentItems != null && event.getPacket() instanceof ScreenHandlerSlotUpdateS2CPacket) {
-			ScreenHandlerSlotUpdateS2CPacket packet = (ScreenHandlerSlotUpdateS2CPacket) event.getPacket();
+		} else if (currentItems != null && event.getPacket() instanceof ClientboundContainerSetSlotPacket) {
+			ClientboundContainerSetSlotPacket packet = (ClientboundContainerSetSlotPacket) event.getPacket();
 
 			if (packet.getSyncId() == currentSyncId && packet.getSlot() >= 0 && packet.getSlot() < currentItems.size()) {
 				currentItems.set(packet.getSlot(), packet.getStack());

@@ -29,26 +29,26 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import com.mojang.authlib.GameProfile;
 
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.network.AbstractClientPlayerEntity;
-import net.minecraft.client.network.ClientPlayNetworkHandler;
-import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.client.world.ClientWorld;
-import net.minecraft.entity.MovementType;
-import net.minecraft.network.packet.c2s.play.HandSwingC2SPacket;
-import net.minecraft.util.Hand;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.player.AbstractClientPlayer;
+import net.minecraft.client.multiplayer.ClientPacketListener;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.world.entity.MoverType;
+import net.minecraft.network.protocol.game.ServerboundSwingPacket;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.phys.Vec3;
 
-@Mixin(ClientPlayerEntity.class)
-public class MixinClientPlayerEntity extends AbstractClientPlayerEntity {
+@Mixin(LocalPlayer.class)
+public class MixinClientPlayerEntity extends AbstractClientPlayer {
 
 	@Shadow private float mountJumpStrength;
 
-	@Shadow private ClientPlayNetworkHandler networkHandler;
-	@Shadow private MinecraftClient client;
+	@Shadow private ClientPacketListener networkHandler;
+	@Shadow private Minecraft client;
 
-	private MixinClientPlayerEntity(ClientWorld world, GameProfile profile) {
+	private MixinClientPlayerEntity(ClientLevel world, GameProfile profile) {
 		super(world, profile);
 	}
 
@@ -64,9 +64,9 @@ public class MixinClientPlayerEntity extends AbstractClientPlayerEntity {
 		}
 	}
 
-	@Redirect(method = "tickMovement", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/network/ClientPlayerEntity;isUsingItem()Z"),
+	@Redirect(method = "tickMovement", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/network/LocalPlayer;isUsingItem()Z"),
 			require = 0 /* TODO: meteor compatibility */)
-	private boolean tickMovement_isUsingItem(ClientPlayerEntity player) {
+	private boolean tickMovement_isUsingItem(LocalPlayer player) {
 		NoSlow noSlow = ModuleManager.getModule(NoSlow.class);
 		if (noSlow.isEnabled() && noSlow.getSetting(5).asToggle().getState())
 			return false;
@@ -75,7 +75,7 @@ public class MixinClientPlayerEntity extends AbstractClientPlayerEntity {
 	}
 
 	@Inject(method = "move", at = @At("HEAD"), cancellable = true)
-	private void move(MovementType type, Vec3d movement, CallbackInfo info) {
+	private void move(MoverType type, Vec3 movement, CallbackInfo info) {
 		EventClientMove event = new EventClientMove(type, movement);
 		BleachHack.eventBus.post(event);
 		if (event.isCancelled()) {
@@ -96,18 +96,18 @@ public class MixinClientPlayerEntity extends AbstractClientPlayerEntity {
 		}
 	}
 
-	@Redirect(method = "updateNausea", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/network/ClientPlayerEntity;closeHandledScreen()V", ordinal = 0),
+	@Redirect(method = "updateNausea", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/network/LocalPlayer;closeHandledScreen()V", ordinal = 0),
 			require = 0 /* TODO: inertia compatibility */)
-	private void updateNausea_closeHandledScreen(ClientPlayerEntity player) {
+	private void updateNausea_closeHandledScreen(LocalPlayer player) {
 		if (!ModuleManager.getModule(BetterPortal.class).isEnabled()
 				|| !ModuleManager.getModule(BetterPortal.class).getSetting(0).asToggle().getState()) {
 			closeHandledScreen();
 		}
 	}
 
-	@Redirect(method = "updateNausea", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/MinecraftClient;setScreen(Lnet/minecraft/client/gui/screen/Screen;)V", ordinal = 0),
+	@Redirect(method = "updateNausea", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/Minecraft;setScreen(Lnet/minecraft/client/gui/screen/Screen;)V", ordinal = 0),
 			require = 0 /* TODO: inertia compatibility */)
-	private void updateNausea_setScreen(MinecraftClient client, Screen screen) {
+	private void updateNausea_setScreen(Minecraft client, Screen screen) {
 		if (!ModuleManager.getModule(BetterPortal.class).isEnabled()
 				|| !ModuleManager.getModule(BetterPortal.class).getSetting(0).asToggle().getState()) {
 			client.setScreen(screen);
@@ -115,7 +115,7 @@ public class MixinClientPlayerEntity extends AbstractClientPlayerEntity {
 	}
 
 	@Overwrite
-	public void swingHand(Hand hand) {
+	public void swingHand(InteractionHand hand) {
 		EventSwingHand event = new EventSwingHand(hand);
 		BleachHack.eventBus.post(event);
 
@@ -123,7 +123,7 @@ public class MixinClientPlayerEntity extends AbstractClientPlayerEntity {
 			super.swingHand(event.getHand());
 		}
 
-		networkHandler.sendPacket(new HandSwingC2SPacket(hand));
+		networkHandler.sendPacket(new ServerboundSwingPacket(hand));
 	}
 
 	@Override

@@ -1,11 +1,11 @@
 package org.bleachhack.gui.window.widget;
 
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
 
 public abstract class WindowWidget {
 
-	protected static MinecraftClient mc = MinecraftClient.getInstance();
+	protected static Minecraft mc = Minecraft.getInstance();
 
 	public int x1;
 	public int y1;
@@ -28,7 +28,7 @@ public abstract class WindowWidget {
 		this.y2 = y2;
 	}
 
-	public void render(DrawContext drawContext, int windowX, int windowY, int mouseX, int mouseY) {
+	public void render(GuiGraphics drawContext, int windowX, int windowY, int mouseX, int mouseY) {
 		if (renderEvent != null) {
 			renderEvent.accept(this, drawContext, windowX, windowY);
 		}
@@ -89,7 +89,7 @@ public abstract class WindowWidget {
 	
 	@FunctionalInterface
 	public interface RenderEvent {
-		void accept(WindowWidget widget, DrawContext drawContext, int wx, int wy);
+		void accept(WindowWidget widget, GuiGraphics drawContext, int wx, int wy);
 	}
 	
 	@FunctionalInterface

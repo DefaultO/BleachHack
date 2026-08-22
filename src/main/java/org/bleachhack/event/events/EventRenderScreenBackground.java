@@ -8,19 +8,20 @@
  */
 package org.bleachhack.event.events;
 
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import org.bleachhack.event.Event;
+import org.joml.Matrix3x2fStack;
 
 public class EventRenderScreenBackground extends Event {
 	
-	public DrawContext context;
+	public GuiGraphicsExtractor context;
 
-	public EventRenderScreenBackground(DrawContext context) {
+	public EventRenderScreenBackground(GuiGraphicsExtractor context) {
 		this.context = context;
 	}
 
-	public MatrixStack getMatrices() {
-		return context.getMatrices();
+	// TODO(26.2): GUI transform is now a 2D Matrix3x2fStack (was 3D PoseStack); callers using z-translate need adapting.
+	public Matrix3x2fStack getMatrices() {
+		return context.pose();
 	}
 }

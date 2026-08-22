@@ -14,25 +14,25 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 import com.mojang.authlib.GameProfile;
-import net.minecraft.client.network.PlayerListEntry;
-import net.minecraft.client.resource.language.I18n;
-import net.minecraft.enchantment.Enchantment;
-import net.minecraft.enchantment.EnchantmentHelper;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.ItemEntity;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.decoration.ArmorStandEntity;
-import net.minecraft.entity.mob.Monster;
-import net.minecraft.entity.passive.FoxEntity;
-import net.minecraft.entity.passive.AbstractHorseEntity;
-import net.minecraft.entity.passive.TameableEntity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.ItemStack;
+import net.minecraft.client.multiplayer.PlayerInfo;
+import net.minecraft.client.resources.language.I18n;
+import net.minecraft.world.item.enchantment.Enchantment;
+import net.minecraft.world.item.enchantment.EnchantmentHelper;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.decoration.ArmorStand;
+import net.minecraft.world.entity.monster.Enemy;
+import net.minecraft.world.entity.animal.fox.Fox;
+import net.minecraft.world.entity.animal.equine.AbstractHorse;
+import net.minecraft.world.entity.TamableAnimal;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.text.*;
-import net.minecraft.util.Formatting;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.GameMode;
+import net.minecraft.ChatFormatting;
+import net.minecraft.util.Mth;
+import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.level.GameType;
 import org.apache.commons.lang3.StringUtils;
 import org.bleachhack.BleachHack;
 import org.bleachhack.command.commands.CmdEntityStats;
@@ -148,11 +148,11 @@ public class Nametags extends Module {
 
 	@BleachSubscribe
 	public void onLivingLabelRender(EventEntityRender.Single.Label event) {
-		if ((event.getEntity() instanceof PlayerEntity && getSetting(1).asToggle().getState())
+		if ((event.getEntity() instanceof Player && getSetting(1).asToggle().getState())
 				|| (EntityUtils.isAnimal(event.getEntity()) && getSetting(2).asToggle().getState())
-				|| (event.getEntity() instanceof Monster && getSetting(3).asToggle().getState())
+				|| (event.getEntity() instanceof Enemy && getSetting(3).asToggle().getState())
 				|| (event.getEntity() instanceof ItemEntity && getSetting(4).asToggle().getState())
-				|| (event.getEntity() instanceof ArmorStandEntity && getSetting(5).asToggle().getState()))
+				|| (event.getEntity() instanceof ArmorStand && getSetting(5).asToggle().getState()))
 			event.setCancelled(true);
 	}
 
@@ -163,12 +163,12 @@ public class Nametags extends Module {
 				continue;
 			}
 
-			Vec3d rPos = entity.getPos().subtract(Renderer.getInterpolationOffset(entity)).add(0, entity.getHeight() + 0.25, 0);
+			Vec3 rPos = entity.getPos().subtract(Renderer.getInterpolationOffset(entity)).add(0, entity.getHeight() + 0.25, 0);
 
-			if (entity instanceof PlayerEntity && getSetting(1).asToggle().getState()) {
+			if (entity instanceof Player && getSetting(1).asToggle().getState()) {
 				double scale = Math.max(getSetting(1).asToggle().getChild(0).asSlider().getValue() * (mc.cameraEntity.distanceTo(entity) / 20), 1);
 
-				List<Text> lines = getPlayerLines((PlayerEntity) entity);
+				List<Text> lines = getPlayerLines((Player) entity);
 				drawLines(rPos.x, rPos.y, rPos.z, scale, lines);
 
 				if (getSetting(1).asToggle().getChild(1).asToggle().getState()) {
@@ -180,10 +180,10 @@ public class Nametags extends Module {
 				List<Text> lines = getAnimalLines((LivingEntity) entity);
 				drawLines(rPos.x, rPos.y, rPos.z, scale, lines);
 
-				if (getSetting(2).asToggle().getChild(1).asToggle().getState() && entity instanceof FoxEntity) {
-					drawItems(rPos.x, rPos.y + (lines.size() + 1) * 0.25 * scale, rPos.z, scale, List.of(((FoxEntity) entity).getMainHandStack()));
+				if (getSetting(2).asToggle().getChild(1).asToggle().getState() && entity instanceof Fox) {
+					drawItems(rPos.x, rPos.y + (lines.size() + 1) * 0.25 * scale, rPos.z, scale, List.of(((Fox) entity).getMainHandStack()));
 				}
-			} else if (entity instanceof Monster && getSetting(3).asToggle().getState()) {
+			} else if (entity instanceof Enemy && getSetting(3).asToggle().getState()) {
 				double scale = Math.max(getSetting(3).asToggle().getChild(0).asSlider().getValue() * (mc.cameraEntity.distanceTo(entity) / 20), 1);
 
 				List<Text> lines = getMobLines((LivingEntity) entity);
@@ -197,7 +197,7 @@ public class Nametags extends Module {
 
 				List<Text> lines = getItemLines((ItemEntity) entity);
 				drawLines(rPos.x, rPos.y, rPos.z, scale, lines);
-			} else if (entity instanceof ArmorStandEntity && getSetting(5).asToggle().getState()) {
+			} else if (entity instanceof ArmorStand && getSetting(5).asToggle().getState()) {
 				double scale = Math.max(getSetting(5).asToggle().getChild(0).asSlider().getValue() * (mc.cameraEntity.distanceTo(entity) / 20), 1);
 
 				drawItems(rPos.x, rPos.y + 0.25 * scale, rPos.z, scale, getMainEquipment(entity));
@@ -255,18 +255,18 @@ public class Nametags extends Module {
 		return list;
 	}
 
-	public List<Text> getPlayerLines(PlayerEntity player) {
+	public List<Text> getPlayerLines(Player player) {
 		List<Text> lines = new ArrayList<>();
 		List<Text> mainText = new ArrayList<>();
 
-		PlayerListEntry playerEntry = mc.player.networkHandler.getPlayerListEntry(player.getGameProfile().getId());
+		PlayerInfo playerEntry = mc.player.networkHandler.getPlayerListEntry(player.getGameProfile().getId());
 
 		if (getSetting(1).asToggle().getChild(4).asToggle().getState() && playerEntry != null) { // Ping
-			mainText.add(Text.literal(playerEntry.getLatency() + "ms").formatted(Formatting.GRAY));
+			mainText.add(Text.literal(playerEntry.getLatency() + "ms").formatted(ChatFormatting.GRAY));
 		}
 
 		if (getSetting(1).asToggle().getChild(2).asToggle().getState()) { // Name
-			mainText.add(((MutableText) player.getName()).formatted(BleachHack.friendMang.has(player) ? Formatting.AQUA : Formatting.RED));
+			mainText.add(((MutableText) player.getName()).formatted(BleachHack.friendMang.has(player) ? ChatFormatting.AQUA : ChatFormatting.RED));
 		}
 
 		if (getSetting(1).asToggle().getChild(3).asToggle().getState()) { // Health
@@ -278,7 +278,7 @@ public class Nametags extends Module {
 		}
 
 		if (getSetting(1).asToggle().getChild(5).asToggle().getState() && playerEntry != null) { // GM
-			mainText.add(Text.literal("[" + playerEntry.getGameMode().toString().substring(0, playerEntry.getGameMode() == GameMode.SPECTATOR ? 2 : 1) + "]").formatted(Formatting.GOLD));
+			mainText.add(Text.literal("[" + playerEntry.getGameMode().toString().substring(0, playerEntry.getGameMode() == GameType.SPECTATOR ? 2 : 1) + "]").formatted(ChatFormatting.GOLD));
 		}
 
 		if (!mainText.isEmpty())
@@ -290,27 +290,27 @@ public class Nametags extends Module {
 	public List<Text> getAnimalLines(LivingEntity animal) {
 		List<Text> lines = new ArrayList<>();
 
-		if (animal instanceof AbstractHorseEntity || animal instanceof TameableEntity) {
-			boolean tame = animal instanceof AbstractHorseEntity
-					? ((AbstractHorseEntity) animal).isTame() : ((TameableEntity) animal).isTamed();
+		if (animal instanceof AbstractHorse || animal instanceof TamableAnimal) {
+			boolean tame = animal instanceof AbstractHorse
+					? ((AbstractHorse) animal).isTame() : ((TamableAnimal) animal).isTamed();
 
-			UUID ownerUUID = animal instanceof AbstractHorseEntity
-					? ((AbstractHorseEntity) animal).getOwnerUuid() : ((TameableEntity) animal).getOwnerUuid();
+			UUID ownerUUID = animal instanceof AbstractHorse
+					? ((AbstractHorse) animal).getOwnerUuid() : ((TamableAnimal) animal).getOwnerUuid();
 
 			if (getSetting(2).asToggle().getChild(4).asToggle().getState() && !animal.isBaby()
 					&& (getSetting(2).asToggle().getChild(4).asToggle().getChild(0).asMode().getMode() != 1 || tame)) {
-				lines.add(0, Text.literal(tame ? "Tamed: Yes" : "Tamed: No").formatted(tame ? Formatting.GREEN : Formatting.RED));
+				lines.add(0, Text.literal(tame ? "Tamed: Yes" : "Tamed: No").formatted(tame ? ChatFormatting.GREEN : ChatFormatting.RED));
 			}
 
 			if (getSetting(2).asToggle().getChild(5).asToggle().getState() && ownerUUID != null) {
 				if (uuidCache.containsKey(ownerUUID)) {
-					lines.add(0, Text.literal("Owner: " + uuidCache.get(ownerUUID)).formatted(Formatting.GREEN));
+					lines.add(0, Text.literal("Owner: " + uuidCache.get(ownerUUID)).formatted(ChatFormatting.GREEN));
 				} else if (failedUUIDs.contains(ownerUUID)) {
-					lines.add(0, Text.literal("Owner: " + Formatting.GRAY + "Invalid UUID!").formatted(Formatting.GREEN));
+					lines.add(0, Text.literal("Owner: " + ChatFormatting.GRAY + "Invalid UUID!").formatted(ChatFormatting.GREEN));
 				} else {
 					// Try to see if the owner is online on the server before calling the mojang api
 					Optional<GameProfile> owner = mc.player.networkHandler.getPlayerList().stream()
-							.map(PlayerListEntry::getProfile)
+							.map(PlayerInfo::getProfile)
 							.filter(profile -> profile != null && ownerUUID.equals(profile.getId()) && profile.getName() != null)
 							.findFirst();
 
@@ -320,23 +320,23 @@ public class Nametags extends Module {
 						uuidQueue.add(ownerUUID);
 					}
 
-					lines.add(0, Text.literal("Owner: " + Formatting.GRAY + "Loading...").formatted(Formatting.GREEN));
+					lines.add(0, Text.literal("Owner: " + ChatFormatting.GRAY + "Loading...").formatted(ChatFormatting.GREEN));
 				}
 			}
 
-			if (getSetting(2).asToggle().getChild(6).asToggle().getState() && animal instanceof AbstractHorseEntity) {
-				AbstractHorseEntity he = (AbstractHorseEntity) animal;
+			if (getSetting(2).asToggle().getChild(6).asToggle().getState() && animal instanceof AbstractHorse) {
+				AbstractHorse he = (AbstractHorse) animal;
 
 				lines.add(0, Text.literal(
-						CmdEntityStats.getSpeed(he) + " m/s" + Formatting.GRAY + " | " + Formatting.RESET + CmdEntityStats.getJumpHeight(he) + " Jump")
-						.formatted(Formatting.GREEN));
+						CmdEntityStats.getSpeed(he) + " m/s" + ChatFormatting.GRAY + " | " + ChatFormatting.RESET + CmdEntityStats.getJumpHeight(he) + " Jump")
+						.formatted(ChatFormatting.GREEN));
 			}
 		}
 		
 		List<Text> mainText = new ArrayList<>();
 
 		if (getSetting(2).asToggle().getChild(2).asToggle().getState()) { // Name
-			mainText.add(((MutableText) animal.getName()).formatted(Formatting.GREEN));
+			mainText.add(((MutableText) animal.getName()).formatted(ChatFormatting.GREEN));
 		}
 
 		if (getSetting(2).asToggle().getChild(3).asToggle().getState()) { // Health
@@ -358,7 +358,7 @@ public class Nametags extends Module {
 		List<Text> mainText = new ArrayList<>();
 
 		if (getSetting(3).asToggle().getChild(2).asToggle().getState()) { // Name
-			mainText.add(((MutableText) mob.getName()).formatted(Formatting.DARK_PURPLE));
+			mainText.add(((MutableText) mob.getName()).formatted(ChatFormatting.DARK_PURPLE));
 		}
 
 		if (getSetting(3).asToggle().getChild(3).asToggle().getState()) { // Health
@@ -380,12 +380,12 @@ public class Nametags extends Module {
 
 		if (!item.getName().getString().equals(item.getStack().getName().getString()) && getSetting(4).asToggle().getChild(1).asToggle().getState()) {
 			lines.add(
-					Text.literal("\"").formatted(Formatting.GOLD)
-					.append(((MutableText) item.getStack().getName()).formatted(Formatting.YELLOW))
-					.append(Text.literal("\"").formatted(Formatting.GOLD)));
+					Text.literal("\"").formatted(ChatFormatting.GOLD)
+					.append(((MutableText) item.getStack().getName()).formatted(ChatFormatting.YELLOW))
+					.append(Text.literal("\"").formatted(ChatFormatting.GOLD)));
 		}
 
-		lines.add(((MutableText) item.getName()).formatted(Formatting.GOLD).append(getSetting(4).asToggle().getChild(2).asToggle().getState() ? Formatting.YELLOW + " [x" + item.getStack().getCount() + "]" : ""));
+		lines.add(((MutableText) item.getName()).formatted(ChatFormatting.GOLD).append(getSetting(4).asToggle().getChild(2).asToggle().getState() ? ChatFormatting.YELLOW + " [x" + item.getStack().getCount() + "]" : ""));
 
 		return lines;
 	}
@@ -396,23 +396,23 @@ public class Nametags extends Module {
 		if (getSetting(0).asMode().getMode() == 0) {
 			return Text.literal(Integer.toString(totalHealth)).styled(s -> s.withColor(getHealthColor(e)));
 		} else if (getSetting(0).asMode().getMode() == 1) {
-			return Text.literal(Integer.toString(totalHealth) + Formatting.GREEN + "/" + (int) e.getMaxHealth()).styled(s -> s.withColor(getHealthColor(e)));
+			return Text.literal(Integer.toString(totalHealth) + ChatFormatting.GREEN + "/" + (int) e.getMaxHealth()).styled(s -> s.withColor(getHealthColor(e)));
 		} else if (getSetting(0).asMode().getMode() == 2) {
 			// Health bar
 			String health = "";
 
 			// - Add Green Normal Health
-			health += Formatting.GREEN + StringUtils.repeat('|', (int) e.getHealth());
+			health += ChatFormatting.GREEN + StringUtils.repeat('|', (int) e.getHealth());
 
 			// - Add Yellow Absorption Health
-			health += Formatting.YELLOW + StringUtils.repeat('|', (int) Math.min(e.getAbsorptionAmount(), e.getMaxHealth() - e.getHealth()));
+			health += ChatFormatting.YELLOW + StringUtils.repeat('|', (int) Math.min(e.getAbsorptionAmount(), e.getMaxHealth() - e.getHealth()));
 
 			// - Add Red Empty Health (Remove Based on absorption amount)
-			health += Formatting.RED + StringUtils.repeat('|', (int) e.getMaxHealth() - totalHealth);
+			health += ChatFormatting.RED + StringUtils.repeat('|', (int) e.getMaxHealth() - totalHealth);
 
 			// - Add "+??" to the end if the entity has extra hearts
 			if (totalHealth > (int) e.getMaxHealth()) {
-				health += Formatting.YELLOW + " +" + (totalHealth - (int) e.getMaxHealth());
+				health += ChatFormatting.YELLOW + " +" + (totalHealth - (int) e.getMaxHealth());
 			}
 
 			return Text.literal(health);
@@ -423,9 +423,9 @@ public class Nametags extends Module {
 
 	private int getHealthColor(LivingEntity entity) {
 		if (entity.getHealth() + entity.getAbsorptionAmount() > entity.getMaxHealth()) {
-			return Formatting.YELLOW.getColorValue();
+			return ChatFormatting.YELLOW.getColorValue();
 		} else {
-			return MathHelper.hsvToRgb((entity.getHealth() + entity.getAbsorptionAmount()) / (entity.getMaxHealth() * 3), 1f, 1f);
+			return Mth.hsvToRgb((entity.getHealth() + entity.getAbsorptionAmount()) / (entity.getMaxHealth() * 3), 1f, 1f);
 		}
 	}
 

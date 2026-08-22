@@ -8,10 +8,10 @@
  */
 package org.bleachhack.module.mods;
 
-import net.minecraft.fluid.FluidState;
-import net.minecraft.util.math.Box;
-import net.minecraft.util.math.ChunkPos;
-import net.minecraft.util.math.Direction;
+import net.minecraft.world.level.material.FluidState;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.level.ChunkPos;
+import net.minecraft.core.Direction;
 import org.bleachhack.event.events.EventWorldRender;
 import org.bleachhack.eventbus.BleachSubscribe;
 import org.bleachhack.module.Module;
@@ -107,7 +107,7 @@ public class NewChunks extends Module {
 			synchronized (newChunks) {
 				for (ChunkPos c: newChunks) {
 					if (mc.getCameraEntity().getBlockPos().isWithinDistance(c.getStartPos(), 1024)) {
-						Box box = new Box(
+						AABB box = new AABB(
 								c.getStartX(), renderY, c.getStartZ(),
 								c.getStartX() + 16, renderY, c.getStartZ() + 16);
 
@@ -129,7 +129,7 @@ public class NewChunks extends Module {
 			synchronized (oldChunks) {
 				for (ChunkPos c: oldChunks) {
 					if (mc.getCameraEntity().getBlockPos().isWithinDistance(c.getStartPos(), 1024)) {
-						Box box = new Box(
+						AABB box = new AABB(
 								c.getStartX(), renderY, c.getStartZ(),
 								c.getStartX() + 16, renderY, c.getStartZ() + 16);
 

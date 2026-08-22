@@ -8,11 +8,11 @@
  */
 package org.bleachhack.event.events;
 
-import net.minecraft.block.BlockState;
-import net.minecraft.client.render.RenderLayer;
-import net.minecraft.client.render.VertexConsumer;
-import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.client.renderer.rendertype.RenderType;
+import com.mojang.blaze3d.vertex.VertexConsumer;
+import com.mojang.blaze3d.vertex.PoseStack;
+import net.minecraft.core.BlockPos;
 import org.bleachhack.event.Event;
 
 public class EventRenderBlock extends Event {
@@ -81,10 +81,10 @@ public class EventRenderBlock extends Event {
 	public static class Tesselate extends EventRenderBlock {
 
 		private BlockPos pos;
-		private MatrixStack matrices;
+		private PoseStack matrices;
 		private VertexConsumer vertexConsumer;
 
-		public Tesselate(BlockState state, BlockPos pos, MatrixStack matrices, VertexConsumer vertexConsumer) {
+		public Tesselate(BlockState state, BlockPos pos, PoseStack matrices, VertexConsumer vertexConsumer) {
 			super(state);
 			this.pos = pos;
 			this.matrices = matrices;
@@ -95,7 +95,7 @@ public class EventRenderBlock extends Event {
 			return pos;
 		}
 
-		public MatrixStack getMatrices() {
+		public PoseStack getMatrices() {
 			return matrices;
 		}
 
@@ -106,17 +106,17 @@ public class EventRenderBlock extends Event {
 
 	public static class Layer extends EventRenderBlock {
 
-		private RenderLayer layer;
+		private RenderType layer;
 
 		public Layer(BlockState state) {
 			super(state);
 		}
 
-		public RenderLayer getLayer() {
+		public RenderType getLayer() {
 			return layer;
 		}
 
-		public void setLayer(RenderLayer layer) {
+		public void setLayer(RenderType layer) {
 			this.layer = layer;
 		}
 	}

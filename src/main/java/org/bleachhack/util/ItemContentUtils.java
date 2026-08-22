@@ -8,30 +8,26 @@
  */
 package org.bleachhack.util;
 
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtList;
-import net.minecraft.text.Text;
+import net.minecraft.client.Minecraft;
+import net.minecraft.core.NonNullList;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.component.ItemContainerContents;
+import net.minecraft.world.item.component.WritableBookContent;
+import net.minecraft.world.item.component.WrittenBookContent;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 public class ItemContentUtils {
 
 	public static List<ItemStack> getItemsInContainer(ItemStack item) {
-		List<ItemStack> items = new ArrayList<>(Collections.nCopies(27, new ItemStack(Items.AIR)));
-		NbtCompound nbt = item.getOrCreateNbt().contains("BlockEntityTag", 10)
-				? item.getNbt().getCompound("BlockEntityTag") : item.getNbt();
+		NonNullList<ItemStack> items = NonNullList.withSize(27, ItemStack.EMPTY);
 
-		if (nbt.contains("Items", 9)) {
-			NbtList nbt2 = nbt.getList("Items", 10);
-			for (int i = 0; i < nbt2.size(); i++) {
-				int slot = nbt2.getCompound(i).contains("Slot", 99) ? nbt2.getCompound(i).getByte("Slot") : i;
-				items.set(slot, ItemStack.fromNbt(nbt2.getCompound(i)));
-			}
+		ItemContainerContents contents = item.get(DataComponents.CONTAINER);
+		if (contents != null) {
+			contents.copyInto(items);
 		}
 
 		return items;
@@ -39,17 +35,15 @@ public class ItemContentUtils {
 
 	public static List<List<String>> getTextInBook(ItemStack item) {
 		List<String> pages = new ArrayList<>();
-		NbtCompound nbt = item.getNbt();
 
-		if (nbt != null && nbt.contains("pages")) {
-			NbtList nbt2 = nbt.getList("pages", 8);
-			for (int i = 0; i < nbt2.size(); i++) {
-				if (item.getItem() == Items.WRITABLE_BOOK) {
-					pages.add(nbt2.getString(i));
-				} else {
-					Text text = Text.of(nbt2.getString(i));
-
-					pages.add(text != null ? text.getString() : nbt2.getString(i));
+		WritableBookContent writable = item.get(DataComponents.WRITABLE_BOOK_CONTENT);
+		if (writable != null) {
+			writable.getPages(false).forEach(pages::add);
+		} else {
+			WrittenBookContent written = item.get(DataComponents.WRITTEN_BOOK_CONTENT);
+			if (written != null) {
+				for (Component text : written.getPages(false)) {
+					pages.add(text.getString());
 				}
 			}
 		}
@@ -61,7 +55,7 @@ public class ItemContentUtils {
 			List<String> pageBuffer = new ArrayList<>();
 
 			for (char c : s.toCharArray()) {
-				if (MinecraftClient.getInstance().textRenderer.getWidth(buffer) > 114 || buffer.endsWith("\n")) {
+				if (Minecraft.getInstance().font.width(buffer) > 114 || buffer.endsWith("\n")) {
 					pageBuffer.add(buffer.replace("\n", ""));
 					buffer = "";
 				}

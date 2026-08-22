@@ -25,12 +25,12 @@ import org.bleachhack.util.world.WorldUtils;
 
 import com.google.common.collect.Sets;
 
-import net.minecraft.block.Block;
-import net.minecraft.block.Blocks;
-import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
 
 public class Surround extends Module {
 
@@ -58,9 +58,9 @@ public class Surround extends Module {
 
 		if (inWorld) {
 			if (getSetting(3).asToggle().getState()) {
-				Vec3d centerPos = Vec3d.ofBottomCenter(mc.player.getBlockPos());
+				Vec3 centerPos = Vec3.ofBottomCenter(mc.player.getBlockPos());
 				mc.player.updatePosition(centerPos.x, centerPos.y, centerPos.z);
-				mc.player.networkHandler.sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(centerPos.x, centerPos.y, centerPos.z, mc.player.isOnGround()));
+				mc.player.networkHandler.sendPacket(new ServerboundMovePlayerPacket.PositionAndOnGround(centerPos.x, centerPos.y, centerPos.z, mc.player.isOnGround()));
 			}
 
 			place();
@@ -89,7 +89,7 @@ public class Surround extends Module {
 
 		int cap = 0;
 
-		Box box = mc.player.getBoundingBox();
+		AABB box = mc.player.getBoundingBox();
 		Set<BlockPos> placePoses = getSetting(0).asMode().getMode() == 0
 				? Sets.newHashSet(
 						mc.player.getBlockPos().north(), mc.player.getBlockPos().east(),

@@ -8,9 +8,9 @@
  */
 package org.bleachhack.event.events;
 
-import net.minecraft.client.render.VertexConsumer;
-import net.minecraft.fluid.FluidState;
-import net.minecraft.util.math.BlockPos;
+import com.mojang.blaze3d.vertex.VertexConsumer;
+import net.minecraft.world.level.material.FluidState;
+import net.minecraft.core.BlockPos;
 import org.bleachhack.event.Event;
 
 public class EventRenderFluid extends Event {

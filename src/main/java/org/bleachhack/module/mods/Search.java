@@ -9,18 +9,18 @@
 package org.bleachhack.module.mods;
 
 import com.google.common.collect.Sets;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
-import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.network.packet.s2c.common.DisconnectS2CPacket;
-import net.minecraft.network.packet.s2c.play.GameJoinS2CPacket;
-import net.minecraft.network.packet.s2c.play.PlayerRespawnS2CPacket;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.util.shape.VoxelShape;
-import net.minecraft.util.shape.VoxelShapes;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.network.protocol.common.ClientboundDisconnectPacket;
+import net.minecraft.network.protocol.game.ClientboundLoginPacket;
+import net.minecraft.network.protocol.game.ClientboundRespawnPacket;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.phys.shapes.VoxelShape;
+import net.minecraft.world.phys.shapes.Shapes;
 import org.bleachhack.event.events.EventPacket;
 import org.bleachhack.event.events.EventTick;
 import org.bleachhack.event.events.EventWorldRender;
@@ -114,8 +114,8 @@ public class Search extends Module {
 
 	public Search() {
 		super("Search", KEY_UNBOUND, ModuleCategory.RENDER, "Highlights certain blocks.",
-				new SettingMode("Render", "Box+Fill", "Box", "Fill").withDesc("The rendering method."),
-				new SettingSlider("Box", 0.1, 4, 2, 1).withDesc("The thickness of the box lines."),
+				new SettingMode("Render", "AABB+Fill", "AABB", "Fill").withDesc("The rendering method."),
+				new SettingSlider("AABB", 0.1, 4, 2, 1).withDesc("The thickness of the box lines."),
 				new SettingSlider("Fill", 0, 1, 0.3, 2).withDesc("The opacity of the fill."),
 				new SettingToggle("Tracers", false).withDesc("Renders a line from the player to all found blocks.").withChildren(
 						new SettingSlider("Width", 0.1, 5, 1.5, 1).withDesc("Thickness of the tracers."),
@@ -162,9 +162,9 @@ public class Search extends Module {
 
 	@BleachSubscribe
 	public void onReadPacket(EventPacket.Read event) {
-		if (event.getPacket() instanceof DisconnectS2CPacket
-				|| event.getPacket() instanceof GameJoinS2CPacket
-				|| event.getPacket() instanceof PlayerRespawnS2CPacket) {
+		if (event.getPacket() instanceof ClientboundDisconnectPacket
+				|| event.getPacket() instanceof ClientboundLoginPacket
+				|| event.getPacket() instanceof ClientboundRespawnPacket) {
 			foundBlocks.clear();
 			prevBlockList.clear();
 			processor.restartExecutor();
@@ -186,13 +186,13 @@ public class Search extends Module {
 
 			VoxelShape voxelShape = state.getOutlineShape(mc.world, pos);
 			if (voxelShape.isEmpty()) {
-				voxelShape = VoxelShapes.cuboid(0, 0, 0, 1, 1, 1);
+				voxelShape = Shapes.cuboid(0, 0, 0, 1, 1, 1);
 			}
 
 			if (mode == 0 || mode == 2) {
 				int fillAlpha = (int) (getSetting(2).asSlider().getValue() * 255);
 
-				for (Box box: voxelShape.getBoundingBoxes()) {
+				for (AABB box: voxelShape.getBoundingBoxes()) {
 					Renderer.drawBoxFill(box.offset(pos), QuadColor.single(color[0], color[1], color[2], fillAlpha));
 				}
 			}
@@ -200,7 +200,7 @@ public class Search extends Module {
 			if (mode == 0 || mode == 1) {
 				float outlineWidth = getSetting(1).asSlider().getValueFloat();
 
-				for (Box box: voxelShape.getBoundingBoxes()) {
+				for (AABB box: voxelShape.getBoundingBoxes()) {
 					Renderer.drawBoxOutline(box.offset(pos), QuadColor.single(color[0], color[1], color[2], 255), outlineWidth);
 				}
 			}
@@ -208,7 +208,7 @@ public class Search extends Module {
 			SettingToggle tracers = getSetting(3).asToggle();
 			if (tracers.getState()) {
 				// This is bad when bobbing is enabled!
-				Vec3d lookVec = new Vec3d(0, 0, 75)
+				Vec3 lookVec = new Vec3(0, 0, 75)
 						.rotateX(-(float) Math.toRadians(mc.gameRenderer.getCamera().getPitch()))
 						.rotateY(-(float) Math.toRadians(mc.gameRenderer.getCamera().getYaw()))
 						.add(mc.cameraEntity.getEyePos());

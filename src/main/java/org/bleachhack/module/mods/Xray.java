@@ -19,10 +19,10 @@ import org.bleachhack.setting.module.SettingSlider;
 import org.bleachhack.setting.module.SettingToggle;
 import org.bleachhack.util.world.WorldUtils;
 
-import net.minecraft.block.Block;
-import net.minecraft.block.Blocks;
-import net.minecraft.block.TallPlantBlock;
-import net.minecraft.client.render.RenderLayer;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.DoublePlantBlock;
+import net.minecraft.client.renderer.rendertype.RenderType;
 
 public class Xray extends Module {
 
@@ -110,7 +110,7 @@ public class Xray extends Module {
 			if (getSetting(1).asToggle().getState()) {
 				if (getSetting(1).asToggle().getChild(1).asToggle().getState()
 						&& (event.getState().getBlock() == Blocks.FERN
-								|| event.getState().getBlock() instanceof TallPlantBlock
+								|| event.getState().getBlock() instanceof DoublePlantBlock
 								|| WorldUtils.getTopBlockIgnoreLeaves(event.getPos().getX(), event.getPos().getZ()) == event.getPos().getY())) {
 					event.setCancelled(true);
 					return;
@@ -126,7 +126,7 @@ public class Xray extends Module {
 	@BleachSubscribe
 	public void onRenderBlockLayer(EventRenderBlock.Layer event) {
 		if (getSetting(1).asToggle().getState() && !getSetting(2).asList(Block.class).contains(event.getState().getBlock())) {
-			event.setLayer(RenderLayer.getTranslucent());
+			event.setLayer(RenderType.getTranslucent());
 		}
 	}
 

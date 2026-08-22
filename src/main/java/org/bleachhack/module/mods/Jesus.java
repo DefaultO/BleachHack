@@ -15,11 +15,11 @@ import org.bleachhack.module.Module;
 import org.bleachhack.module.ModuleCategory;
 import org.bleachhack.setting.module.SettingMode;
 
-import net.minecraft.entity.Entity;
-import net.minecraft.fluid.FluidState;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.util.shape.VoxelShapes;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.level.material.FluidState;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.phys.shapes.Shapes;
 
 public class Jesus extends Module {
 
@@ -54,11 +54,11 @@ public class Jesus extends Module {
 				&& !mc.player.isSneaking()
 				&& !mc.player.isTouchingWater()
 				&& mc.player.getY() >= event.getPos().getY() + 0.9) {
-			event.setShape(VoxelShapes.cuboid(0, 0, 0, 1, 0.9, 1));
+			event.setShape(Shapes.cuboid(0, 0, 0, 1, 0.9, 1));
 		}
 	}
 	
-	private boolean isSubmerged(Vec3d pos) {
+	private boolean isSubmerged(Vec3 pos) {
 		BlockPos bp = BlockPos.ofFloored(pos);
 		FluidState state = mc.world.getFluidState(bp);
 

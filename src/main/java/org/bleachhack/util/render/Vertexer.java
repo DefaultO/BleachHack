@@ -1,10 +1,10 @@
 package org.bleachhack.util.render;
 
-import net.minecraft.client.render.VertexConsumer;
-import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.util.math.Box;
-import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.MathHelper;
+import com.mojang.blaze3d.vertex.VertexConsumer;
+import com.mojang.blaze3d.vertex.PoseStack;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.core.Direction;
+import net.minecraft.util.Mth;
 import org.apache.commons.lang3.ArrayUtils;
 import org.bleachhack.util.render.color.LineColor;
 import org.bleachhack.util.render.color.QuadColor;
@@ -18,7 +18,7 @@ public class Vertexer {
 	public static final int CULL_FRONT = 1;
 	public static final int CULL_NONE = 2;
 
-	public static void vertexBoxQuads(MatrixStack matrixStack, VertexConsumer vertexConsumer, Box box, QuadColor quadColor, Direction... excludeDirs) {
+	public static void vertexBoxQuads(PoseStack matrixStack, VertexConsumer vertexConsumer, AABB box, QuadColor quadColor, Direction... excludeDirs) {
 		float x1 = (float) box.minX;
 		float y1 = (float) box.minY;
 		float z1 = (float) box.minZ;
@@ -53,7 +53,7 @@ public class Vertexer {
 		}
 	}
 
-	public static void vertexQuad(MatrixStack matrixStack, VertexConsumer vertexConsumer, float x1, float y1, float z1, float x2, float y2, float z2, float x3, float y3, float z3, float x4, float y4, float z4, int cullMode, QuadColor quadColor) {
+	public static void vertexQuad(PoseStack matrixStack, VertexConsumer vertexConsumer, float x1, float y1, float z1, float x2, float y2, float z2, float x3, float y3, float z3, float x4, float y4, float z4, int cullMode, QuadColor quadColor) {
 		int[] color = quadColor.getAllColors();
 
 		if (cullMode != CULL_FRONT) {
@@ -71,7 +71,7 @@ public class Vertexer {
 		}
 	}
 
-	public static void vertexBoxLines(MatrixStack matrixStack, VertexConsumer vertexConsumer, Box box, QuadColor quadColor, Direction... excludeDirs) {
+	public static void vertexBoxLines(PoseStack matrixStack, VertexConsumer vertexConsumer, AABB box, QuadColor quadColor, Direction... excludeDirs) {
 		float x1 = (float) box.minX;
 		float y1 = (float) box.minY;
 		float z1 = (float) box.minZ;
@@ -131,7 +131,7 @@ public class Vertexer {
 		}
 	}
 
-	public static void vertexLine(MatrixStack matrixStack, VertexConsumer vertexConsumer, float x1, float y1, float z1, float x2, float y2, float z2, LineColor lineColor) {
+	public static void vertexLine(PoseStack matrixStack, VertexConsumer vertexConsumer, float x1, float y1, float z1, float x2, float y2, float z2, LineColor lineColor) {
 		Matrix4f model = matrixStack.peek().getPositionMatrix();
 		Matrix3f normal = matrixStack.peek().getNormalMatrix();
 
@@ -148,7 +148,7 @@ public class Vertexer {
 		float xNormal = x2 - x1;
 		float yNormal = y2 - y1;
 		float zNormal = z2 - z1;
-		float normalSqrt = MathHelper.sqrt(xNormal * xNormal + yNormal * yNormal + zNormal * zNormal);
+		float normalSqrt = Mth.sqrt(xNormal * xNormal + yNormal * yNormal + zNormal * zNormal);
 
 		return new Vector3f(xNormal / normalSqrt, yNormal / normalSqrt, zNormal / normalSqrt);
 	}

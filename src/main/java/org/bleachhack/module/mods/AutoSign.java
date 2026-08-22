@@ -8,9 +8,9 @@
  */
 package org.bleachhack.module.mods;
 
-import net.minecraft.block.entity.SignBlockEntity;
-import net.minecraft.client.gui.screen.ingame.SignEditScreen;
-import net.minecraft.network.packet.c2s.play.UpdateSignC2SPacket;
+import net.minecraft.world.level.block.entity.SignBlockEntity;
+import net.minecraft.client.gui.screens.inventory.SignEditScreen;
+import net.minecraft.network.protocol.game.ServerboundSignUpdatePacket;
 import org.bleachhack.event.events.EventOpenScreen;
 import org.bleachhack.event.events.EventPacket;
 import org.bleachhack.eventbus.BleachSubscribe;
@@ -42,8 +42,8 @@ public class AutoSign extends Module {
 
 	@BleachSubscribe
 	public void sendPacket(EventPacket.Send event) {
-		if (event.getPacket() instanceof UpdateSignC2SPacket && text.length < 3) {
-			text = ((UpdateSignC2SPacket) event.getPacket()).getText();
+		if (event.getPacket() instanceof ServerboundSignUpdatePacket && text.length < 3) {
+			text = ((ServerboundSignUpdatePacket) event.getPacket()).getText();
 		}
 	}
 
@@ -67,7 +67,7 @@ public class AutoSign extends Module {
 			}
 
 			SignBlockEntity sign = ((SignEditScreen) event.getScreen()).blockEntity;
-			mc.player.networkHandler.sendPacket(new UpdateSignC2SPacket(sign.getPos(), true, text[0], text[1], text[2], text[3]));
+			mc.player.networkHandler.sendPacket(new ServerboundSignUpdatePacket(sign.getPos(), true, text[0], text[1], text[2], text[3]));
 		}
 	}
 }

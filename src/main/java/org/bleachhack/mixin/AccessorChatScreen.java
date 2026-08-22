@@ -8,8 +8,8 @@
  */
 package org.bleachhack.mixin;
 
-import net.minecraft.client.gui.screen.ChatScreen;
-import net.minecraft.client.gui.widget.TextFieldWidget;
+import net.minecraft.client.gui.screens.ChatScreen;
+import net.minecraft.client.gui.components.EditBox;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Accessor;
 
@@ -17,5 +17,5 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 public interface AccessorChatScreen {
 
 	@Accessor
-	public abstract TextFieldWidget getChatField();
+	public abstract EditBox getChatField();
 }

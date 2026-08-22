@@ -17,12 +17,12 @@ import org.bleachhack.module.Module;
 import org.bleachhack.module.ModuleCategory;
 import org.bleachhack.util.world.WorldUtils;
 
-import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.util.Hand;
-import net.minecraft.util.hit.BlockHitResult;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.world.phys.Vec3;
 
 public class Ghosthand extends Module {
 
@@ -45,7 +45,7 @@ public class Ghosthand extends Module {
 
 		Set<BlockPos> posList = new HashSet<>();
 
-		Vec3d nextPos = new Vec3d(0, 0, 0.1)
+		Vec3 nextPos = new Vec3(0, 0, 0.1)
 				.rotateX(-(float) Math.toRadians(mc.player.getPitch()))
 				.rotateY(-(float) Math.toRadians(mc.player.getYaw()));
 
@@ -56,8 +56,8 @@ public class Ghosthand extends Module {
 	
 				for (BlockEntity b : WorldUtils.getBlockEntities()) {
 					if (b.getPos().equals(curPos)) {
-						mc.interactionManager.interactBlock(mc.player, Hand.MAIN_HAND,
-								new BlockHitResult(Vec3d.ofCenter(curPos, 1), Direction.UP, curPos, true));
+						mc.interactionManager.interactBlock(mc.player, InteractionHand.MAIN_HAND,
+								new BlockHitResult(Vec3.ofCenter(curPos, 1), Direction.UP, curPos, true));
 						return;
 					}
 				}

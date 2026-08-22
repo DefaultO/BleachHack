@@ -15,13 +15,13 @@ import org.bleachhack.module.ModuleCategory;
 import org.bleachhack.setting.module.SettingSlider;
 import org.bleachhack.setting.module.SettingToggle;
 
-import net.minecraft.item.Items;
-import net.minecraft.network.packet.c2s.play.PlayerActionC2SPacket;
-import net.minecraft.network.packet.c2s.play.PlayerActionC2SPacket.Action;
-import net.minecraft.network.packet.c2s.play.UpdateSelectedSlotC2SPacket;
-import net.minecraft.screen.slot.SlotActionType;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
+import net.minecraft.world.item.Items;
+import net.minecraft.network.protocol.game.ServerboundPlayerActionPacket;
+import net.minecraft.network.protocol.game.ServerboundPlayerActionPacket.Action;
+import net.minecraft.network.protocol.game.ServerboundSetCarriedItemPacket;
+import net.minecraft.world.inventory.ClickType;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 
 public class AutoTotem extends Module {
 
@@ -57,11 +57,11 @@ public class AutoTotem extends Module {
 			for (int i = 9; i < 45; i++) {
 				if (mc.player.getInventory().getStack(i >= 36 ? i - 36 : i).getItem() == Items.TOTEM_OF_UNDYING) {
 					boolean itemInOffhand = !mc.player.getOffHandStack().isEmpty();
-					mc.interactionManager.clickSlot(mc.player.currentScreenHandler.syncId, i, 0, SlotActionType.PICKUP, mc.player);
-					mc.interactionManager.clickSlot(mc.player.currentScreenHandler.syncId, 45, 0, SlotActionType.PICKUP, mc.player);
+					mc.interactionManager.clickSlot(mc.player.currentScreenHandler.syncId, i, 0, ClickType.PICKUP, mc.player);
+					mc.interactionManager.clickSlot(mc.player.currentScreenHandler.syncId, 45, 0, ClickType.PICKUP, mc.player);
 
 					if (itemInOffhand)
-						mc.interactionManager.clickSlot(mc.player.currentScreenHandler.syncId, i, 0, SlotActionType.PICKUP, mc.player);
+						mc.interactionManager.clickSlot(mc.player.currentScreenHandler.syncId, i, 0, ClickType.PICKUP, mc.player);
 
 					delay = getSetting(1).asSlider().getValueInt();
 					return;
@@ -73,10 +73,10 @@ public class AutoTotem extends Module {
 				if (mc.player.getInventory().getStack(i).getItem() == Items.TOTEM_OF_UNDYING) {
 					if (i != mc.player.getInventory().selectedSlot) {
 						mc.player.getInventory().selectedSlot = i;
-						mc.player.networkHandler.sendPacket(new UpdateSelectedSlotC2SPacket(i));
+						mc.player.networkHandler.sendPacket(new ServerboundSetCarriedItemPacket(i));
 					}
 
-					mc.player.networkHandler.sendPacket(new PlayerActionC2SPacket(Action.SWAP_ITEM_WITH_OFFHAND, BlockPos.ORIGIN, Direction.DOWN));
+					mc.player.networkHandler.sendPacket(new ServerboundPlayerActionPacket(Action.SWAP_ITEM_WITH_OFFHAND, BlockPos.ORIGIN, Direction.DOWN));
 					delay = getSetting(1).asSlider().getValueInt();
 					return;
 				}

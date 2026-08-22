@@ -21,11 +21,11 @@ import org.bleachhack.setting.module.SettingSlider;
 import org.bleachhack.setting.module.SettingToggle;
 
 import net.minecraft.client.render.DimensionEffects;
-import net.minecraft.network.packet.s2c.common.DisconnectS2CPacket;
-import net.minecraft.network.packet.s2c.play.GameStateChangeS2CPacket;
-import net.minecraft.network.packet.s2c.play.WorldTimeUpdateS2CPacket;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.World;
+import net.minecraft.network.protocol.common.ClientboundDisconnectPacket;
+import net.minecraft.network.protocol.game.ClientboundGameEventPacket;
+import net.minecraft.network.protocol.game.ClientboundSetTimePacket;
+import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.level.Level;
 
 public class Ambience extends Module {
 
@@ -101,24 +101,24 @@ public class Ambience extends Module {
 
 	@BleachSubscribe
 	public void readPacket(EventPacket.Read event) {
-		if (event.getPacket() instanceof GameStateChangeS2CPacket && getSetting(0).asToggle().getState()) {
-			GameStateChangeS2CPacket packet = (GameStateChangeS2CPacket) event.getPacket();
-			if (packet.getReason() == GameStateChangeS2CPacket.RAIN_STARTED) {
+		if (event.getPacket() instanceof ClientboundGameEventPacket && getSetting(0).asToggle().getState()) {
+			ClientboundGameEventPacket packet = (ClientboundGameEventPacket) event.getPacket();
+			if (packet.getReason() == ClientboundGameEventPacket.RAIN_STARTED) {
 				weatherManager.setRain(1f);
-			} else if (packet.getReason() == GameStateChangeS2CPacket.RAIN_STOPPED) {
+			} else if (packet.getReason() == ClientboundGameEventPacket.RAIN_STOPPED) {
 				weatherManager.setRain(0f);
-			} else if (packet.getReason() == GameStateChangeS2CPacket.RAIN_GRADIENT_CHANGED) {
+			} else if (packet.getReason() == ClientboundGameEventPacket.RAIN_GRADIENT_CHANGED) {
 				weatherManager.setRain(packet.getValue());
-			} else if (packet.getReason() == GameStateChangeS2CPacket.THUNDER_GRADIENT_CHANGED) {
+			} else if (packet.getReason() == ClientboundGameEventPacket.THUNDER_GRADIENT_CHANGED) {
 				weatherManager.setThunder(packet.getValue());
 			} else {
 				return;
 			}
 
 			event.setCancelled(true);
-		} else if (event.getPacket() instanceof DisconnectS2CPacket && getSetting(0).asToggle().getState()) {
+		} else if (event.getPacket() instanceof ClientboundDisconnectPacket && getSetting(0).asToggle().getState()) {
 			weatherManager.reset();
-		} else if (event.getPacket() instanceof WorldTimeUpdateS2CPacket && getSetting(1).asToggle().getState()) {
+		} else if (event.getPacket() instanceof ClientboundSetTimePacket && getSetting(1).asToggle().getState()) {
 			event.setCancelled(true);
 		}
 	}
@@ -136,7 +136,7 @@ public class Ambience extends Module {
 	public void onSkyColor(EventSkyRender.Color event) {
 		if (getCurrentDimSetting().getState() && getCurrentDimSetting().getChild(0).asToggle().getState()) {
 			int[] color = getCurrentDimSetting().getChild(0).asToggle().getChild(1).asColor().getRGBArray();
-			event.setColor(new Vec3d(color[0] / 255d, color[1] / 255d, color[2] / 255d));
+			event.setColor(new Vec3(color[0] / 255d, color[1] / 255d, color[2] / 255d));
 		}
 	}
 
@@ -146,7 +146,7 @@ public class Ambience extends Module {
 				&& getCurrentDimSetting().getChild(0).asToggle().getChild(0).asToggle().getState()) {
 			event.setSky(new DimensionEffects(event.getSky().getCloudsHeight(), false, DimensionEffects.SkyType.END, true, false) {
 
-				public Vec3d adjustFogColor(Vec3d color, float sunHeight) {
+				public Vec3 adjustFogColor(Vec3 color, float sunHeight) {
 					return color.multiply(0.15000000596046448D);
 				}
 
@@ -162,7 +162,7 @@ public class Ambience extends Module {
 	}
 
 	private SettingToggle getCurrentDimSetting() {
-		return getSetting(mc.world.getRegistryKey() == World.END ? 4 : mc.world.getRegistryKey() == World.NETHER ? 3 : 2).asToggle();
+		return getSetting(mc.world.getRegistryKey() == Level.END ? 4 : mc.world.getRegistryKey() == Level.NETHER ? 3 : 2).asToggle();
 	}
 
 	private static class WeatherManager {
@@ -183,7 +183,7 @@ public class Ambience extends Module {
 			thunder = -1f;
 		}
 
-		public void applyWeather(World world) {
+		public void applyWeather(Level world) {
 			if (rain >= 0f) {
 				world.getLevelProperties().setRaining(rain > 0f);
 				world.setRainGradient(rain);

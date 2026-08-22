@@ -29,12 +29,12 @@ import org.bleachhack.util.operation.RemoveOperation;
 import org.bleachhack.util.render.Renderer;
 import org.bleachhack.util.render.color.QuadColor;
 
-import net.minecraft.item.Items;
-import net.minecraft.util.hit.BlockHitResult;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
-import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.Direction.Axis;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.core.Direction;
+import net.minecraft.core.Direction.Axis;
 
 public class AutoBuild extends Module {
 
@@ -190,7 +190,7 @@ public class AutoBuild extends Module {
 				o.render();
 			}
 
-			Renderer.drawBoxOutline(new Box(current.getNext().pos).contract(0.01), QuadColor.single(1f, 1f, 0f, 0.5f), 3f);
+			Renderer.drawBoxOutline(new AABB(current.getNext().pos).contract(0.01), QuadColor.single(1f, 1f, 0f, 0.5f), 3f);
 		}
 
 		if (ray != null && !active) {

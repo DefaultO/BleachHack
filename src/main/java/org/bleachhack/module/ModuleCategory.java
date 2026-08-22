@@ -8,8 +8,8 @@
  */
 package org.bleachhack.module;
 
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 
 public enum ModuleCategory {
 	PLAYER(new ItemStack(Items.ARMOR_STAND)),

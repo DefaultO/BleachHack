@@ -8,10 +8,10 @@
  */
 package org.bleachhack.util;
 
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.network.packet.c2s.play.UpdateSelectedSlotC2SPacket;
-import net.minecraft.screen.slot.SlotActionType;
-import net.minecraft.util.Hand;
+import net.minecraft.client.Minecraft;
+import net.minecraft.network.protocol.game.ServerboundSetCarriedItemPacket;
+import net.minecraft.world.inventory.ContainerInput;
+import net.minecraft.world.InteractionHand;
 
 import java.util.Comparator;
 import java.util.function.IntPredicate;
@@ -19,7 +19,7 @@ import java.util.stream.IntStream;
 
 public class InventoryUtils {
 	
-	private static final MinecraftClient mc = MinecraftClient.getInstance();
+	private static final Minecraft mc = Minecraft.getInstance();
 
 	/** Returns the slot with the <b>lowest</b> comparator value **/
 	public static int getSlot(boolean offhand, boolean reverse, Comparator<Integer> comparator) {
@@ -29,7 +29,7 @@ public class InventoryUtils {
 	}
 
 	/** Selects the slot with the <b>lowest</b> comparator value and returns the hand it selected **/
-	public static Hand selectSlot(boolean offhand, boolean reverse, Comparator<Integer> comparator) {
+	public static InteractionHand selectSlot(boolean offhand, boolean reverse, Comparator<Integer> comparator) {
 		return selectSlot(getSlot(offhand, reverse, comparator));
 	}
 	
@@ -41,40 +41,40 @@ public class InventoryUtils {
 	}
 	
 	/** Selects the first slot that matches the Predicate and returns the hand it selected **/
-	public static Hand selectSlot(boolean offhand, IntPredicate filter) {
+	public static InteractionHand selectSlot(boolean offhand, IntPredicate filter) {
 		return selectSlot(getSlot(offhand, filter));
 	}
 	
-	public static Hand selectSlot(int slot) {
+	public static InteractionHand selectSlot(int slot) {
 		if (slot >= 0 && slot <= 36) {
 			if (slot < 9) {
-				if (slot != mc.player.getInventory().selectedSlot) {
-					mc.player.getInventory().selectedSlot = slot;
-					mc.player.networkHandler.sendPacket(new UpdateSelectedSlotC2SPacket(slot));
+				if (slot != mc.player.getInventory().getSelectedSlot()) {
+					mc.player.getInventory().setSelectedSlot(slot);
+					mc.player.connection.send(new ServerboundSetCarriedItemPacket(slot));
 				}
 
-				return Hand.MAIN_HAND;
-			} else if (mc.player.playerScreenHandler == mc.player.currentScreenHandler) {
+				return InteractionHand.MAIN_HAND;
+			} else if (mc.player.inventoryMenu == mc.player.containerMenu) {
 				for (int i = 0; i <= 8; i++) {
-					if (mc.player.getInventory().getStack(i).isEmpty()) {
-						mc.interactionManager.clickSlot(mc.player.currentScreenHandler.syncId, slot, 0, SlotActionType.QUICK_MOVE, mc.player);
+					if (mc.player.getInventory().getItem(i).isEmpty()) {
+						mc.gameMode.handleContainerInput(mc.player.containerMenu.containerId, slot, 0, ContainerInput.QUICK_MOVE, mc.player);
 
-						if (i != mc.player.getInventory().selectedSlot) {
-							mc.player.getInventory().selectedSlot = i;
-							mc.player.networkHandler.sendPacket(new UpdateSelectedSlotC2SPacket(i));
+						if (i != mc.player.getInventory().getSelectedSlot()) {
+							mc.player.getInventory().setSelectedSlot(i);
+							mc.player.connection.send(new ServerboundSetCarriedItemPacket(i));
 						}
 
-						return Hand.MAIN_HAND;
+						return InteractionHand.MAIN_HAND;
 					}
 				}
 
-				mc.interactionManager.clickSlot(mc.player.currentScreenHandler.syncId, slot, 0, SlotActionType.PICKUP, mc.player);
-				mc.interactionManager.clickSlot(mc.player.currentScreenHandler.syncId, 36 + mc.player.getInventory().selectedSlot, 0, SlotActionType.PICKUP, mc.player);
-				mc.interactionManager.clickSlot(mc.player.currentScreenHandler.syncId, slot, 0, SlotActionType.PICKUP, mc.player);
-				return Hand.MAIN_HAND;
+				mc.gameMode.handleContainerInput(mc.player.containerMenu.containerId, slot, 0, ContainerInput.PICKUP, mc.player);
+				mc.gameMode.handleContainerInput(mc.player.containerMenu.containerId, 36 + mc.player.getInventory().getSelectedSlot(), 0, ContainerInput.PICKUP, mc.player);
+				mc.gameMode.handleContainerInput(mc.player.containerMenu.containerId, slot, 0, ContainerInput.PICKUP, mc.player);
+				return InteractionHand.MAIN_HAND;
 			}
 		} else if (slot == 40) {
-			return Hand.OFF_HAND;
+			return InteractionHand.OFF_HAND;
 		}
 
 		return null;
@@ -84,11 +84,11 @@ public class InventoryUtils {
 		int[] i = new int[offhand ? 38 : 37];
 		
 		// Add hand slots first
-		i[0] = mc.player.getInventory().selectedSlot;
+		i[0] = mc.player.getInventory().getSelectedSlot();
 		i[1] = 40;
 
 		for (int j = 0; j < 36; j++) {
-			if (j != mc.player.getInventory().selectedSlot) {
+			if (j != mc.player.getInventory().getSelectedSlot()) {
 				i[offhand ? j + 2 : j + 1] = j;
 			}
 		}

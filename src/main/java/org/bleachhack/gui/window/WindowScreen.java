@@ -11,10 +11,10 @@ package org.bleachhack.gui.window;
 import com.mojang.blaze3d.systems.RenderSystem;
 import it.unimi.dsi.fastutil.ints.Int2IntMap.Entry;
 import it.unimi.dsi.fastutil.ints.*;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.render.*;
-import net.minecraft.text.Text;
+import net.minecraft.network.chat.Component;
 import org.bleachhack.gui.window.widget.WindowWidget;
 
 import java.util.ArrayList;
@@ -32,11 +32,11 @@ public abstract class WindowScreen extends Screen {
 	private List<WindowWidget> globalWidgets = new ArrayList<>();
 	private boolean autoClose;
 
-	public WindowScreen(Text title) {
+	public WindowScreen(Component title) {
 		this(title, true);
 	}
 
-	public WindowScreen(Text title, boolean autoClose) {
+	public WindowScreen(Component title, boolean autoClose) {
 		super(title);
 		this.autoClose = autoClose;
 	}
@@ -117,7 +117,7 @@ public abstract class WindowScreen extends Screen {
 	}
 
 	@Override
-	public void render(DrawContext drawContext, int mouseX, int mouseY, float delta) {
+	public void render(GuiGraphics drawContext, int mouseX, int mouseY, float delta) {
 		super.render(drawContext, mouseX, mouseY, delta);
 		
 		for (WindowWidget w : globalWidgets) {
@@ -147,7 +147,7 @@ public abstract class WindowScreen extends Screen {
 		if (autoClose && close) this.close();
 	}
 
-	public void onRenderWindow(DrawContext drawContext, int window, int mouseX, int mouseY) {
+	public void onRenderWindow(GuiGraphics drawContext, int window, int mouseX, int mouseY) {
 		if (!windows.get(window).closed) {
 			windows.get(window).render(drawContext, mouseX, mouseY);
 		}
@@ -239,7 +239,7 @@ public abstract class WindowScreen extends Screen {
 	}
 
 	@Override
-	public void renderBackgroundTexture(DrawContext drawContext) {
+	public void renderBackgroundTexture(GuiGraphics drawContext) {
 		int colorOffset = (int) ((System.currentTimeMillis() / 75) % 100);
 		if (colorOffset > 50)
 			colorOffset = 50 - (colorOffset - 50);

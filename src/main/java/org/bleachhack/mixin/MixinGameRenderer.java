@@ -9,12 +9,12 @@
 package org.bleachhack.mixin;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import net.minecraft.client.gl.PostEffectProcessor;
-import net.minecraft.client.render.GameRenderer;
-import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
-import net.minecraft.util.math.MathHelper;
+import net.minecraft.client.renderer.PostChain;
+import net.minecraft.client.renderer.GameRenderer;
+import com.mojang.blaze3d.vertex.PoseStack;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.util.Mth;
 import org.bleachhack.BleachHack;
 import org.bleachhack.event.events.EventRenderShader;
 import org.bleachhack.module.ModuleManager;
@@ -29,10 +29,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(GameRenderer.class)
 public class MixinGameRenderer {
 
-	@Shadow private PostEffectProcessor postProcessor;
+	@Shadow private PostChain postProcessor;
 
 	@Inject(method = "tiltViewWhenHurt", at = @At("HEAD"), cancellable = true)
-	private void onTiltViewWhenHurt(MatrixStack matrixStack, float f, CallbackInfo ci) {
+	private void onTiltViewWhenHurt(PoseStack matrixStack, float f, CallbackInfo ci) {
 		if (ModuleManager.getModule(NoRender.class).isOverlayToggled(2)) {
 			ci.cancel();
 		}
@@ -45,18 +45,18 @@ public class MixinGameRenderer {
 		}
 	}
 
-	@Redirect(method = "renderWorld", at = @At(value = "INVOKE", target = "Lnet/minecraft/util/math/MathHelper;lerp(FFF)F", ordinal = 0),
+	@Redirect(method = "renderWorld", at = @At(value = "INVOKE", target = "Lnet/minecraft/util/math/Mth;lerp(FFF)F", ordinal = 0),
 			require = 0 /* TODO: meteor compatibility */)
 	private float nauseaWobble(float delta, float first, float second) {
 		if (ModuleManager.getModule(NoRender.class).isOverlayToggled(5)) {
 			return 0;
 		}
 
-		return MathHelper.lerp(delta, first, second);
+		return Mth.lerp(delta, first, second);
 	}
 
-	@Redirect(method = "render", at = @At(value = "FIELD", target = "Lnet/minecraft/client/render/GameRenderer;postProcessor:Lnet/minecraft/client/gl/PostEffectProcessor;", ordinal = 0))
-	private PostEffectProcessor render_Shader(GameRenderer renderer, float tickDelta) {
+	@Redirect(method = "render", at = @At(value = "FIELD", target = "Lnet/minecraft/client/render/GameRenderer;postProcessor:Lnet/minecraft/client/gl/PostChain;", ordinal = 0))
+	private PostChain render_Shader(GameRenderer renderer, float tickDelta) {
 		EventRenderShader event = new EventRenderShader(postProcessor);
 		BleachHack.eventBus.post(event);
 

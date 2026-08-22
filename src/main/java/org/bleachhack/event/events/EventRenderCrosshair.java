@@ -8,22 +8,22 @@
  */
 package org.bleachhack.event.events;
 
-import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import org.bleachhack.event.Event;
 
 public class EventRenderCrosshair extends Event {
 
-	private DrawContext context;
+	private GuiGraphicsExtractor context;
 
-	public EventRenderCrosshair(DrawContext context) {
+	public EventRenderCrosshair(GuiGraphicsExtractor context) {
 		this.setMatrices(context);
 	}
 
-	public DrawContext getMatrices() {
+	public GuiGraphicsExtractor getMatrices() {
 		return context;
 	}
 
-	public void setMatrices(DrawContext context) {
+	public void setMatrices(GuiGraphicsExtractor context) {
 		this.context = context;
 	}
 }

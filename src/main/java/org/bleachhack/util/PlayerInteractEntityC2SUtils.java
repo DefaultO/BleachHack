@@ -8,29 +8,27 @@
  */
 package org.bleachhack.util;
 
-import io.netty.buffer.Unpooled;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.entity.Entity;
-import net.minecraft.network.PacketByteBuf;
-import net.minecraft.network.packet.c2s.play.PlayerInteractEntityC2SPacket;
+import net.minecraft.client.Minecraft;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.network.protocol.game.ServerboundInteractPacket;
 
 /* Mojang how */
 /* HOW */
 public class PlayerInteractEntityC2SUtils {
 
-	public static Entity getEntity(PlayerInteractEntityC2SPacket packet) {
-		PacketByteBuf packetBuf = new PacketByteBuf(Unpooled.buffer());
-		packet.write(packetBuf);
-
-		return MinecraftClient.getInstance().world.getEntityById(packetBuf.readVarInt());
+	public static Entity getEntity(ServerboundInteractPacket packet) {
+		// 26.2: packet is a record, read the entity id directly (no more buffer round-trip).
+		return Minecraft.getInstance().level.getEntity(packet.entityId());
 	}
-	
-	public static InteractType getInteractType(PlayerInteractEntityC2SPacket packet) {
-		PacketByteBuf packetBuf = new PacketByteBuf(Unpooled.buffer());
-		packet.write(packetBuf);
 
-		packetBuf.readVarInt();
-		return packetBuf.readEnumConstant(InteractType.class);
+	// TODO(26.2): ServerboundInteractPacket no longer carries an interact-type/action field.
+	// Attacks moved to their own packet (ServerboundAttackPacket), and the old INTERACT vs
+	// INTERACT_AT distinction collapsed into a single interact-with-location packet. We can
+	// only tell INTERACT_AT (has a location) from a plain INTERACT here; this packet can
+	// never represent ATTACK anymore. Callers that relied on InteractType.ATTACK (e.g.
+	// Criticals) must instead listen for ServerboundAttackPacket.
+	public static InteractType getInteractType(ServerboundInteractPacket packet) {
+		return packet.location() != null ? InteractType.INTERACT_AT : InteractType.INTERACT;
 	}
 
 	public enum InteractType {

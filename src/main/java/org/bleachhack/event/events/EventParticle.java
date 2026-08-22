@@ -9,7 +9,7 @@
 package org.bleachhack.event.events;
 
 import net.minecraft.client.particle.Particle;
-import net.minecraft.particle.ParticleEffect;
+import net.minecraft.core.particles.ParticleOptions;
 import org.bleachhack.event.Event;
 
 public class EventParticle extends Event {
@@ -29,13 +29,13 @@ public class EventParticle extends Event {
 
 	public static class Emitter extends EventParticle {
 
-		private ParticleEffect effect;
+		private ParticleOptions effect;
 
-		public Emitter(ParticleEffect effect) {
+		public Emitter(ParticleOptions effect) {
 			this.effect = effect;
 		}
 
-		public ParticleEffect getEffect() {
+		public ParticleOptions getEffect() {
 			return effect;
 		}
 	}

@@ -8,8 +8,8 @@
  */
 package org.bleachhack.module.mods;
 
-import net.minecraft.item.Items;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.item.Items;
+import net.minecraft.core.BlockPos;
 
 import org.bleachhack.event.events.EventTick;
 import org.bleachhack.eventbus.BleachSubscribe;
