@@ -13,7 +13,8 @@
 			"uniforms": {
 				"BleachOutline": [
 					{ "name": "Fill", "type": "float", "value": ${FILL} },
-					{ "name": "Radius", "type": "float", "value": ${RADIUS} }
+					{ "name": "Radius", "type": "float", "value": ${RADIUS} },
+					{ "name": "Style", "type": "float", "value": ${STYLE} }
 				]
 			},
 			"output": "bleach_dilate"
@@ -28,7 +29,8 @@
 			"uniforms": {
 				"BleachOutline": [
 					{ "name": "Fill", "type": "float", "value": ${FILL} },
-					{ "name": "Radius", "type": "float", "value": ${RADIUS} }
+					{ "name": "Radius", "type": "float", "value": ${RADIUS} },
+					{ "name": "Style", "type": "float", "value": ${STYLE} }
 				]
 			},
 			"output": "bleach_result"

@@ -58,6 +58,7 @@ public class ESP extends Module {
 	private static final int PROJECTILES = 15;
 	private static final int OTHER = 16;
 	private static final int THROUGH_WALLS = 17;
+	private static final int SHADER_STYLE = 18;
 
 	public ESP() {
 		super("ESP", KEY_UNBOUND, ModuleCategory.RENDER, "Highlights Entities in the world.",
@@ -98,7 +99,10 @@ public class ESP extends Module {
 				new SettingToggle("Other", false).withDesc("Highlights anything the categories above miss (tnt, falling blocks, item frames, xp...).").withChildren(
 						new SettingColor("Color", 200, 200, 200).withDesc("Outline color for everything else.")),
 
-				new SettingToggle("ThroughWalls", true).withDesc("Draw box mode over terrain and fluids instead of hiding behind them."));
+				new SettingToggle("ThroughWalls", true).withDesc("Draw box mode over terrain and fluids instead of hiding behind them."),
+
+				new SettingMode("ShaderStyle", "Solid", "Inline", "Gradient")
+						.withDesc("How the shader outline is shaded across its width. Inline puts a dark band against the entity."));
 
 		// Only show the options that apply to the selected render mode.
 		getSetting(SHADER_FILL).visibleWhen(this::isShaderMode);
@@ -106,6 +110,7 @@ public class ESP extends Module {
 		getSetting(BOX).visibleWhen(() -> !isShaderMode());
 		getSetting(BOX_FILL).visibleWhen(() -> !isShaderMode());
 		getSetting(THROUGH_WALLS).visibleWhen(() -> !isShaderMode());
+		getSetting(SHADER_STYLE).visibleWhen(this::isShaderMode);
 	}
 
 	private boolean isShaderMode() {
@@ -125,7 +130,8 @@ public class ESP extends Module {
 
 		return BleachShaders.variantFor(
 				esp.getSetting(SHADER_FILL).asSlider().getValueInt(),
-				esp.getSetting(SHADER_OUTLINE).asSlider().getValueInt());
+				esp.getSetting(SHADER_OUTLINE).asSlider().getValueInt(),
+				esp.getSetting(SHADER_STYLE).asMode().getMode());
 	}
 
 	/**

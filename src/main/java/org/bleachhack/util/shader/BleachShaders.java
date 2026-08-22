@@ -28,7 +28,10 @@ public class BleachShaders {
 	public static final Identifier ENTITY_OUTLINE_COMBINE = Identifier.fromNamespaceAndPath("bleachhack", "post/outline_combine");
 
 	/** Fill steps, 0..FILL_STEPS maps to 0%..100% interior opacity. */
-	public static final int FILL_STEPS = 20;
+	public static final int FILL_STEPS = 10;
+
+	/** Outline shading across its width: solid, inline (dark band inside), gradient. */
+	public static final int STYLES = 3;
 
 	/** Outline thickness in texels. */
 	public static final int MIN_RADIUS = 1;
@@ -36,15 +39,17 @@ public class BleachShaders {
 
 	private static final Set<Identifier> REGISTERED = ConcurrentHashMap.newKeySet();
 
-	public static Identifier variant(int fillStep, int radius) {
+	public static Identifier variant(int fillStep, int radius, int style) {
 		return Identifier.fromNamespaceAndPath("bleachhack",
-				"entity_outline_f" + Mth.clamp(fillStep, 0, FILL_STEPS) + "_r" + Mth.clamp(radius, MIN_RADIUS, MAX_RADIUS));
+				"entity_outline_f" + Mth.clamp(fillStep, 0, FILL_STEPS)
+						+ "_r" + Mth.clamp(radius, MIN_RADIUS, MAX_RADIUS)
+						+ "_s" + Mth.clamp(style, 0, STYLES - 1));
 	}
 
-	/** Picks the variant matching a 0-255 fill and a thickness in texels. */
-	public static Identifier variantFor(int fill255, int radius) {
+	/** Picks the variant matching a 0-255 fill, a thickness in texels and an outline style. */
+	public static Identifier variantFor(int fill255, int radius, int style) {
 		int step = Math.round(Mth.clamp(fill255, 0, 255) / 255f * FILL_STEPS);
-		return variant(step, radius);
+		return variant(step, radius, style);
 	}
 
 	public static void markRegistered(Identifier id) {

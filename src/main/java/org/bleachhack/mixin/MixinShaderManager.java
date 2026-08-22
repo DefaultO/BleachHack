@@ -70,17 +70,20 @@ public class MixinShaderManager {
 		if (template != null) {
 			for (int fill = 0; fill <= BleachShaders.FILL_STEPS; fill++) {
 				for (int radius = BleachShaders.MIN_RADIUS; radius <= BleachShaders.MAX_RADIUS; radius++) {
-					String json = template
-							.replace("${FILL}", String.valueOf((float) fill / BleachShaders.FILL_STEPS))
-							.replace("${RADIUS}", String.valueOf((float) radius));
+					for (int style = 0; style < BleachShaders.STYLES; style++) {
+						String json = template
+								.replace("${FILL}", String.valueOf((float) fill / BleachShaders.FILL_STEPS))
+								.replace("${RADIUS}", String.valueOf((float) radius))
+								.replace("${STYLE}", String.valueOf((float) style));
 
-					PostChainConfig config = bleachhack$parseChain(json);
+						PostChainConfig config = bleachhack$parseChain(json);
 
-					if (config != null) {
-						Identifier id = BleachShaders.variant(fill, radius);
-						chains.put(id, config);
-						BleachShaders.markRegistered(id);
-						variants++;
+						if (config != null) {
+							Identifier id = BleachShaders.variant(fill, radius, style);
+							chains.put(id, config);
+							BleachShaders.markRegistered(id);
+							variants++;
+						}
 					}
 				}
 			}
