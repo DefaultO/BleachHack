@@ -14,6 +14,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.input.KeyEvent;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.network.chat.Component;
@@ -47,7 +48,7 @@ public class MixinTitleScreen extends Screen {
 			if (Option.GENERAL_SHOW_UPDATE_SCREEN.getValue()) {
 				JsonObject updateJson = BleachHack.getUpdateJson();
 				if (updateJson != null && updateJson.has("version") && updateJson.get("version").getAsInt() > BleachHack.INTVERSION)
-					client.setScreen(new UpdateScreen(null, updateJson));
+					minecraft.gui.setScreen(new UpdateScreen(null, updateJson));
 			}
 
 			firstLoad = false;
@@ -55,7 +56,7 @@ public class MixinTitleScreen extends Screen {
 		}
 
 		if (BleachTitleScreen.customTitleScreen) {
-			Minecraft.getInstance().setScreen(
+			Minecraft.getInstance().gui.setScreen(
 					new WindowManagerScreen(
 							Triple.of(new BleachTitleScreen(), "BleachHack", new ItemStack(Items.MUSIC_DISC_CAT)),
 							Triple.of(new AccountManagerScreen(), "Accounts", new ItemStack(Items.PAPER)),
@@ -63,20 +64,20 @@ public class MixinTitleScreen extends Screen {
 							Triple.of(new BleachOptionsScreen(null), "Options", new ItemStack(Items.REDSTONE)),
 							Triple.of(new BleachCreditsScreen(), "Credits", new ItemStack(Items.DRAGON_HEAD))) {
 
-						public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-							if (keyCode == ModuleManager.getModule(ClickGui.class).getKey()) {
+						public boolean keyPressed(KeyEvent event) {
+							if (event.key() == ModuleManager.getModule(ClickGui.class).getKey()) {
 								selectWindow(2);
 							}
 
-							return super.keyPressed(keyCode, scanCode, modifiers);
+							return super.keyPressed(event);
 						}
 					});
 		} else {
-			addDrawableChild(Button.builder(Component.literal("BH"), button -> {
+			addRenderableWidget(Button.builder(Component.literal("BH"), button -> {
 				BleachTitleScreen.customTitleScreen = !BleachTitleScreen.customTitleScreen;
 				BleachFileHelper.saveMiscSetting("customTitleScreen", new JsonPrimitive(true));
-				client.setScreen(new TitleScreen(false));
-			}).position(width / 2 - 124, height / 4 + 96).size(20, 20).build());
+				minecraft.gui.setScreen(new TitleScreen(false));
+			}).pos(width / 2 - 124, height / 4 + 96).size(20, 20).build());
 		}
 	}
 }

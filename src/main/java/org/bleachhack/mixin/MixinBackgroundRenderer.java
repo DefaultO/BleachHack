@@ -11,26 +11,30 @@ package org.bleachhack.mixin;
 import org.bleachhack.module.ModuleManager;
 import org.bleachhack.module.mods.NoRender;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Redirect;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-import net.minecraft.client.render.BackgroundRenderer;
-import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.client.renderer.fog.environment.MobEffectFogEnvironment;
+import net.minecraft.core.Holder;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.level.material.FogType;
 
-@Mixin(BackgroundRenderer.class)
-public class MixinBackgroundRenderer {
+// TODO(26.2): BackgroundRenderer no longer exists; blindness fog now comes from
+// MobEffectFogEnvironment/BlindnessFogEnvironment. Making isApplicable return false
+// disables the blindness fog (and its darkness modifier) like the old redirect did.
+@Mixin(MobEffectFogEnvironment.class)
+public abstract class MixinBackgroundRenderer {
 
-	@Redirect(method = {
-			"render(Lnet/minecraft/client/render/Camera;FLnet/minecraft/client/world/ClientWorld;IF)V",
-			"applyFog"},
-			at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/LivingEntity;hasStatusEffect(Lnet/minecraft/entity/effect/MobEffect;)Z"))
-	private static boolean hasStatusEffect(LivingEntity entity, MobEffect effect) {
-		if (effect == MobEffects.BLINDNESS && ModuleManager.getModule(NoRender.class).isOverlayToggled(0)) {
-			return false;
+	@Shadow public abstract Holder<MobEffect> getMobEffect();
+
+	@Inject(method = "isApplicable(Lnet/minecraft/world/level/material/FogType;Lnet/minecraft/world/entity/Entity;)Z", at = @At("HEAD"), cancellable = true)
+	private void isApplicable(FogType fogType, Entity entity, CallbackInfoReturnable<Boolean> cir) {
+		if (getMobEffect() == MobEffects.BLINDNESS && ModuleManager.getModule(NoRender.class).isOverlayToggled(0)) {
+			cir.setReturnValue(false);
 		}
-
-		return entity.hasStatusEffect(effect);
 	}
 }

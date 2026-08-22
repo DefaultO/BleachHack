@@ -8,7 +8,7 @@
  */
 package org.bleachhack.mixin;
 
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import org.bleachhack.BleachHack;
 import org.bleachhack.event.events.EventRenderScreenBackground;
 import org.bleachhack.event.events.EventRenderTooltip;
@@ -29,23 +29,25 @@ public class MixinScreen {
 
 	@Unique private boolean skipTooltip;
 
-	@Shadow private void renderWithTooltip(GuiGraphics context, int mouseX, int mouseY, float delta) {}
+	// 26.2: renderWithTooltip -> extractRenderStateWithTooltipAndSubtitles
+	@Shadow private void extractRenderStateWithTooltipAndSubtitles(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta) {}
 
-	@Inject(method = "render", at = @At("HEAD"))
-	private void render(GuiGraphics context, int mouseX, int mouseY, float delta, CallbackInfo callback) {
+	// 26.2: render -> extractRenderState
+	@Inject(method = "extractRenderState", at = @At("HEAD"))
+	private void render(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta, CallbackInfo callback) {
 		lastMX = mouseX;
 		lastMY = mouseY;
 	}
 
-	@Inject(method = "renderWithTooltip", at = @At("HEAD"), cancellable = true)
-	private void renderWithTooltip(GuiGraphics context, int mouseX, int mouseY, float delta, CallbackInfo ci) {
+	@Inject(method = "extractRenderStateWithTooltipAndSubtitles", at = @At("HEAD"), cancellable = true)
+	private void renderWithTooltip(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta, CallbackInfo ci) {
 		if (!skipTooltip) {
-			EventRenderTooltip event = new EventRenderTooltip((Screen) (Object) this, context, mouseX, mouseY, delta);
+			EventRenderTooltip event = new EventRenderTooltip((Screen) (Object) this, graphics, mouseX, mouseY, delta);
 			BleachHack.eventBus.post(event);
 
 			if (!event.isCancelled()) {
 				skipTooltip = true;
-				renderWithTooltip(context, event.getMouseX(), event.getMouseY(), event.getDelta());
+				extractRenderStateWithTooltipAndSubtitles(graphics, event.getMouseX(), event.getMouseY(), event.getDelta());
 				skipTooltip = false;
 			}
 
@@ -55,9 +57,10 @@ public class MixinScreen {
 		}
 	}
 
-	@Inject(method = "renderBackground", at = @At("HEAD"), cancellable = true)
-	private void renderBackground(GuiGraphics context, int mouseX, int mouseY, float delta, CallbackInfo ci) {
-		EventRenderScreenBackground event = new EventRenderScreenBackground(context);
+	// 26.2: renderBackground -> extractBackground
+	@Inject(method = "extractBackground", at = @At("HEAD"), cancellable = true)
+	private void renderBackground(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta, CallbackInfo ci) {
+		EventRenderScreenBackground event = new EventRenderScreenBackground(graphics);
 		BleachHack.eventBus.post(event);
 
 		if (event.isCancelled()) {

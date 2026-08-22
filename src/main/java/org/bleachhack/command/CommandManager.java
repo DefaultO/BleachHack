@@ -110,11 +110,11 @@ public class CommandManager {
 					BleachLogger.error(e.getMessage());
 
 					MutableComponent text = Component.literal(Command.getPrefix() + c.getAliases()[0] + ": §f" + c.getDescription())
-							.styled(s -> s.withColor(BleachLogger.INFO_COLOR));
+							.withStyle(s -> s.withColor(BleachLogger.INFO_COLOR));
 
 					BleachLogger.info(
-							text.styled(style -> style
-									.withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, c.getHelpTooltip()))));
+							text.withStyle(style -> style
+									.withHoverEvent(new HoverEvent.ShowText(c.getHelpTooltip()))));
 				} catch (Exception e) {
 					e.printStackTrace();
 

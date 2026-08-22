@@ -49,11 +49,11 @@ public class CommandSuggestor {
 		if (!Option.CHAT_SHOW_SUGGESTIONS.getValue())
 			return;
 
-		Screen screen = Minecraft.getInstance().currentScreen;
+		Screen screen = Minecraft.getInstance().gui.screen();
 
 		if (screen instanceof ChatScreen) {
 			EditBox field = ((AccessorChatScreen) screen).getChatField();
-			String text = field.getText();
+			String text = field.getValue();
 
 			if (!text.equals(curText)) {
 				suggestions.clear();
@@ -68,7 +68,7 @@ public class CommandSuggestor {
 			}
 
 			if (selected >= 0 && selected < suggestions.size()) {
-				String[] split = field.getText().split(" ", -1);
+				String[] split = field.getValue().split(" ", -1);
 				int offset = split[split.length - 1].length() - (split.length == 1 ? Command.getPrefix().length() : 0);
 
 				if (offset > suggestions.get(selected).length()) {
@@ -79,27 +79,27 @@ public class CommandSuggestor {
 			}
 
 			if (!suggestions.isEmpty()) {
-				event.getContext().getMatrices().push();
-				event.getContext().getMatrices().translate(0, 0, 200);
+				// TODO(26.2): z-translate(0, 0, 200) removed - the 2D pose stack has no z; layering is handled by gui strata now
+				event.getContext().pose().pushMatrix();
 
 				int length = suggestions.stream()
-						.map(s -> Minecraft.getInstance().textRenderer.getWidth(s))
+						.map(s -> Minecraft.getInstance().font.width(s))
 						.min(Comparator.reverseOrder()).orElse(0);
 
-				int startX = Minecraft.getInstance().textRenderer.getWidth(
-						field.getText().replaceFirst("[^ ]*$", "") + (!field.getText().contains(" ") ? Command.getPrefix() : "")) + 3;
+				int startX = Minecraft.getInstance().font.width(
+						field.getValue().replaceFirst("[^ ]*$", "") + (!field.getValue().contains(" ") ? Command.getPrefix() : "")) + 3;
 				int startY = screen.height - Math.min(suggestions.size(), 10) * 12 - 15;
 				for (int i = scroll; i < suggestions.size() && i < scroll + 10; i++) {
 					String suggestion = suggestions.get(i);
 
 					event.getContext().fill(startX, startY, startX + length + 2, startY + 12, 0xd0000000);
-					event.getContext().drawTextWithShadow(Minecraft.getInstance().textRenderer,
-							suggestion, startX + 1, startY + 2, i == selected ? 0xffff00: 0xb0b0b0);
+					event.getContext().text(Minecraft.getInstance().font,
+							suggestion, startX + 1, startY + 2, i == selected ? 0xffffff00 : 0xffb0b0b0);
 
 					startY += 12;
 				}
 
-				event.getContext().getMatrices().pop();
+				event.getContext().pose().popMatrix();
 			}
 		}
 	}
@@ -115,12 +115,12 @@ public class CommandSuggestor {
 				updateScroll();
 			} else if (event.getKey() == GLFW.GLFW_KEY_SPACE || event.getKey() == GLFW.GLFW_KEY_TAB) {
 				if (selected >= 0 && selected < suggestions.size()) {
-					EditBox field = ((AccessorChatScreen) Minecraft.getInstance().currentScreen).getChatField();
-					String[] split = field.getText().split(" ", -1);
+					EditBox field = ((AccessorChatScreen) Minecraft.getInstance().gui.screen()).getChatField();
+					String[] split = field.getValue().split(" ", -1);
 					int offset = split[split.length - 1].length() - (split.length == 1 ? Command.getPrefix().length() : 0);
 
 					if (offset < suggestions.get(selected).length() && !suggestions.get(selected).matches("^<.*>$")) {
-						field.setText(field.getText() + suggestions.get(selected).substring(offset));
+						field.setValue(field.getValue() + suggestions.get(selected).substring(offset));
 					}
 				}
 			}
@@ -129,8 +129,8 @@ public class CommandSuggestor {
 
 	@BleachSubscribe
 	public void onKeyPressChat(EventKeyPress.InChat event) {
-		EditBox field = ((AccessorChatScreen) Minecraft.getInstance().currentScreen).getChatField();
-		if (field.getText().startsWith(Command.getPrefix())
+		EditBox field = ((AccessorChatScreen) Minecraft.getInstance().gui.screen()).getChatField();
+		if (field.getValue().startsWith(Command.getPrefix())
 				&& (event.getKey() == GLFW.GLFW_KEY_TAB || event.getKey() == GLFW.GLFW_KEY_UP || event.getKey() == GLFW.GLFW_KEY_DOWN)) {
 			event.setCancelled(true);
 		}
@@ -146,7 +146,7 @@ public class CommandSuggestor {
 
 	@BleachSubscribe
 	public void onOpenScreen(EventOpenScreen event) {
-		if (Minecraft.getInstance().currentScreen instanceof ChatScreen) {
+		if (Minecraft.getInstance().gui.screen() instanceof ChatScreen) {
 			reset();
 		}
 	}

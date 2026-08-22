@@ -8,10 +8,10 @@
  */
 package org.bleachhack.mixin;
 
-import net.minecraft.client.renderer.MapRenderer;
-import net.minecraft.client.renderer.MultiBufferSource;
 import com.mojang.blaze3d.vertex.PoseStack;
-import net.minecraft.world.level.saveddata.maps.MapItemSavedData;
+import net.minecraft.client.renderer.MapRenderer;
+import net.minecraft.client.renderer.SubmitNodeCollector;
+import net.minecraft.client.renderer.state.MapRenderState;
 import org.bleachhack.module.ModuleManager;
 import org.bleachhack.module.mods.NoRender;
 import org.spongepowered.asm.mixin.Mixin;
@@ -22,8 +22,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(MapRenderer.class)
 public class MixinMapRenderer {
 
-	@Inject(method = "draw", at = @At("HEAD"), cancellable = true)
-	private void draw(PoseStack matrices, MultiBufferSource vertexConsumers, int id, MapItemSavedData state, boolean hidePlayerIcons, int light, CallbackInfo ci) {
+	@Inject(method = "render", at = @At("HEAD"), cancellable = true)
+	private void render(MapRenderState mapRenderState, PoseStack poseStack, SubmitNodeCollector submitNodeCollector, boolean showOnlyFrame, int lightCoords, CallbackInfo ci) {
 		if (ModuleManager.getModule(NoRender.class).isWorldToggled(3)) {
 			ci.cancel();
 		}

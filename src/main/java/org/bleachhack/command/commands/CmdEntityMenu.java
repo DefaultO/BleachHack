@@ -30,6 +30,6 @@ public class CmdEntityMenu extends Command {
 	public void onCommand(String alias, String[] args) throws Exception {
 		MutablePairList<String, String> interactions = ModuleManager.getModule(EntityMenu.class).interactions;
 
-		BleachQueue.add(() -> mc.setScreen(new EntityMenuEditScreen(interactions)));
+		BleachQueue.add(() -> mc.gui.setScreen(new EntityMenuEditScreen(interactions)));
 	}
 }

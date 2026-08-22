@@ -22,6 +22,7 @@ import org.bleachhack.command.exception.CmdSyntaxException;
 import org.bleachhack.util.BleachLogger;
 import org.bleachhack.util.io.BleachFileHelper;
 
+import java.net.URI;
 import java.util.Locale;
 
 public class CmdFriends extends Command {
@@ -66,17 +67,17 @@ public class CmdFriends extends Command {
 
 					text
 					.append(Component.literal("\n> " + f + spaces)
-							.styled(style -> style
+							.withStyle(style -> style
 									.withColor(BleachLogger.INFO_COLOR)))
 					.append(Component.literal("§c[Del]")
-							.styled(style -> style
-									.withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.literal("Remove " + f + " from your friendlist")))
-									.withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, getPrefix() + "friends remove " + f))))
+							.withStyle(style -> style
+									.withHoverEvent(new HoverEvent.ShowText(Component.literal("Remove " + f + " from your friendlist")))
+									.withClickEvent(new ClickEvent.RunCommand(getPrefix() + "friends remove " + f))))
 					.append("   ")
 					.append(Component.literal("§3[NameMC]")
-							.styled(style -> style
-									.withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.literal("Open NameMC page of " + f)))
-									.withClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, "https://namemc.com/profile/" + f))));
+							.withStyle(style -> style
+									.withHoverEvent(new HoverEvent.ShowText(Component.literal("Open NameMC page of " + f)))
+									.withClickEvent(new ClickEvent.OpenUrl(URI.create("https://namemc.com/profile/" + f)))));
 				}
 
 				BleachLogger.info(text);

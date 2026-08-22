@@ -10,9 +10,8 @@ package org.bleachhack.mixin;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.main.GameConfig;
-import net.minecraft.client.gui.screens.Screen;
 import org.bleachhack.BleachHack;
-import org.bleachhack.event.events.EventOpenScreen;
+import org.bleachhack.event.events.EventWorldRender;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.At.Shift;
@@ -21,20 +20,27 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(Minecraft.class)
 public class MixinMinecraftClient {
-	
-	@Inject(method = "<init>", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/Minecraft;setOverlay(Lnet/minecraft/client/gui/screen/Overlay;)V", shift = Shift.BEFORE))
+
+	@Inject(method = "<init>", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/Gui;setOverlay(Lnet/minecraft/client/gui/screens/Overlay;)V", shift = Shift.BEFORE))
 	private void init(GameConfig args, CallbackInfo callback) {
 		BleachHack.getInstance().postInit();
 	}
-	
 
-	@Inject(method = "setScreen", at = @At("HEAD"), cancellable = true)
-	private void setScreen(Screen screen, CallbackInfo info) {
-		EventOpenScreen event = new EventOpenScreen(screen);
-		BleachHack.eventBus.post(event);
+	// Fired inside the per-frame gizmo collector scope so handlers can draw
+	// world overlays through org.bleachhack.util.render.Renderer.
+	@Inject(method = "renderFrame", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/GameRenderer;render(Lnet/minecraft/client/DeltaTracker;Z)V"))
+	private void preWorldRender(boolean advanceGameTime, CallbackInfo callback) {
+		Minecraft mc = (Minecraft) (Object) this;
+		if (mc.level != null && mc.player != null) {
+			BleachHack.eventBus.post(new EventWorldRender.Pre(mc.getDeltaTracker().getGameTimeDeltaPartialTick(false)));
+		}
+	}
 
-		if (event.isCancelled()) {
-			info.cancel();
+	@Inject(method = "renderFrame", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/GameRenderer;render(Lnet/minecraft/client/DeltaTracker;Z)V", shift = Shift.AFTER))
+	private void postWorldRender(boolean advanceGameTime, CallbackInfo callback) {
+		Minecraft mc = (Minecraft) (Object) this;
+		if (mc.level != null && mc.player != null) {
+			BleachHack.eventBus.post(new EventWorldRender.Post(mc.getDeltaTracker().getGameTimeDeltaPartialTick(false)));
 		}
 	}
 }

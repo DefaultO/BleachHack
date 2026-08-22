@@ -11,22 +11,26 @@ package org.bleachhack.command.commands;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
-import java.util.Random;
+import java.util.UUID;
 
+import com.mojang.authlib.GameProfile;
+import com.mojang.authlib.properties.Property;
+import com.mojang.authlib.properties.PropertyMap;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import org.bleachhack.command.Command;
 import org.bleachhack.command.CommandCategory;
 import org.bleachhack.command.exception.CmdSyntaxException;
 import org.bleachhack.util.BleachLogger;
 
+import com.google.common.collect.ImmutableMultimap;
 import com.google.common.io.Resources;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.TagParser;
+import net.minecraft.world.item.component.ResolvableProfile;
 
 public class CmdSkull extends Command {
 
@@ -37,7 +41,7 @@ public class CmdSkull extends Command {
 
 	@Override
 	public void onCommand(String alias, String[] args) throws CmdSyntaxException, CommandSyntaxException {
-		if (!mc.interactionManager.getCurrentGameMode().isCreative()) {
+		if (!mc.gameMode.getPlayerMode().isCreative()) {
 			BleachLogger.error("Not In Creative Mode!");
 			return;
 		}
@@ -47,9 +51,6 @@ public class CmdSkull extends Command {
 		}
 
 		ItemStack item = new ItemStack(Items.PLAYER_HEAD, 64);
-
-		Random random = new Random();
-		String id = "[I;" + random.nextInt() + "," + random.nextInt() + "," + random.nextInt() + "," + random.nextInt() + "]";
 
 		if (args.length < 2) {
 			try {
@@ -61,21 +62,25 @@ public class CmdSkull extends Command {
 						Resources.toString(new URL("https://sessionserver.mojang.com/session/minecraft/profile/" + json.get("id").getAsString()), StandardCharsets.UTF_8))
 						.getAsJsonObject();
 
-				item.setNbt(TagParser.parse("{SkullOwner:{Id:" + id + ",Properties:{textures:[{Value:\""
-						+ json2.get("properties").getAsJsonArray().get(0).getAsJsonObject().get("value").getAsString()
-						+ "\"}]}}}"));
+				item.set(DataComponents.PROFILE, texturedProfile(json.get("name").getAsString(),
+						json2.get("properties").getAsJsonArray().get(0).getAsJsonObject().get("value").getAsString()));
 			} catch (Exception e) {
 				e.printStackTrace();
 				BleachLogger.error("Error getting head! (" + e.getClass().getSimpleName() + ")");
 			}
 		} else if (args[0].equalsIgnoreCase("img")) {
-			CompoundTag tag = TagParser.parse(
-					"{SkullOwner:{Id:" + id + ",Properties:{textures:[{Value:\"" + encodeUrl(args[1]) + "\"}]}}}");
-			item.setNbt(tag);
-			BleachLogger.logger.info(tag);
+			// 26.2: SkullOwner NBT was replaced by the minecraft:profile data component
+			ResolvableProfile profile = texturedProfile("img", encodeUrl(args[1]));
+			item.set(DataComponents.PROFILE, profile);
+			BleachLogger.logger.info(profile);
 		}
 
-		mc.player.getInventory().addPickBlock(item);
+		mc.player.getInventory().addAndPickItem(item);
+	}
+
+	private ResolvableProfile texturedProfile(String name, String textureValue) {
+		PropertyMap properties = new PropertyMap(ImmutableMultimap.of("textures", new Property("textures", textureValue)));
+		return ResolvableProfile.createResolved(new GameProfile(UUID.randomUUID(), name, properties));
 	}
 
 	private String encodeUrl(String url) {

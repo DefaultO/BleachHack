@@ -27,8 +27,8 @@ public class MixinServerScreen extends Screen {
 
 	@Inject(method = "init()V", at = @At("HEAD"))
 	private void init(CallbackInfo info) {
-		addDrawableChild(Button.builder(Component.literal("Protocol"), button -> {
-			client.setScreen(new ProtocolScreen((JoinMultiplayerScreen) client.currentScreen));
-		}).position(5, 7).size(50, 20).build());
+		addRenderableWidget(Button.builder(Component.literal("Protocol"), button -> {
+			minecraft.gui.setScreen(new ProtocolScreen(this));
+		}).pos(5, 7).size(50, 20).build());
 	}
 }

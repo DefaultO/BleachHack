@@ -12,7 +12,6 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import net.minecraft.core.registries.BuiltInRegistries;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.bleachhack.command.Command;
@@ -20,20 +19,22 @@ import org.bleachhack.command.CommandCategory;
 import org.bleachhack.command.exception.CmdSyntaxException;
 import org.bleachhack.util.BleachLogger;
 
+import net.minecraft.core.Holder;
+import net.minecraft.core.Registry;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.Enchantments;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
 
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.Style;
 import net.minecraft.network.chat.Component;
-import net.minecraft.ChatFormatting;
+import net.minecraft.network.chat.TextColor;
 
 public class CmdEnchant extends Command {
 
-	private static final Map<String[], Enchantment> enchantments = new LinkedHashMap<>();
+	private static final Map<String[], ResourceKey<Enchantment>> enchantments = new LinkedHashMap<>();
 
 	static {
 		enchantments.put(new String[] { "aqua_affinity", "aqua" }, Enchantments.AQUA_AFFINITY);
@@ -70,7 +71,7 @@ public class CmdEnchant extends Command {
 		enchantments.put(new String[] { "sharpness", "sharp" }, Enchantments.SHARPNESS);
 		enchantments.put(new String[] { "silk_touch", "silk" }, Enchantments.SILK_TOUCH);
 		enchantments.put(new String[] { "smite" }, Enchantments.SMITE);
-		enchantments.put(new String[] { "sweeping_edge", "sweep" }, Enchantments.SWEEPING);
+		enchantments.put(new String[] { "sweeping_edge", "sweep" }, Enchantments.SWEEPING_EDGE);
 		enchantments.put(new String[] { "thorns" }, Enchantments.THORNS);
 		enchantments.put(new String[] { "soul_speed", "soul" }, Enchantments.SOUL_SPEED);
 		enchantments.put(new String[] { "unbreaking" }, Enchantments.UNBREAKING);
@@ -82,7 +83,7 @@ public class CmdEnchant extends Command {
 
 	@Override
 	public void onCommand(String alias, String[] args) throws CmdSyntaxException {
-		if (!mc.interactionManager.getCurrentGameMode().isCreative()) {
+		if (!mc.gameMode.getPlayerMode().isCreative()) {
 			BleachLogger.error("Not In Creative Mode!");
 			return;
 		}
@@ -95,7 +96,7 @@ public class CmdEnchant extends Command {
 			MutableComponent text = Component.literal("");
 			int i = 0;
 			for (String[] s: enchantments.keySet()) {
-				int color = i % 2 == 0 ? BleachLogger.INFO_COLOR : ChatFormatting.AQUA.getColorValue();
+				int color = i % 2 == 0 ? BleachLogger.INFO_COLOR : TextColor.AQUA.getValue();
 				text.append(Component.literal("§7[§r" + String.join("§7/§r", s) + "§7] ").setStyle(Style.EMPTY.withColor(color)));
 				i++;
 			}
@@ -105,10 +106,13 @@ public class CmdEnchant extends Command {
 		}
 
 		int level = args.length == 1 ? 1 : Integer.parseInt(args[1]);
-		ItemStack item = mc.player.getInventory().getMainHandStack();
+		ItemStack item = mc.player.getInventory().getSelectedItem();
+
+		// TODO(26.2): enchantments are data-driven now; resolved through the level's registry.
+		Registry<Enchantment> registry = mc.level.registryAccess().lookupOrThrow(Registries.ENCHANTMENT);
 
 		if (args[0].equalsIgnoreCase("all")) {
-			for (Enchantment e : BuiltInRegistries.ENCHANTMENT) {
+			for (Holder<Enchantment> e : registry.listElements().toList()) {
 				enchant(item, e, level);
 			}
 
@@ -118,31 +122,24 @@ public class CmdEnchant extends Command {
 		int i = NumberUtils.toInt(args[0], -1);
 
 		if (i != -1) {
-			enchant(item, Enchantment.byRawId(i), level);
+			enchant(item, registry.get(i).orElse(null), level);
 		} else {
 			enchant(item, enchantments.entrySet().stream()
 					.filter(e -> ArrayUtils.contains(e.getKey(), args[0]))
 					.map(Entry::getValue)
-					.findFirst().orElse(null), level);
+					.findFirst()
+					.flatMap(registry::get)
+					.orElse(null), level);
 		}
 	}
 
-	public void enchant(ItemStack item, Enchantment e, int level) throws CmdSyntaxException {
+	public void enchant(ItemStack item, Holder<Enchantment> e, int level) throws CmdSyntaxException {
 		if (e == null) {
 			throw new CmdSyntaxException("Invalid enchantment!");
 		}
 
-		if (item.getNbt() == null)
-			item.setNbt(new CompoundTag());
-		if (!item.getNbt().contains("Enchantments", 9)) {
-			item.getNbt().put("Enchantments", new ListTag());
-		}
-
-		ListTag listnbt = item.getNbt().getList("Enchantments", 10);
-		CompoundTag compoundnbt = new CompoundTag();
-		compoundnbt.putString("id", String.valueOf(BuiltInRegistries.ENCHANTMENT.getId(e)));
-		compoundnbt.putInt("lvl", level);
-		listnbt.add(compoundnbt);
+		// TODO(26.2): enchantments are a data component now; levels are clamped to 255 (raw NBT used to allow up to 32767).
+		item.enchant(e, level);
 	}
 
 }

@@ -60,14 +60,15 @@ public class CmdEntityStats extends Command {
 	}
 
 	public static double getSpeed(AbstractHorse horse) {
-		return round(20 * horse.getAttributeValue(Attributes.GENERIC_MOVEMENT_SPEED), 2);
+		return round(20 * horse.getAttributeValue(Attributes.MOVEMENT_SPEED), 2);
 	}
 
 	public static double getSpeedLiving(LivingEntity entity) {
-		return round(43.17 * entity.getMovementSpeed(), 2);
+		return round(43.17 * entity.getSpeed(), 2);
 	}
 
 	public static double getJumpHeight(AbstractHorse horse) {
-		return round(-0.1817584952 * Math.pow(horse.getJumpStrength(), 3) + 3.689713992 * Math.pow(horse.getJumpStrength(), 2) + 2.128599134 * horse.getJumpStrength() - 0.343930367, 3);
+		double jumpStrength = horse.getAttributeValue(Attributes.JUMP_STRENGTH);
+		return round(-0.1817584952 * Math.pow(jumpStrength, 3) + 3.689713992 * Math.pow(jumpStrength, 2) + 2.128599134 * jumpStrength - 0.343930367, 3);
 	}
 }

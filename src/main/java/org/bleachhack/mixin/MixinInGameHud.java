@@ -8,8 +8,9 @@
  */
 package org.bleachhack.mixin;
 
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.Gui;
+import net.minecraft.client.DeltaTracker;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.Hud;
 import net.minecraft.resources.Identifier;
 import org.bleachhack.BleachHack;
 import org.bleachhack.event.events.EventRenderCrosshair;
@@ -22,18 +23,21 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-@Mixin(Gui.class)
+// 26.2: the in-game HUD logic moved from Gui to Hud (Gui is now the screen/overlay manager).
+@Mixin(Hud.class)
 public class MixinInGameHud {
 
 	@Unique private boolean bypassRenderOverlay = false;
 	@Unique private boolean bypassRenderCrosshair = false;
 
-	@Shadow private void renderOverlay(GuiGraphics context, Identifier texture, float opacity) {}
-	@Shadow private void renderCrosshair(GuiGraphics context) {}
+	// 26.2: renderOverlay -> extractTextureOverlay, renderCrosshair -> extractCrosshair (extra DeltaTracker param)
+	@Shadow private void extractTextureOverlay(GuiGraphicsExtractor graphics, Identifier texture, float alpha) {}
+	@Shadow private void extractCrosshair(GuiGraphicsExtractor graphics, DeltaTracker deltaTracker) {}
 
-	@Inject(method = "render", at = @At("RETURN"), cancellable = true)
-	private void render(GuiGraphics context, float tickDelta, CallbackInfo ci) {
-		EventRenderInGameHud event = new EventRenderInGameHud(context);
+	// 26.2: render -> extractRenderState
+	@Inject(method = "extractRenderState", at = @At("RETURN"), cancellable = true)
+	private void render(GuiGraphicsExtractor graphics, DeltaTracker deltaTracker, CallbackInfo ci) {
+		EventRenderInGameHud event = new EventRenderInGameHud(graphics);
 		BleachHack.eventBus.post(event);
 
 		if (event.isCancelled()) {
@@ -41,15 +45,15 @@ public class MixinInGameHud {
 		}
 	}
 
-	@Inject(method = "renderOverlay", at = @At("HEAD"), cancellable = true)
-	private void renderOverlay(GuiGraphics context, Identifier texture, float opacity, CallbackInfo ci) {
+	@Inject(method = "extractTextureOverlay", at = @At("HEAD"), cancellable = true)
+	private void renderOverlay(GuiGraphicsExtractor graphics, Identifier texture, float opacity, CallbackInfo ci) {
 		if (!bypassRenderOverlay) {
-			EventRenderOverlay event = new EventRenderOverlay(context, texture, opacity);
+			EventRenderOverlay event = new EventRenderOverlay(graphics, texture, opacity);
 			BleachHack.eventBus.post(event);
 
 			if (!event.isCancelled()) {
 				bypassRenderOverlay = true;
-				renderOverlay(context, event.getTexture(), event.getOpacity());
+				extractTextureOverlay(graphics, event.getTexture(), event.getOpacity());
 				bypassRenderOverlay = false;
 			}
 
@@ -58,15 +62,15 @@ public class MixinInGameHud {
 	}
 
 
-	@Inject(method = "renderCrosshair", at = @At("HEAD"), cancellable = true)
-	private void renderCrosshair(GuiGraphics context, CallbackInfo ci) {
+	@Inject(method = "extractCrosshair", at = @At("HEAD"), cancellable = true)
+	private void renderCrosshair(GuiGraphicsExtractor graphics, DeltaTracker deltaTracker, CallbackInfo ci) {
 		if (!bypassRenderCrosshair) {
-			EventRenderCrosshair event = new EventRenderCrosshair(context);
+			EventRenderCrosshair event = new EventRenderCrosshair(graphics);
 			BleachHack.eventBus.post(event);
 
 			if (!event.isCancelled()) {
 				bypassRenderCrosshair = true;
-				renderCrosshair(context);
+				extractCrosshair(graphics, deltaTracker);
 				bypassRenderCrosshair = false;
 			}
 

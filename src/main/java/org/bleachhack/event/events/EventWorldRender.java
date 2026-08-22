@@ -8,37 +8,34 @@
  */
 package org.bleachhack.event.events;
 
-import com.mojang.blaze3d.vertex.PoseStack;
 import org.bleachhack.event.Event;
 
+/**
+ * Fired each frame while the gizmo collector is active, so handlers can draw
+ * world overlays via {@link org.bleachhack.util.render.Renderer}.
+ * ponytail: 26.2 dropped the PoseStack that used to ride along here; no module used it.
+ */
 public class EventWorldRender extends Event {
 
 	protected float partialTicks;
-	protected PoseStack matrices;
-	
+
 	public static class Pre extends EventWorldRender {
 
-		public Pre(float partialTicks, PoseStack matrices) {
+		public Pre(float partialTicks) {
 			this.partialTicks = partialTicks;
-			this.matrices = matrices;
 		}
-		
+
 	}
-	
+
 	public static class Post extends EventWorldRender {
 
-		public Post(float partialTicks, PoseStack matrices) {
+		public Post(float partialTicks) {
 			this.partialTicks = partialTicks;
-			this.matrices = matrices;
 		}
-		
+
 	}
 
 	public float getPartialTicks() {
 		return partialTicks;
-	}
-	
-	public PoseStack getMatrices() {
-		return matrices;
 	}
 }

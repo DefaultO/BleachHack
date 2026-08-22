@@ -10,8 +10,10 @@ import org.spongepowered.asm.mixin.injection.ModifyArg;
 
 @Mixin(FriendlyByteBuf.class)
 public class MixinPacketByteBuf {
-    @ModifyArg(method = "readNbt()Lnet/minecraft/nbt/NbtCompound;", at = @At(value = "INVOKE", target = "Lnet/minecraft/network/FriendlyByteBuf;readNbt(Lnet/minecraft/nbt/NbtAccounter;)Lnet/minecraft/nbt/NbtElement;"))
-    private NbtAccounter increaseLimit(NbtAccounter in) {
-        return ModuleManager.getModule(AntiChunkBan.class).isEnabled() ? NbtAccounter.ofUnlimitedBytes() : in;
+    // 26.2: the accounter is created in the static readNbt(ByteBuf) overload now; ofUnlimitedBytes -> unlimitedHeap
+    @ModifyArg(method = "readNbt(Lio/netty/buffer/ByteBuf;)Lnet/minecraft/nbt/CompoundTag;",
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/network/FriendlyByteBuf;readNbt(Lio/netty/buffer/ByteBuf;Lnet/minecraft/nbt/NbtAccounter;)Lnet/minecraft/nbt/Tag;"))
+    private static NbtAccounter increaseLimit(NbtAccounter in) {
+        return ModuleManager.getModule(AntiChunkBan.class).isEnabled() ? NbtAccounter.unlimitedHeap() : in;
     }
 }

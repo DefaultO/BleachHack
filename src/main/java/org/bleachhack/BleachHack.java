@@ -81,7 +81,7 @@ public class BleachHack implements ModInitializer {
 		//TODO: Here
 
 		if (Option.GENERAL_CHECK_FOR_UPDATES.getValue()) {
-			updateJson = BleachOnlineMang.getResourceAsync("update/" + SharedConstants.getGameVersion().getName().replace(' ', '_') + ".json", HttpResponse.BodyHandlers.ofString())
+			updateJson = BleachOnlineMang.getResourceAsync("update/" + SharedConstants.getCurrentVersion().name().replace(' ', '_') + ".json", HttpResponse.BodyHandlers.ofString())
 					.thenApply(s -> BleachJsonHelper.parseOrNull(s, JsonObject.class));
 		}
 

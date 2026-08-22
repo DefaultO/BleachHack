@@ -8,27 +8,17 @@
  */
 package org.bleachhack.mixin;
 
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.render.DimensionEffects;
 import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.world.phys.Vec3;
 import org.bleachhack.BleachHack;
-import org.bleachhack.event.events.EventSkyRender;
 import org.bleachhack.event.events.EventTick;
 import org.bleachhack.util.BleachQueue;
-import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Overwrite;
-import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(ClientLevel.class)
 public class MixinClientWorld {
-
-	@Shadow @Final private DimensionEffects dimensionEffects;
 
 	@Inject(method = "tickEntities", at = @At("HEAD"), cancellable = true)
 	private void tickEntities(CallbackInfo info) {
@@ -39,6 +29,15 @@ public class MixinClientWorld {
 		if (event.isCancelled())
 			info.cancel();
 	}
+
+	// TODO(26.2): ClientLevel.getSkyColor(Vec3, float) and getCloudsColor(float) no longer exist —
+	// sky/cloud colors are now int-ARGB values computed by the EnvironmentAttributes system
+	// (ClientLevel.environmentAttributes().getValue(EnvironmentAttributes.SKY_COLOR/CLOUD_COLOR, pos)).
+	// DimensionEffects (DimensionSpecialEffects) was removed entirely, so getDimensionEffects and the
+	// EventSkyRender.Properties hook have no target. EventSkyRender needs a rework against the new
+	// attribute system (e.g. mixing into EnvironmentAttributeSystem or SkyRenderer).
+	/*
+	@Shadow @Final private DimensionEffects dimensionEffects;
 
 	@Inject(method = "getSkyColor", at = @At("HEAD"), cancellable = true)
 	public void getSkyColor(Vec3 cameraPos, float tickDelta, CallbackInfoReturnable<Vec3> ci) {
@@ -66,7 +65,7 @@ public class MixinClientWorld {
 
 	@Overwrite
 	public DimensionEffects getDimensionEffects() {
-		if (Minecraft.getInstance().world == null) {
+		if (Minecraft.getInstance().level == null) {
 			return dimensionEffects;
 		}
 
@@ -75,4 +74,5 @@ public class MixinClientWorld {
 
 		return event.getSky();
 	}
+	*/
 }

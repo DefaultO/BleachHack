@@ -21,12 +21,17 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import net.minecraft.client.KeyboardHandler;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.ChatScreen;
+import net.minecraft.client.input.KeyEvent;
 
 @Mixin(KeyboardHandler.class)
 public class MixinKeyboard {
 
-	@Inject(method = "onKey", at = @At("HEAD"), cancellable = true)
-	private void onKeyEvent(long windowPointer, int key, int scanCode, int action, int modifiers, CallbackInfo callbackInfo) {
+	// 26.2: onKey(JIIII)V -> keyPress(JI + KeyEvent record carrying key/scancode/modifiers)
+	@Inject(method = "keyPress", at = @At("HEAD"), cancellable = true)
+	private void onKeyEvent(long windowPointer, int action, KeyEvent keyEvent, CallbackInfo callbackInfo) {
+		int key = keyEvent.key();
+		int scanCode = keyEvent.scancode();
+		int modifiers = keyEvent.modifiers();
 		if (action == 2) action = 1;
 
 		switch (action) {
@@ -43,12 +48,16 @@ public class MixinKeyboard {
 		}
 	}
 
-	@Inject(method = "onKey", at = @At(value = "INVOKE", target = "net/minecraft/client/util/InputUtil.isKeyPressed(JI)Z", ordinal = 2), cancellable = true)
-	private void onKeyEvent_1(long windowPointer, int key, int scanCode, int action, int modifiers, CallbackInfo callbackInfo) {
+	// 26.2: the old InputUtil.isKeyPressed ordinal-2 anchor (right after the window-handle check, before
+	// screen handling) maps to the unconditional FramerateLimitTracker.onInputReceived() call.
+	@Inject(method = "keyPress", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/platform/FramerateLimitTracker;onInputReceived()V"), cancellable = true)
+	private void onKeyEvent_1(long windowPointer, int action, KeyEvent keyEvent, CallbackInfo callbackInfo) {
+		int key = keyEvent.key();
+		int scanCode = keyEvent.scancode();
 		if (action == 2) action = 1;
 
 		if (Option.CHAT_QUICK_PREFIX.getValue() && Command.getPrefix().length() == 1 && key == Command.getPrefix().charAt(0)) {
-			Minecraft.getInstance().setScreen(new ChatScreen(Command.getPrefix()));
+			Minecraft.getInstance().gui.setScreen(new ChatScreen(Command.getPrefix(), false));
 		}
 
 		ModuleManager.handleKey(key);

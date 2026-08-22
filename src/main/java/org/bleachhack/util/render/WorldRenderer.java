@@ -8,32 +8,29 @@
  */
 package org.bleachhack.util.render;
 
-import com.mojang.blaze3d.systems.RenderSystem;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.Font;
-import net.minecraft.client.render.*;
-import net.minecraft.client.render.model.json.ModelTransformationMode;
 import com.mojang.blaze3d.vertex.PoseStack;
-import net.minecraft.world.item.ItemStack;
+import net.minecraft.client.Camera;
+import net.minecraft.client.Minecraft;
+import net.minecraft.gizmos.Gizmos;
+import net.minecraft.gizmos.TextGizmo;
 import net.minecraft.network.chat.Component;
-import com.mojang.math.Axis;
-import org.apache.commons.lang3.reflect.FieldUtils;
-import org.joml.Vector3f;
+import net.minecraft.util.Mth;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.phys.Vec3;
 
+/**
+ * World-space text/item billboards, backed by the 26.2 Gizmos API.
+ *
+ * ponytail: Gizmos.billboardText renders a plain single-color string, so
+ * Component styling collapses to getString(); rebuild on the submit pipeline
+ * if colored nametag parts matter again.
+ */
 public class WorldRenderer {
 
 	private static final Minecraft mc = Minecraft.getInstance();
 
-	// A Pointer to RenderSystem.shaderLightDirections
-	private static final Vector3f[] shaderLight;
-
-	static {
-		try {
-			shaderLight = (Vector3f[]) FieldUtils.getField(RenderSystem.class, "shaderLightDirections", true).get(null);
-		} catch (IllegalArgumentException | IllegalAccessException e) {
-			throw new RuntimeException(e);
-		}
-	}
+	// Rough parity between the old 0.025-per-pixel billboard scale and the gizmo text scale.
+	private static final float SCALE_BASE = TextGizmo.Style.DEFAULT_SCALE;
 
 	/** Draws text in the world. **/
 	public static void drawText(Component text, double x, double y, double z, double scale, boolean shadow) {
@@ -42,83 +39,40 @@ public class WorldRenderer {
 
 	/** Draws text in the world. **/
 	public static void drawText(Component text, double x, double y, double z, double offX, double offY, double scale, boolean fill) {
-		PoseStack matrices = matrixFrom(x, y, z);
-
-		Camera camera = mc.gameRenderer.getCamera();
-		matrices.multiply(Axis.POSITIVE_Y.rotationDegrees(-camera.getYaw()));
-		matrices.multiply(Axis.POSITIVE_X.rotationDegrees(camera.getPitch()));
-
-		RenderSystem.enableBlend();
-		RenderSystem.defaultBlendFunc();
-
-		matrices.translate(offX, offY, 0);
-		matrices.scale(-0.025f * (float) scale, -0.025f * (float) scale, 1);
-
-		int halfWidth = mc.textRenderer.getWidth(text) / 2;
-
-		VertexConsumerProvider.Immediate immediate = VertexConsumerProvider.immediate(Tessellator.getInstance().getBuffer());
-
-		if (fill) {
-			int opacity = (int) (Minecraft.getInstance().options.getTextBackgroundOpacity(0.25F) * 255.0F) << 24;
-			mc.textRenderer.draw(text, -halfWidth, 0f, 553648127, false, matrices.peek().getPositionMatrix(), immediate, Font.TextLayerType.NORMAL, opacity, 0xf000f0);
-			immediate.draw();
-		} else {
-			matrices.push();
-			matrices.translate(1, 1, 0);
-			mc.textRenderer.draw(text.copy(), -halfWidth, 0f, 0x202020, false, matrices.peek().getPositionMatrix(), immediate, Font.TextLayerType.NORMAL, 0, 0xf000f0);
-			immediate.draw();
-			matrices.pop();
-		}
-
-		mc.textRenderer.draw(text, -halfWidth, 0f, -1, false, matrices.peek().getPositionMatrix(), immediate, Font.TextLayerType.NORMAL, 0, 0xf000f0);
-		immediate.draw();
-
-		RenderSystem.disableBlend();
+		// offX/offY were applied in billboard (text-pixel) space; approximate with
+		// camera-relative right/up offsets so labels keep their relative placement.
+		Vec3 pos = new Vec3(x, y, z).add(billboardOffset(offX, offY, scale));
+		Gizmos.billboardText(text.getString(), pos, TextGizmo.Style.forColorAndCentered(-1).withScale(SCALE_BASE * (float) scale)).setAlwaysOnTop();
 	}
 
-	/** Draws a 2D gui items somewhere in the world. **/
+	/** Draws a 2D gui item somewhere in the world. **/
 	public static void drawGuiItem(double x, double y, double z, double offX, double offY, double scale, ItemStack item) {
 		if (item.isEmpty()) {
 			return;
 		}
 
-		PoseStack matrices = matrixFrom(x, y, z);
-
-		Camera camera = mc.gameRenderer.getCamera();
-		matrices.multiply(Axis.POSITIVE_Y.rotationDegrees(-camera.getYaw()));
-		matrices.multiply(Axis.POSITIVE_X.rotationDegrees(camera.getPitch()));
-
-		matrices.translate(offX, offY, 0);
-		matrices.scale((float) scale, (float) scale, 0.001f);
-
-		matrices.multiply(Axis.POSITIVE_Y.rotationDegrees(180f));
-
-		mc.getBufferBuilders().getEntityVertexConsumers().draw();
-		
-		RenderSystem.enableBlend();
-		RenderSystem.defaultBlendFunc();
-
-		Vector3f[] currentLight = shaderLight.clone();
-		DiffuseLighting.disableGuiDepthLighting();
-
-		mc.getItemRenderer().renderItem(item, ModelTransformationMode.GUI, 0xF000F0,
-				OverlayTexture.DEFAULT_UV, matrices, mc.getBufferBuilders().getEntityVertexConsumers(), mc.world, 0);
-
-		mc.getBufferBuilders().getEntityVertexConsumers().draw();
-
-		RenderSystem.setShaderLights(currentLight[0], currentLight[1]);
-		RenderSystem.disableBlend();
+		// TODO(26.2): floating GUI-item billboards need the new item submit pipeline
+		// (the old ItemRenderer/BufferBuilders immediate path is gone). Until then,
+		// show the item name + count so the feature stays informative.
+		Component label = item.getCount() > 1
+				? Component.literal(item.getCount() + "x ").append(item.getHoverName())
+				: item.getHoverName();
+		drawText(label, x, y, z, offX, offY, scale * 0.5, true);
 	}
 
 	public static PoseStack matrixFrom(double x, double y, double z) {
-		PoseStack matrices = new PoseStack();
+		return Renderer.matrixFrom(x, y, z);
+	}
 
-		Camera camera = mc.gameRenderer.getCamera();
-		matrices.multiply(Axis.POSITIVE_X.rotationDegrees(camera.getPitch()));
-		matrices.multiply(Axis.POSITIVE_Y.rotationDegrees(camera.getYaw() + 180.0F));
+	private static Vec3 billboardOffset(double offX, double offY, double scale) {
+		if (offX == 0 && offY == 0) {
+			return Vec3.ZERO;
+		}
 
-		matrices.translate(x - camera.getPos().x, y - camera.getPos().y, z - camera.getPos().z);
-
-		return matrices;
+		Camera camera = mc.gameRenderer.mainCamera();
+		float yawRad = camera.yRot() * Mth.DEG_TO_RAD;
+		Vec3 right = new Vec3(-Mth.cos(yawRad), 0, -Mth.sin(yawRad));
+		double unit = 0.025 * scale;
+		return right.scale(-offX * unit).add(0, -offY * unit, 0);
 	}
 }

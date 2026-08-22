@@ -10,12 +10,18 @@ package org.bleachhack.command.commands;
 
 import net.minecraft.SharedConstants;
 import net.minecraft.client.multiplayer.PlayerInfo;
+import net.minecraft.core.BlockPos;
 import net.minecraft.network.protocol.game.ServerboundCommandSuggestionPacket;
 import net.minecraft.network.protocol.game.ClientboundCommandSuggestionsPacket;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.HoverEvent;
 
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.permissions.PermissionSet;
+import net.minecraft.server.permissions.Permissions;
+import net.minecraft.world.DifficultyInstance;
+import net.minecraft.world.attribute.EnvironmentAttributes;
+import net.minecraft.world.level.dimension.DimensionType;
 import net.minecraft.ChatFormatting;
 import org.apache.commons.lang3.StringUtils;
 import org.bleachhack.BleachHack;
@@ -40,9 +46,9 @@ public class CmdServer extends Command {
 
 	@Override
 	public void onCommand(String alias, String[] args) throws CmdSyntaxException {
-		boolean sp = mc.isIntegratedServerRunning();
+		boolean sp = mc.isLocalServer();
 
-		if (!sp && mc.getCurrentServerEntry() == null) {
+		if (!sp && mc.getCurrentServer() == null) {
 			BleachLogger.error("Unable to get server info.");
 			return;
 		}
@@ -94,9 +100,9 @@ public class CmdServer extends Command {
 			BleachHack.eventBus.unsubscribe(this);
 
 			ClientboundCommandSuggestionsPacket packet = (ClientboundCommandSuggestionsPacket) event.getPacket();
-			List<String> plugins = packet.getSuggestions().getList().stream()
+			List<String> plugins = packet.suggestions().stream()
 					.map(s -> {
-						String[] split = s.getText().split(":");
+						String[] split = s.text().split(":");
 						return split.length != 1 ? split[0].replace("/", "") : null;
 					})
 					.filter(Objects::nonNull)
@@ -114,14 +120,14 @@ public class CmdServer extends Command {
 
 	public Component createText(String name, String value) {
 		boolean newlines = value.contains("\n");
-		return Component.literal("§7" + name + "§f:" + (newlines ? "\n" : " " ) + "§a" + value).styled(style -> style
-				.withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.literal("Click to copy to clipboard")))
-				.withClickEvent(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, ChatFormatting.strip(value))));
+		return Component.literal("§7" + name + "§f:" + (newlines ? "\n" : " " ) + "§a" + value).withStyle(style -> style
+				.withHoverEvent(new HoverEvent.ShowText(Component.literal("Click to copy to clipboard")))
+				.withClickEvent(new ClickEvent.CopyToClipboard(ChatFormatting.stripFormatting(value))));
 	}
 
 	public void checkForPlugins() {
 		BleachHack.eventBus.subscribe(this); // Plugins
-		mc.player.networkHandler.sendPacket(new ServerboundCommandSuggestionPacket(0, "/"));
+		mc.player.connection.send(new ServerboundCommandSuggestionPacket(0, "/"));
 
 		Thread timeoutThread = new Thread(() -> {
 			try {
@@ -139,22 +145,26 @@ public class CmdServer extends Command {
 		if (singleplayer)
 			return "Singleplayer";
 
-		return mc.getCurrentServerEntry().address != null ? mc.getCurrentServerEntry().address : "Unknown";
+		return mc.getCurrentServer().ip != null ? mc.getCurrentServer().ip : "Unknown";
 	}
 
 	public String getBrand(boolean singleplayer) {
 		if (singleplayer)
 			return "Integrated Server";
 
-		return mc.getNetworkHandler().getBrand() != null ? mc.getNetworkHandler().getBrand() : "unknown";
+		return mc.getConnection().serverBrand() != null ? mc.getConnection().serverBrand() : "unknown";
 	}
 
 	public String getDay(boolean singleplayer) {
-		return "Day " + (mc.world.getTimeOfDay() / 24000L);
+		return "Day " + (mc.level.getOverworldClockTime() / 24000L);
 	}
 
 	public String getDifficulty(boolean singleplayer) {
-		return StringUtils.capitalize(mc.world.getDifficulty().getName()) + " (Local: " + mc.world.getLocalDifficulty(mc.player.getBlockPos()).getLocalDifficulty() + ")";
+		BlockPos pos = mc.player.blockPosition();
+		float moonBrightness = DimensionType.MOON_BRIGHTNESS_PER_PHASE[mc.level.environmentAttributes().getValue(EnvironmentAttributes.MOON_PHASE, pos).index()];
+		DifficultyInstance localDifficulty = new DifficultyInstance(
+				mc.level.getDifficulty(), mc.level.getOverworldClockTime(), mc.level.getChunkAt(pos).getInhabitedTime(), moonBrightness);
+		return StringUtils.capitalize(mc.level.getDifficulty().getSerializedName()) + " (Local: " + localDifficulty.getEffectiveDifficulty() + ")";
 	}
 
 	public String getIP(boolean singleplayer) {
@@ -162,7 +172,7 @@ public class CmdServer extends Command {
 			if (singleplayer)
 				return InetAddress.getLocalHost().getHostAddress();
 
-			return mc.getCurrentServerEntry().address != null ? InetAddress.getByName(mc.getCurrentServerEntry().address).getHostAddress() : "Unknown";
+			return mc.getCurrentServer().ip != null ? InetAddress.getByName(mc.getCurrentServer().ip).getHostAddress() : "Unknown";
 		} catch (UnknownHostException e) {
 			return "Unknown";
 		}
@@ -172,17 +182,21 @@ public class CmdServer extends Command {
 		if (singleplayer)
 			return "-";
 
-		return mc.getCurrentServerEntry().label != null ? mc.getCurrentServerEntry().label.getString() : "Unknown";
+		return mc.getCurrentServer().motd != null ? mc.getCurrentServer().motd.getString() : "Unknown";
 	}
 
 	public String getPing(boolean singleplayer) {
-		PlayerInfo playerEntry = mc.player.networkHandler.getPlayerListEntry(mc.player.getGameProfile().getId());
+		PlayerInfo playerEntry = mc.player.connection.getPlayerInfo(mc.player.getGameProfile().id());
 		return playerEntry == null ? "0" : Integer.toString(playerEntry.getLatency());
 	}
 
 	public String getPerms(boolean singleplayer) {
-		int p = 0;
-		while (mc.player.hasPermissionLevel(p + 1) && p < 5) p++;
+		// 26.2: numeric permission levels were replaced by a permission set, map back to the old 0-4 scale
+		PermissionSet perms = mc.player.permissions();
+		int p = perms.hasPermission(Permissions.COMMANDS_OWNER) ? 4
+				: perms.hasPermission(Permissions.COMMANDS_ADMIN) ? 3
+				: perms.hasPermission(Permissions.COMMANDS_GAMEMASTER) ? 2
+				: perms.hasPermission(Permissions.COMMANDS_MODERATOR) ? 1 : 0;
 
 		return switch (p) {
 			case 0 -> "0 (No Perms)";
@@ -198,13 +212,13 @@ public class CmdServer extends Command {
 		if (singleplayer)
 			return Integer.toString(SharedConstants.getProtocolVersion());
 
-		return Integer.toString(mc.getCurrentServerEntry().protocolVersion);
+		return Integer.toString(mc.getCurrentServer().protocol);
 	}
 
 	public String getVersion(boolean singleplayer) {
 		if (singleplayer)
-			return SharedConstants.getGameVersion().getName();
+			return SharedConstants.getCurrentVersion().name();
 
-		return mc.getCurrentServerEntry().version != null ? mc.getCurrentServerEntry().version.getString() : "Unknown (" + SharedConstants.getGameVersion().getName() + ")";
+		return mc.getCurrentServer().version != null ? mc.getCurrentServer().version.getString() : "Unknown (" + SharedConstants.getCurrentVersion().name() + ")";
 	}
 }

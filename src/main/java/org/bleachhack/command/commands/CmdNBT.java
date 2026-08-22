@@ -17,9 +17,14 @@ import org.bleachhack.command.exception.CmdSyntaxException;
 import org.bleachhack.util.BleachLogger;
 import org.bleachhack.util.io.BleachJsonHelper;
 
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.util.ProblemReporter;
+import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.storage.TagValueOutput;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtOps;
 import net.minecraft.nbt.NbtUtils;
 import net.minecraft.nbt.TagParser;
 import net.minecraft.network.chat.ClickEvent;
@@ -51,16 +56,16 @@ public class CmdNBT extends Command {
 			CompoundTag nbt = getNbt(args[1]);
 
 			if (nbt != null) {
-				Component textNbt = NbtUtils.toPrettyPrintedText(nbt);
+				Component textNbt = NbtUtils.toPrettyComponent(nbt);
 
 				Component copy = Component.literal("§e§l<COPY>")
-						.styled(s ->
+						.withStyle(s ->
 						s.withClickEvent(
-								new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, textNbt.getString()))
+								new ClickEvent.CopyToClipboard(textNbt.getString()))
 						.withHoverEvent(
-								new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.literal("Copy the nbt of this item to your clipboard"))));
+								new HoverEvent.ShowText(Component.literal("Copy the nbt of this item to your clipboard"))));
 
-				BleachLogger.info(Component.literal("§6§lNBT: ").append(copy).append("§6\n" + textNbt));
+				BleachLogger.info(Component.literal("§6§lNBT: ").append(copy).append("§6\n").append(textNbt));
 			}
 		} else if (args[0].equalsIgnoreCase("copy")) {
 			if (args.length != 2) {
@@ -70,11 +75,11 @@ public class CmdNBT extends Command {
 			CompoundTag nbt = getNbt(args[1]);
 
 			if (nbt != null) {
-				mc.keyboard.setClipboard(nbt.toString());
-				BleachLogger.info("§6Copied\n§f" + NbtUtils.toPrettyPrintedText(nbt).getString() + "\n§6to clipboard.");
+				mc.keyboardHandler.setClipboard(nbt.toString());
+				BleachLogger.info("§6Copied\n§f" + NbtUtils.toPrettyComponent(nbt).getString() + "\n§6to clipboard.");
 			}
 		} else if (args[0].equalsIgnoreCase("set")) {
-			if (!mc.interactionManager.getCurrentGameMode().isCreative()) {
+			if (!mc.gameMode.getPlayerMode().isCreative()) {
 				BleachLogger.error("You must be in creative mode to set NBT!");
 				return;
 			}
@@ -83,16 +88,20 @@ public class CmdNBT extends Command {
 				throw new CmdSyntaxException();
 			}
 
-			ItemStack item = mc.player.getMainHandStack();
-			item.setNbt(TagParser.parse(StringUtils.join(ArrayUtils.subarray(args, 1, args.length), ' ')));
-			BleachLogger.info("§6Set NBT of " + item.getItem().getName().getString() + " to\n" + BleachJsonHelper.formatJson(item.getNbt().toString()));
+			// TODO(26.2): item NBT was replaced by data components - this sets the minecraft:custom_data component only
+			ItemStack item = mc.player.getMainHandItem();
+			CompoundTag tag = TagParser.parseCompoundFully(StringUtils.join(ArrayUtils.subarray(args, 1, args.length), ' '));
+			item.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
+			BleachLogger.info("§6Set NBT of " + item.getItemName().getString() + " to\n" + BleachJsonHelper.formatJson(tag.toString()));
 		} else if (args[0].equalsIgnoreCase("wipe")) {
-			if (!mc.interactionManager.getCurrentGameMode().isCreative()) {
+			if (!mc.gameMode.getPlayerMode().isCreative()) {
 				BleachLogger.error("You must be in creative mode to wipe NBT!");
 				return;
 			}
 
-			mc.player.getMainHandStack().setNbt(new CompoundTag());
+			// 26.2: no stack NBT to clear anymore, replace the held stack with a fresh one to drop all component patches
+			ItemStack held = mc.player.getMainHandItem();
+			mc.player.getInventory().setSelectedItem(new ItemStack(held.getItem(), held.getCount()));
 		} else {
 			throw new CmdSyntaxException();
 		}
@@ -100,15 +109,20 @@ public class CmdNBT extends Command {
 
 	private CompoundTag getNbt(String arg) throws CmdSyntaxException {
 		if (arg.equalsIgnoreCase("hand")) {
-			return mc.player.getMainHandStack().getOrCreateNbt();
+			ItemStack stack = mc.player.getMainHandItem();
+			if (stack.isEmpty())
+				return new CompoundTag();
+
+			return (CompoundTag) ItemStack.CODEC.encodeStart(
+					mc.level.registryAccess().createSerializationContext(NbtOps.INSTANCE), stack).getOrThrow();
 		} else if (arg.equalsIgnoreCase("block")) {
-			HitResult target = mc.crosshairTarget;
+			HitResult target = mc.hitResult;
 			if (target.getType() == HitResult.Type.BLOCK) {
 				BlockPos pos = ((BlockHitResult) target).getBlockPos();
-				BlockEntity be = mc.world.getBlockEntity(pos);
+				BlockEntity be = mc.level.getBlockEntity(pos);
 
 				if (be != null) {
-					return be.createNbt();
+					return be.saveWithFullMetadata(mc.level.registryAccess());
 				} else {
 					return new CompoundTag();
 				}
@@ -117,9 +131,11 @@ public class CmdNBT extends Command {
 			BleachLogger.error("Not looking at a block.");
 			return null;
 		} else if (arg.equalsIgnoreCase("entity")) {
-			HitResult target = mc.crosshairTarget;
+			HitResult target = mc.hitResult;
 			if (target.getType() == HitResult.Type.ENTITY) {
-				return ((EntityHitResult) target).getEntity().writeNbt(new CompoundTag());
+				TagValueOutput output = TagValueOutput.createWithContext(ProblemReporter.DISCARDING, mc.level.registryAccess());
+				((EntityHitResult) target).getEntity().saveWithoutId(output);
+				return output.buildResult();
 			}
 
 			BleachLogger.error("Not looking at an entity.");

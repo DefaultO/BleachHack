@@ -8,11 +8,9 @@
  */
 package org.bleachhack.gui.window;
 
-import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.render.*;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -64,8 +62,8 @@ public class Window {
 		return widget;
 	}
 
-	public void render(GuiGraphics drawContext, int mouseX, int mouseY) {
-		Font textRend = Minecraft.getInstance().textRenderer;
+	public void render(GuiGraphicsExtractor drawContext, int mouseX, int mouseY) {
+		Font textRend = Minecraft.getInstance().font;
 
 		if (dragging) {
 			x2 = (x2 - x1) + mouseX - dragOffX - Math.min(0, mouseX - dragOffX);
@@ -86,39 +84,38 @@ public class Window {
 
 		/* window icon */
 		if (icon != null) {
-			drawContext.getMatrices().push();
-			drawContext.getMatrices().translate(x1 + (blockItem ? 3 : 2), y1 + 2, 0);
-			drawContext.getMatrices().scale(0.6f, 0.6f, 1f);
+			drawContext.pose().pushMatrix();
+			drawContext.pose().translate(x1 + (blockItem ? 3 : 2), y1 + 2);
+			drawContext.pose().scale(0.6f, 0.6f);
 
-			//DiffuseLighting.enableGuiDepthLighting();
-
-			drawContext.drawItem(icon, 0, 0);
-			drawContext.getMatrices().pop();
+			drawContext.item(icon, 0, 0);
+			drawContext.pose().popMatrix();
 		}
 
 		/* window title */
-		drawContext.drawTextWithShadow(textRend, title,
+		drawContext.text(textRend, title,
 				x1 + (icon == null || icon.getItem() == Items.AIR ? 4 : (blockItem ? 15 : 14)), y1 + 3, -1);
 	}
 
-	protected void drawBackground(GuiGraphics drawContext, int mouseX, int mouseY, Font textRend) {
+	protected void drawBackground(GuiGraphicsExtractor drawContext, int mouseX, int mouseY, Font textRend) {
 		/* background */
 		drawContext.fill(x1, y1 + 1, x1 + 1, y2 - 1, 0xff6060b0);
-		horizontalGradient(x1 + 1, y1, x2 - 1, y1 + 1, 0xff6060b0, 0xff8070b0);
+		horizontalGradient(drawContext, x1 + 1, y1, x2 - 1, y1 + 1, 0xff6060b0, 0xff8070b0);
 		drawContext.fill(x2 - 1, y1 + 1, x2, y2 - 1, 0xff8070b0);
-		horizontalGradient(x1 + 1, y2 - 1, x2 - 1, y2, 0xff6060b0, 0xff8070b0);
+		horizontalGradient(drawContext, x1 + 1, y2 - 1, x2 - 1, y2, 0xff6060b0, 0xff8070b0);
 
 		drawContext.fill(x1 + 1, y1 + 12, x2 - 1, y2 - 1, 0x90606090);
 
 		/* title bar */
-		horizontalGradient(x1 + 1, y1 + 1, x2 - 1, y1 + 12, (selected ? 0xff6060b0 : 0xff606060), (selected ? 0xff8070b0 : 0xffa0a0a0));
+		horizontalGradient(drawContext, x1 + 1, y1 + 1, x2 - 1, y1 + 12, (selected ? 0xff6060b0 : 0xff606060), (selected ? 0xff8070b0 : 0xffa0a0a0));
 
 		/* buttons */
-		drawContext.drawText(textRend, "x", x2 - 10, y1 + 3, 0, false);
-		drawContext.drawText(textRend, "x", x2 -11, y1 + 2, -1, false);
+		// 26.2 text() skips zero-alpha colors (old TextRenderer forced them opaque), so black is written out
+		drawContext.text(textRend, "x", x2 - 10, y1 + 3, 0xff000000, false);
+		drawContext.text(textRend, "x", x2 - 11, y1 + 2, -1, false);
 
-		drawContext.drawText(textRend, "_", x2 - 22, y1 + 2, 0, false);
-		drawContext.drawText(textRend, "_", x2 - 22, y1 + 1, -1, false);
+		drawContext.text(textRend, "_", x2 - 22, y1 + 2, 0xff000000, false);
+		drawContext.text(textRend, "_", x2 - 22, y1 + 1, -1, false);
 	}
 
 	public boolean shouldClose(int mouseX, int mouseY) {
@@ -177,15 +174,15 @@ public class Window {
 		}
 	}
 
-	public static void fill(GuiGraphics drawContext, int x1, int y1, int x2, int y2) {
+	public static void fill(GuiGraphicsExtractor drawContext, int x1, int y1, int x2, int y2) {
 		fill(drawContext, x1, y1, x2, y2, 0xff6060b0, 0xff8070b0, 0x00000000);
 	}
 
-	public static void fill(GuiGraphics drawContext, int x1, int y1, int x2, int y2, int fill) {
+	public static void fill(GuiGraphicsExtractor drawContext, int x1, int y1, int x2, int y2, int fill) {
 		fill(drawContext, x1, y1, x2, y2, 0xff6060b0, 0xff8070b0, fill);
 	}
 
-	public static void fill(GuiGraphics drawContext, int x1, int y1, int x2, int y2, int colTop, int colBot, int colFill) {
+	public static void fill(GuiGraphicsExtractor drawContext, int x1, int y1, int x2, int y2, int colTop, int colBot, int colFill) {
 		drawContext.fill(x1, y1 + 1, x1 + 1, y2 - 1, colTop);
 		drawContext.fill(x1 + 1, y1, x2 - 1, y1 + 1, colTop);
 		drawContext.fill(x2 - 1, y1 + 1, x2, y2 - 1, colBot);
@@ -193,49 +190,18 @@ public class Window {
 		drawContext.fill(x1 + 1, y1 + 1, x2 - 1, y2 - 1, colFill);
 	}
 
-	public static void horizontalGradient(int x1, int y1, int x2, int y2, int color1, int color2) {
-		float alpha1 = (color1 >> 24 & 255) / 255.0F;
-		float red1   = (color1 >> 16 & 255) / 255.0F;
-		float green1 = (color1 >> 8 & 255) / 255.0F;
-		float blue1  = (color1 & 255) / 255.0F;
-		float alpha2 = (color2 >> 24 & 255) / 255.0F;
-		float red2   = (color2 >> 16 & 255) / 255.0F;
-		float green2 = (color2 >> 8 & 255) / 255.0F;
-		float blue2  = (color2 & 255) / 255.0F;
-		RenderSystem.enableBlend();
-		RenderSystem.defaultBlendFunc();
-		RenderSystem.setShader(GameRenderer::getPositionColorProgram);
-		Tessellator tessellator = Tessellator.getInstance();
-		BufferBuilder bufferBuilder = tessellator.getBuffer();
-		bufferBuilder.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_COLOR);
-		bufferBuilder.vertex(x1, y1, 0).color(red1, green1, blue1, alpha1).next();
-		bufferBuilder.vertex(x1, y2, 0).color(red1, green1, blue1, alpha1).next();
-		bufferBuilder.vertex(x2, y2, 0).color(red2, green2, blue2, alpha2).next();
-		bufferBuilder.vertex(x2, y1, 0).color(red2, green2, blue2, alpha2).next();
-		tessellator.draw();
-		RenderSystem.disableBlend();
+	/** color1 = left, color2 = right. Now needs the draw context (26.2 has no global tessellator path). */
+	public static void horizontalGradient(GuiGraphicsExtractor drawContext, int x1, int y1, int x2, int y2, int color1, int color2) {
+		// fillGradient is vertical-only; rotate the pose 90 degrees so its axis runs horizontally
+		drawContext.pose().pushMatrix();
+		drawContext.pose().translate(x2, y1);
+		drawContext.pose().rotate((float) (Math.PI / 2));
+		drawContext.fillGradient(0, 0, y2 - y1, x2 - x1, color2, color1);
+		drawContext.pose().popMatrix();
 	}
 
-	public static void verticalGradient(GuiGraphics context, int x1, int y1, int x2, int y2, int color1, int color2) {
-		float alpha1 = (color1 >> 24 & 255) / 255.0F;
-		float red1   = (color1 >> 16 & 255) / 255.0F;
-		float green1 = (color1 >> 8 & 255) / 255.0F;
-		float blue1  = (color1 & 255) / 255.0F;
-		float alpha2 = (color2 >> 24 & 255) / 255.0F;
-		float red2   = (color2 >> 16 & 255) / 255.0F;
-		float green2 = (color2 >> 8 & 255) / 255.0F;
-		float blue2  = (color2 & 255) / 255.0F;
-		RenderSystem.enableBlend();
-		RenderSystem.defaultBlendFunc();
-		RenderSystem.setShader(GameRenderer::getPositionColorProgram);
-		Tessellator tessellator = Tessellator.getInstance();
-		BufferBuilder bufferBuilder = tessellator.getBuffer();
-		bufferBuilder.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_COLOR);
-		bufferBuilder.vertex(x2, y1, 0).color(red1, green1, blue1, alpha1).next();
-		bufferBuilder.vertex(x1, y1, 0).color(red1, green1, blue1, alpha1).next();
-		bufferBuilder.vertex(x1, y2, 0).color(red2, green2, blue2, alpha2).next();
-		bufferBuilder.vertex(x2, y2, 0).color(red2, green2, blue2, alpha2).next();
-		tessellator.draw();
-		RenderSystem.disableBlend();
+	/** color1 = top, color2 = bottom. */
+	public static void verticalGradient(GuiGraphicsExtractor drawContext, int x1, int y1, int x2, int y2, int color1, int color2) {
+		drawContext.fillGradient(x1, y1, x2, y2, color1, color2);
 	}
 }

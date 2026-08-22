@@ -8,7 +8,6 @@
  */
 package org.bleachhack.mixin;
 
-import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Renderable;
 import net.minecraft.client.gui.screens.inventory.BeaconScreen;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
@@ -34,12 +33,14 @@ public abstract class MixinBeaconScreen extends AbstractContainerScreen<BeaconMe
 
 	@Inject(method = "init", at = @At("RETURN"))
 	private void init(CallbackInfo callback) {
-		addDrawableChild(Button.builder(Component.literal("Unlock"), button -> unlocked = true)
-				.position((width - backgroundWidth) / 2 + 2, (height - backgroundHeight) / 2 - 15).size(46, 14).build());
+		addRenderableWidget(Button.builder(Component.literal("Unlock"), button -> unlocked = true)
+				.pos((width - imageWidth) / 2 + 2, (height - imageHeight) / 2 - 15).size(46, 14).build());
 	}
 
-	@Inject(method = "render", at = @At("HEAD"))
-	private void render(GuiGraphics context, int mouseX, int mouseY, float delta, CallbackInfo ci) {
+	// 26.2: BeaconScreen no longer overrides render; buttons are (de)activated from containerTick -> updateButtons,
+	// so re-enable them right after that instead of every render frame.
+	@Inject(method = "containerTick", at = @At("RETURN"))
+	private void containerTick(CallbackInfo ci) {
 		if (unlocked) {
 			for (Renderable b: ((AccessorScreen) this).getDrawables()) {
 				if (b instanceof AbstractWidget) {

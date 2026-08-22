@@ -31,7 +31,7 @@ public class CmdRbook extends Command {
 
 	@Override
 	public void onCommand(String alias, String[] args) throws Exception {
-		ItemStack item = mc.player.getInventory().getMainHandStack();
+		ItemStack item = mc.player.getMainHandItem();
 
 		if (item.getItem() != Items.WRITABLE_BOOK) {
 			BleachLogger.error("Not Holding A Writable Book!");
@@ -48,7 +48,7 @@ public class CmdRbook extends Command {
 		for (int t = 0; t < pages; t++)
 			textSplit.add(RandomStringUtils.random(pageChars, startChar, endChar, false, false));
 
-		mc.player.networkHandler.sendPacket(new ServerboundEditBookPacket(mc.player.getInventory().selectedSlot, textSplit, Optional.empty()));
+		mc.player.connection.send(new ServerboundEditBookPacket(mc.player.getInventory().getSelectedSlot(), textSplit, Optional.empty()));
 
 		BleachLogger.info("Written book (" + pages + " pages, " + pageChars + " chars/page)");
 	}

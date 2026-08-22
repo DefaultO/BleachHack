@@ -47,7 +47,7 @@ public class CmdTerrain extends Command {
 		for (int x = poses[0]; x <= poses[3]; x++) {
 			for (int z = poses[2]; z <= poses[5]; z++) {
 				for (int y = poses[4]; y >= poses[1]; y--) {
-					if (mc.world.getBlockState(new BlockPos(x, y, z)).isFullCube(mc.world, new BlockPos(x, y, z))) {
+					if (mc.level.getBlockState(new BlockPos(x, y, z)).isCollisionShapeFullBlock(mc.level, new BlockPos(x, y, z))) {
 						builder.append(x - poses[0]).append(",").append(y - poses[1]).append(",").append(z - poses[2]).append("\n");
 						break;
 					}
@@ -55,7 +55,7 @@ public class CmdTerrain extends Command {
 			}
 		}
 
-		mc.keyboard.setClipboard(builder.toString().trim());
+		mc.keyboardHandler.setClipboard(builder.toString().trim());
 		BleachLogger.info("Copied terrain to clipboard!");
 	}
 }

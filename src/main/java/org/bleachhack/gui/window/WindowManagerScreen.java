@@ -8,9 +8,10 @@
  */
 package org.bleachhack.gui.window;
 
-import com.mojang.blaze3d.systems.RenderSystem;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.events.GuiEventListener;
+import net.minecraft.client.input.CharacterEvent;
+import net.minecraft.client.input.KeyEvent;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.network.chat.Component;
 import org.apache.commons.lang3.tuple.Triple;
@@ -50,11 +51,11 @@ public class WindowManagerScreen extends WindowScreen {
 	public void selectWindow(int s) {
 		selected = s;
 		for (Triple<WindowScreen, String, ItemStack> t: windows) {
-			remove(t.getLeft());
+			removeWidget(t.getLeft());
 		}
 
-		getSelectedScreen().init(client, width, height - 16);
-		addDrawable(getSelectedScreen());
+		getSelectedScreen().init(width, height - 16);
+		addRenderableOnly(getSelectedScreen());
 		((List<GuiEventListener>) children()).add(getSelectedScreen());
 	}
 
@@ -79,21 +80,21 @@ public class WindowManagerScreen extends WindowScreen {
 
 	// Children also don't take keyboard input brueh
 	@Override
-	public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-		getSelectedScreen().keyPressed(keyCode, scanCode, modifiers);
-		return super.keyPressed(keyCode, scanCode, modifiers);
+	public boolean keyPressed(KeyEvent event) {
+		getSelectedScreen().keyPressed(event);
+		return super.keyPressed(event);
 	}
 
 	@Override
-	public boolean keyReleased(int keyCode, int scanCode, int modifiers) {
-		getSelectedScreen().keyReleased(keyCode, scanCode, modifiers);
-		return super.keyReleased(keyCode, scanCode, modifiers);
+	public boolean keyReleased(KeyEvent event) {
+		getSelectedScreen().keyReleased(event);
+		return super.keyReleased(event);
 	}
 
 	@Override
-	public boolean charTyped(char chr, int modifiers) {
-		getSelectedScreen().charTyped(chr, modifiers);
-		return super.charTyped(chr, modifiers);
+	public boolean charTyped(CharacterEvent event) {
+		getSelectedScreen().charTyped(event);
+		return super.charTyped(event);
 	}
 
 	private static class WindowTabButtonWidget extends WindowButtonWidget {
@@ -106,7 +107,7 @@ public class WindowManagerScreen extends WindowScreen {
 		}
 
 		@Override
-		public void render(GuiGraphics drawContext, int windowX, int windowY, int mouseX, int mouseY) {
+		public void render(GuiGraphicsExtractor drawContext, int windowX, int windowY, int mouseX, int mouseY) {
 			int bx1 = windowX + x1;
 			int by1 = windowY + y1;
 			int bx2 = windowX + x2;
@@ -117,15 +118,14 @@ public class WindowManagerScreen extends WindowScreen {
 					colorTop, colorBottom,
 					isInBounds(windowX, windowY, mouseX, mouseY) ? colorHoverFill : colorFill);
 
-			RenderSystem.getModelViewStack().push();
-			RenderSystem.getModelViewStack().scale(0.7f, 0.7f, 1f);
+			drawContext.pose().pushMatrix();
+			drawContext.pose().scale(0.7f, 0.7f);
 
-			drawContext.drawItem(item, (int) ((bx1 + 2) / 0.7), (int) ((by1 - 6 + (by2 - by1) / 2.0) / 0.7));
+			drawContext.item(item, (int) ((bx1 + 2) / 0.7), (int) ((by1 - 6 + (by2 - by1) / 2.0) / 0.7));
 
-			RenderSystem.getModelViewStack().pop();
-			RenderSystem.applyModelViewMatrix();
+			drawContext.pose().popMatrix();
 
-			drawContext.drawTextWithShadow(mc.textRenderer, text, bx1 + 16, by1 + (by2 - by1) / 2 - 4, -1);
+			drawContext.text(mc.font, text, bx1 + 16, by1 + (by2 - by1) / 2 - 4, -1);
 		}
 	}
 }

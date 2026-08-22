@@ -1,8 +1,11 @@
 package org.bleachhack.gui.window.widget;
 
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.input.CharacterEvent;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.client.input.MouseButtonInfo;
 import net.minecraft.network.chat.Component;
 
 
@@ -12,8 +15,8 @@ public class WindowTextFieldWidget extends WindowWidget {
 
 	public WindowTextFieldWidget(int x, int y, int width, int height, String text) {
 		super(x, y, x + width, y + height);
-		this.textField = new EditBox(mc.textRenderer, x, y, width, height, Component.empty());
-		this.textField.setText(text);
+		this.textField = new EditBox(mc.font, x, y, width, height, Component.empty());
+		this.textField.setValue(text);
 		this.textField.setMaxLength(32767);
 	}
 
@@ -22,10 +25,10 @@ public class WindowTextFieldWidget extends WindowWidget {
 	}
 
 	@Override
-	public void render(GuiGraphics drawContext, int windowX, int windowY, int mouseX, int mouseY) {
+	public void render(GuiGraphicsExtractor drawContext, int windowX, int windowY, int mouseX, int mouseY) {
 		textField.setX(windowX + x1);
 		textField.setY(windowY + y1);
-		textField.render(drawContext, mouseX, mouseY, Minecraft.getInstance().getTickDelta());
+		textField.extractRenderState(drawContext, mouseX, mouseY, 0f);
 
 		super.render(drawContext, windowX, windowY, mouseX, mouseY);
 	}
@@ -34,7 +37,8 @@ public class WindowTextFieldWidget extends WindowWidget {
 	public void mouseClicked(int windowX, int windowY, int mouseX, int mouseY, int button) {
 		super.mouseClicked(windowX, windowY, mouseX, mouseY, button);
 
-		textField.setFocused(textField.mouseClicked(mouseX, mouseY, button));
+		MouseButtonEvent event = new MouseButtonEvent(mouseX, mouseY, new MouseButtonInfo(button, 0));
+		textField.setFocused(textField.mouseClicked(event, false));
 	}
 
 	@Override
@@ -47,13 +51,13 @@ public class WindowTextFieldWidget extends WindowWidget {
 	public void charTyped(char chr, int modifiers) {
 		super.charTyped(chr, modifiers);
 
-		textField.charTyped(chr, modifiers);
+		textField.charTyped(new CharacterEvent(chr));
 	}
 
 	@Override
 	public void keyPressed(int keyCode, int scanCode, int modifiers) {
 		super.keyPressed(keyCode, scanCode, modifiers);
 
-		textField.keyPressed(keyCode, scanCode, modifiers);
+		textField.keyPressed(new KeyEvent(keyCode, scanCode, modifiers));
 	}
 }

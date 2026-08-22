@@ -8,12 +8,13 @@
  */
 package org.bleachhack.gui.window;
 
-import com.mojang.blaze3d.systems.RenderSystem;
 import it.unimi.dsi.fastutil.ints.Int2IntMap.Entry;
 import it.unimi.dsi.fastutil.ints.*;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.client.render.*;
+import net.minecraft.client.input.CharacterEvent;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 import org.bleachhack.gui.window.widget.WindowWidget;
 
@@ -27,7 +28,7 @@ public abstract class WindowScreen extends Screen {
 	private List<Window> windows = new ArrayList<>();
 
 	// <Layer, Window Index>
-	private Int2IntSortedMap windowOrder = new Int2IntRBTreeMap(); 
+	private Int2IntSortedMap windowOrder = new Int2IntRBTreeMap();
 
 	private List<WindowWidget> globalWidgets = new ArrayList<>();
 	private boolean autoClose;
@@ -107,19 +108,19 @@ public abstract class WindowScreen extends Screen {
 	public List<WindowWidget> getGlobalWidgets() {
 		return globalWidgets;
 	}
-	
+
 	@Override
 	public void init() {
 		super.init();
-		
+
 		globalWidgets.clear();
 		clearWindows();
 	}
 
 	@Override
-	public void render(GuiGraphics drawContext, int mouseX, int mouseY, float delta) {
-		super.render(drawContext, mouseX, mouseY, delta);
-		
+	public void extractRenderState(GuiGraphicsExtractor drawContext, int mouseX, int mouseY, float delta) {
+		super.extractRenderState(drawContext, mouseX, mouseY, delta);
+
 		for (WindowWidget w : globalWidgets) {
 			w.render(drawContext, 0, 0, mouseX, mouseY);
 		}
@@ -144,10 +145,10 @@ public abstract class WindowScreen extends Screen {
 			}
 		}
 
-		if (autoClose && close) this.close();
+		if (autoClose && close) this.onClose();
 	}
 
-	public void onRenderWindow(GuiGraphics drawContext, int window, int mouseX, int mouseY) {
+	public void onRenderWindow(GuiGraphicsExtractor drawContext, int window, int mouseX, int mouseY) {
 		if (!windows.get(window).closed) {
 			windows.get(window).render(drawContext, mouseX, mouseY);
 		}
@@ -178,7 +179,11 @@ public abstract class WindowScreen extends Screen {
 	}
 
 	@Override
-	public boolean mouseClicked(double mouseX, double mouseY, int button) {
+	public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
+		double mouseX = event.x();
+		double mouseY = event.y();
+		int button = event.button();
+
 		/* Handle what window will be selected when clicking */
 		for (int wi: getWindowsFrontToBack()) {
 			Window w = getWindow(wi);
@@ -203,15 +208,15 @@ public abstract class WindowScreen extends Screen {
 			}
 		} catch (ConcurrentModificationException ignored) {}
 
-		return super.mouseClicked(mouseX, mouseY, button);
+		return super.mouseClicked(event, doubleClick);
 	}
 
 	@Override
-	public boolean mouseReleased(double mouseX, double mouseY, int button) {
+	public boolean mouseReleased(MouseButtonEvent event) {
 		for (Window w : windows)
-			w.mouseReleased(mouseX, mouseY, button);
+			w.mouseReleased(event.x(), event.y(), event.button());
 
-		return super.mouseReleased(mouseX, mouseY, button);
+		return super.mouseReleased(event);
 	}
 
 	@Override
@@ -223,23 +228,35 @@ public abstract class WindowScreen extends Screen {
 	}
 
 	@Override
-	public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+	public boolean keyPressed(KeyEvent event) {
 		for (Window w : windows)
-			w.keyPressed(keyCode, scanCode, modifiers);
+			w.keyPressed(event.key(), event.scancode(), event.modifiers());
 
-		return super.keyPressed(keyCode, scanCode, modifiers);
+		return super.keyPressed(event);
 	}
 
 	@Override
-	public boolean charTyped(char chr, int modifiers) {
+	public boolean charTyped(CharacterEvent event) {
+		// 26.2 CharacterEvent no longer carries modifiers
 		for (Window w : windows)
-			w.charTyped(chr, modifiers);
+			w.charTyped((char) event.codepoint(), 0);
 
-		return super.charTyped(chr, modifiers);
+		return super.charTyped(event);
 	}
 
 	@Override
-	public void renderBackgroundTexture(GuiGraphics drawContext) {
+	public void extractBackground(GuiGraphicsExtractor drawContext, int mouseX, int mouseY, float a) {
+		// mirrors pre-26.2 Screen.renderBackground: translucent gradient in-game, custom texture otherwise
+		if (minecraft.level != null) {
+			extractTransparentBackground(drawContext);
+		} else {
+			renderBackgroundTexture(drawContext);
+		}
+
+		minecraft.gui.hud.extractDeferredSubtitles();
+	}
+
+	public void renderBackgroundTexture(GuiGraphicsExtractor drawContext) {
 		int colorOffset = (int) ((System.currentTimeMillis() / 75) % 100);
 		if (colorOffset > 50)
 			colorOffset = 50 - (colorOffset - 50);
@@ -247,19 +264,15 @@ public abstract class WindowScreen extends Screen {
 		// smooth
 		colorOffset = (int) (-(Math.cos(Math.PI * (colorOffset / 50d)) - 1) / 2 * 50);
 
-		RenderSystem.enableBlend();
-		RenderSystem.defaultBlendFunc();
-		RenderSystem.setShader(GameRenderer::getPositionColorProgram);
-
-		Tessellator tessellator = Tessellator.getInstance();
-		BufferBuilder bufferBuilder = Tessellator.getInstance().getBuffer();
-		bufferBuilder.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_COLOR);
-		bufferBuilder.vertex(width, 0, 0).color(30, 20, 80, 255).next();
-		bufferBuilder.vertex(0, 0, 0).color(30 + colorOffset / 3, 20, 80, 255).next();
-		bufferBuilder.vertex(0, height + 16, 0).color(90, 54, 159, 255).next();
-		bufferBuilder.vertex(width, height + 16, 0).color(105 + colorOffset, 54, 189, 255).next();
-		tessellator.draw();
-
-		RenderSystem.disableBlend();
+		// ponytail: the old 4-corner tessellator gradient is approximated with 64 vertical
+		// gradient strips (26.2 gui fills only support 2 colors per quad)
+		int steps = 64;
+		float stripWidth = width / (float) steps;
+		for (int i = 0; i < steps; i++) {
+			float t = (i + 0.5f) / steps;
+			int top = 0xff000000 | ((int) (30 + colorOffset / 3f * (1 - t)) << 16) | (20 << 8) | 80;
+			int bottom = 0xff000000 | ((int) (90 + (15 + colorOffset) * t) << 16) | (54 << 8) | (int) (159 + 30 * t);
+			drawContext.fillGradient(Math.round(i * stripWidth), 0, Math.round((i + 1) * stripWidth), height + 16, top, bottom);
+		}
 	}
 }

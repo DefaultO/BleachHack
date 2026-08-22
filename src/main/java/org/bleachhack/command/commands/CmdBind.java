@@ -48,17 +48,17 @@ public class CmdBind extends Command {
 
 						// Special cases for rshift/rcontrol and that shit
 						try {
-							key = InputConstants.fromTranslationKey("key.keyboard." + args[2].toLowerCase(Locale.ENGLISH)).getCode();
+							key = InputConstants.getKey("key.keyboard." + args[2].toLowerCase(Locale.ENGLISH)).getValue();
 						} catch (IllegalArgumentException e) {
 							if (args[2].toLowerCase(Locale.ENGLISH).startsWith("right")) {
 								try {
-									key = InputConstants.fromTranslationKey("key.keyboard." + args[2].toLowerCase(Locale.ENGLISH).replaceFirst("right", "right.")).getCode();
+									key = InputConstants.getKey("key.keyboard." + args[2].toLowerCase(Locale.ENGLISH).replaceFirst("right", "right.")).getValue();
 								} catch (IllegalArgumentException e1) {
 									throw new CmdSyntaxException("Unknown key: " + args[2] + " / " + args[2].toLowerCase(Locale.ENGLISH).replaceFirst("right", "right."));
 								}
 							} else if (args[2].toLowerCase(Locale.ENGLISH).startsWith("r")) {
 								try {
-									key = InputConstants.fromTranslationKey("key.keyboard." + args[2].toLowerCase(Locale.ENGLISH).replaceFirst("r", "right.")).getCode();
+									key = InputConstants.getKey("key.keyboard." + args[2].toLowerCase(Locale.ENGLISH).replaceFirst("r", "right.")).getValue();
 								} catch (IllegalArgumentException e1) {
 									throw new CmdSyntaxException("Unknown key: " + args[2] + " / " + args[2].toLowerCase(Locale.ENGLISH).replaceFirst("r", "right."));
 								}

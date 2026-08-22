@@ -15,28 +15,16 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 
 @Mixin(Frustum.class)
 public interface AccessorFrustum {
-	
+
 	@Accessor
-	public abstract FrustumIntersection getFrustumIntersection();
-	
+	FrustumIntersection getIntersection();
+
 	@Accessor
-	public abstract void setFrustumIntersection(FrustumIntersection vector4f);
-	
+	double getCamX();
+
 	@Accessor
-	public abstract double getX();
-	
+	double getCamY();
+
 	@Accessor
-	public abstract void setX(double x);
-	
-	@Accessor
-	public abstract double getY();
-	
-	@Accessor
-	public abstract void setY(double y);
-	
-	@Accessor
-	public abstract double getZ();
-	
-	@Accessor
-	public abstract void setZ(double z);
+	double getCamZ();
 }

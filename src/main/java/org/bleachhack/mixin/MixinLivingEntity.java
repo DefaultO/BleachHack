@@ -8,6 +8,7 @@
  */
 package org.bleachhack.mixin;
 
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
@@ -28,21 +29,26 @@ public abstract class MixinLivingEntity extends Entity {
 		super(type, world);
 	}
 
-	@Redirect(method = "takeKnockback", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/LivingEntity;setVelocity(DDD)V"))
-	private void takeKnockback_setVelocity(LivingEntity entity, double x, double y, double z) {
-		EventDamage.Knockback event = new EventDamage.Knockback(x - getVelocity().getX(), y - getVelocity().getY(), z - getVelocity().getZ());
+	// 26.2: takeKnockback -> knockback(DDD + DamageSource/float/boolean), setVelocity -> setDeltaMovement
+	@Redirect(method = "knockback(DDDLnet/minecraft/world/damagesource/DamageSource;FZ)V",
+			at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/LivingEntity;setDeltaMovement(DDD)V"))
+	private void knockback_setDeltaMovement(LivingEntity entity, double x, double y, double z) {
+		EventDamage.Knockback event = new EventDamage.Knockback(x - getDeltaMovement().x(), y - getDeltaMovement().y(), z - getDeltaMovement().z());
 		BleachHack.eventBus.post(event);
-		
+
 		if (!event.isCancelled()) {
-			setVelocity(event.getVelX() + getVelocity().getX(), event.getVelY() + getVelocity().getY(), event.getVelZ() + getVelocity().getZ());
+			setDeltaMovement(event.getVelX() + getDeltaMovement().x(), event.getVelY() + getDeltaMovement().y(), event.getVelZ() + getDeltaMovement().z());
 		}
 	}
-	
-	@Inject(method = "damage", at = @At("HEAD"), cancellable = true)
-	private void damage(DamageSource source, float amount, CallbackInfoReturnable<Boolean> callbackInfo) {
+
+	// 26.2: damage -> hurtServer(ServerLevel, DamageSource, float).
+	// TODO(26.2): client-side damage goes through Entity.hurtClient(DamageSource) which LivingEntity does not
+	// override, so this event only fires on the integrated server side now.
+	@Inject(method = "hurtServer", at = @At("HEAD"), cancellable = true)
+	private void hurtServer(ServerLevel level, DamageSource source, float amount, CallbackInfoReturnable<Boolean> callbackInfo) {
 		EventDamage.Normal event = new EventDamage.Normal(source, amount);
 		BleachHack.eventBus.post(event);
-		
+
 		if (event.isCancelled()) {
 			callbackInfo.setReturnValue(false);
 			callbackInfo.cancel();

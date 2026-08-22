@@ -19,6 +19,7 @@ import org.bleachhack.module.mods.Freecam;
 import org.bleachhack.module.mods.NoSlow;
 import org.bleachhack.module.mods.SafeWalk;
 import org.bleachhack.module.mods.Scaffold;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
@@ -29,12 +30,13 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import com.mojang.authlib.GameProfile;
 
-import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.util.Mth;
 import net.minecraft.world.entity.MoverType;
 import net.minecraft.network.protocol.game.ServerboundSwingPacket;
 import net.minecraft.world.InteractionHand;
@@ -43,19 +45,21 @@ import net.minecraft.world.phys.Vec3;
 @Mixin(LocalPlayer.class)
 public class MixinClientPlayerEntity extends AbstractClientPlayer {
 
-	@Shadow private float mountJumpStrength;
+	@Shadow private float jumpRidingScale;
 
-	@Shadow private ClientPacketListener networkHandler;
-	@Shadow private Minecraft client;
+	@Shadow @Final public ClientPacketListener connection;
 
 	private MixinClientPlayerEntity(ClientLevel world, GameProfile profile) {
 		super(world, profile);
 	}
 
-	@Shadow private void autoJump(float dx, float dz) {}
+	@Shadow protected void updateAutoJump(float dx, float dz) {}
 
-	@Inject(method = "sendMovementPackets", at = @At("HEAD"), cancellable = true)
-	private void sendMovementPackets(CallbackInfo info) {
+	// 26.2: sendMovementPackets -> sendPosition
+	// TODO(26.2): vehicle/input packets are now sent inline in LocalPlayer.tick(), so cancelling this
+	// event only suppresses on-foot movement packets, not vehicle-move packets.
+	@Inject(method = "sendPosition", at = @At("HEAD"), cancellable = true)
+	private void sendPosition(CallbackInfo info) {
 		EventSendMovementPackets event = new EventSendMovementPackets();
 		BleachHack.eventBus.post(event);
 
@@ -64,9 +68,10 @@ public class MixinClientPlayerEntity extends AbstractClientPlayer {
 		}
 	}
 
-	@Redirect(method = "tickMovement", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/network/LocalPlayer;isUsingItem()Z"),
+	// 26.2: item-use slowdown moved from tickMovement/aiStep to modifyInput
+	@Redirect(method = "modifyInput", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/player/LocalPlayer;isUsingItem()Z"),
 			require = 0 /* TODO: meteor compatibility */)
-	private boolean tickMovement_isUsingItem(LocalPlayer player) {
+	private boolean modifyInput_isUsingItem(LocalPlayer player) {
 		NoSlow noSlow = ModuleManager.getModule(NoSlow.class);
 		if (noSlow.isEnabled() && noSlow.getSetting(5).asToggle().getState())
 			return false;
@@ -84,59 +89,68 @@ public class MixinClientPlayerEntity extends AbstractClientPlayer {
 			double double_1 = this.getX();
 			double double_2 = this.getZ();
 			super.move(event.getType(), event.getVec());
-			this.autoJump((float) (this.getX() - double_1), (float) (this.getZ() - double_2));
+			float dx = (float) (this.getX() - double_1);
+			float dz = (float) (this.getZ() - double_2);
+			this.updateAutoJump(dx, dz);
+			this.addWalkedDistance(Mth.length(dx, dz) * 0.6F);
 			info.cancel();
 		}
 	}
 
-	@Inject(method = "pushOutOfBlocks", at = @At("HEAD"), cancellable = true)
+	// 26.2: pushOutOfBlocks -> moveTowardsClosestSpace
+	@Inject(method = "moveTowardsClosestSpace", at = @At("HEAD"), cancellable = true)
 	private void pushOutOfBlocks(double x, double d, CallbackInfo ci) {
 		if (ModuleManager.getModule(Freecam.class).isEnabled()) {
 			ci.cancel();
 		}
 	}
 
-	@Redirect(method = "updateNausea", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/network/LocalPlayer;closeHandledScreen()V", ordinal = 0),
+	// 26.2: updateNausea -> handlePortalTransitionEffect, closeHandledScreen -> closeContainer
+	@Redirect(method = "handlePortalTransitionEffect", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/player/LocalPlayer;closeContainer()V", ordinal = 0),
 			require = 0 /* TODO: inertia compatibility */)
-	private void updateNausea_closeHandledScreen(LocalPlayer player) {
+	private void handlePortalTransitionEffect_closeContainer(LocalPlayer player) {
 		if (!ModuleManager.getModule(BetterPortal.class).isEnabled()
 				|| !ModuleManager.getModule(BetterPortal.class).getSetting(0).asToggle().getState()) {
-			closeHandledScreen();
+			closeContainer();
 		}
 	}
 
-	@Redirect(method = "updateNausea", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/Minecraft;setScreen(Lnet/minecraft/client/gui/screen/Screen;)V", ordinal = 0),
+	// 26.2: screens are set via Minecraft.gui (Gui.setScreen) now
+	@Redirect(method = "handlePortalTransitionEffect", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/Gui;setScreen(Lnet/minecraft/client/gui/screens/Screen;)V", ordinal = 0),
 			require = 0 /* TODO: inertia compatibility */)
-	private void updateNausea_setScreen(Minecraft client, Screen screen) {
+	private void handlePortalTransitionEffect_setScreen(Gui gui, Screen screen) {
 		if (!ModuleManager.getModule(BetterPortal.class).isEnabled()
 				|| !ModuleManager.getModule(BetterPortal.class).getSetting(0).asToggle().getState()) {
-			client.setScreen(screen);
+			gui.setScreen(screen);
 		}
 	}
 
+	// 26.2: swingHand -> swing
 	@Overwrite
-	public void swingHand(InteractionHand hand) {
+	public void swing(InteractionHand hand) {
 		EventSwingHand event = new EventSwingHand(hand);
 		BleachHack.eventBus.post(event);
 
 		if (!event.isCancelled()) {
-			super.swingHand(event.getHand());
+			super.swing(event.getHand());
 		}
 
-		networkHandler.sendPacket(new ServerboundSwingPacket(hand));
+		connection.send(new ServerboundSwingPacket(hand));
 	}
 
+	// 26.2: clipAtLedge -> isStayingOnGroundSurface
 	@Override
-	protected boolean clipAtLedge() {
-		return super.clipAtLedge()
+	protected boolean isStayingOnGroundSurface() {
+		return super.isStayingOnGroundSurface()
 				|| ModuleManager.getModule(SafeWalk.class).isEnabled()
 				|| (ModuleManager.getModule(Scaffold.class).isEnabled()
 						&& ModuleManager.getModule(Scaffold.class).getSetting(8).asToggle().getState());
 	}
 
+	// 26.2: getMountJumpStrength -> getJumpRidingScale
 	@Overwrite
-	public float getMountJumpStrength() {
+	public float getJumpRidingScale() {
 		return ModuleManager.getModule(EntityControl.class).isEnabled()
-				&& ModuleManager.getModule(EntityControl.class).getSetting(2).asToggle().getState() ? 1F : mountJumpStrength;
+				&& ModuleManager.getModule(EntityControl.class).getSetting(2).asToggle().getState() ? 1F : jumpRidingScale;
 	}
 }

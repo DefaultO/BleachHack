@@ -42,11 +42,11 @@ public class CmdHelp extends Command {
 				continue;
 
 			MutableComponent text = Component.literal(getPrefix() + c.getAliases()[0] + ": §f" + c.getDescription())
-					.styled(s -> s.withColor(BleachLogger.INFO_COLOR));
+					.withStyle(s -> s.withColor(BleachLogger.INFO_COLOR));
 
 			BleachLogger.noPrefix(
-					text.styled(style -> style
-							.withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, c.getHelpTooltip()))));
+					text.withStyle(style -> style
+							.withHoverEvent(new HoverEvent.ShowText(c.getHelpTooltip()))));
 		}
 	}
 

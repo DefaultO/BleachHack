@@ -1,11 +1,7 @@
 package org.bleachhack.gui.window.widget;
 
-import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
-import com.mojang.blaze3d.vertex.Tesselator;
-import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
-import com.mojang.math.Axis;
 
 public class WindowTextWidget extends WindowWidget {
 
@@ -41,7 +37,7 @@ public class WindowTextWidget extends WindowWidget {
 	}
 
 	public WindowTextWidget(Component text, boolean shadow, TextAlign align, float scale, float rotation, int x, int y, int color) {
-		super(x, y, x + mc.textRenderer.getWidth(text), (int) (y + 10 * scale));
+		super(x, y, x + mc.font.width(text), (int) (y + 10 * scale));
 		this.text = text;
 		this.shadow = shadow;
 		this.color = color;
@@ -51,29 +47,24 @@ public class WindowTextWidget extends WindowWidget {
 	}
 
 	@Override
-	public void render(GuiGraphics drawContext, int windowX, int windowY, int mouseX, int mouseY) {
+	public void render(GuiGraphicsExtractor drawContext, int windowX, int windowY, int mouseX, int mouseY) {
 		super.render(drawContext, windowX, windowY, mouseX, mouseY);
 
-		float offset = mc.textRenderer.getWidth(text) * align.offset * scale;
+		float offset = mc.font.width(text) * align.offset * scale;
 
-		drawContext.getMatrices().push();
-		drawContext.getMatrices().scale(scale, scale, 1f);
-		drawContext.getMatrices().translate((windowX + x1 - offset) / scale, (windowY + y1) / scale, 0);
-		drawContext.getMatrices().multiply(Axis.POSITIVE_Z.rotationDegrees(rotation));
+		drawContext.pose().pushMatrix();
+		drawContext.pose().scale(scale, scale);
+		drawContext.pose().translate((windowX + x1 - offset) / scale, (windowY + y1) / scale);
+		drawContext.pose().rotate((float) Math.toRadians(rotation));
 
-		MultiBufferSource.Immediate immediate = MultiBufferSource.immediate(Tesselator.getInstance().getBuffer());
-		mc.textRenderer.draw(text, 0, 0, color, shadow, drawContext.getMatrices().peek().getPositionMatrix(), immediate, Font.TextLayerType.NORMAL, 0, 0xf000f0);
-		immediate.draw();
+		// old TextRenderer treated zero-alpha colors as opaque; 26.2 text() skips them instead
+		int col = (color & 0xfc000000) == 0 ? color | 0xff000000 : color;
+		drawContext.text(mc.font, text, 0, 0, col, shadow);
 
-		if (text.getStyle() != null && mc.currentScreen != null
-				&& mouseX >= windowX + x1 - offset && mouseX <= windowX + x2 - offset && mouseY >= windowY + y1 && mouseY <= windowY + y2) {
-			drawContext.getMatrices().push();
-			drawContext.getMatrices().translate(0, 0, 250);
-			//((AccessorScreen) mc.currentScreen).callRenderTextHoverEffect(drawContext, text.getStyle(), mouseX - (windowX + x1 - (int) offset), mouseY - (windowY + y1));
-			drawContext.getMatrices().pop();
-		}
+		// Text hover effect was already disabled before the 26.2 migration:
+		//((AccessorScreen) mc.currentScreen).callRenderTextHoverEffect(drawContext, text.getStyle(), mouseX - (windowX + x1 - (int) offset), mouseY - (windowY + y1));
 
-		drawContext.getMatrices().pop();
+		drawContext.pose().popMatrix();
 	}
 
 	public Component getText() {
@@ -82,7 +73,7 @@ public class WindowTextWidget extends WindowWidget {
 
 	public void setText(Component text) {
 		this.text = text;
-		this.x2 = x1 + mc.textRenderer.getWidth(text);
+		this.x2 = x1 + mc.font.width(text);
 	}
 
 	public float getScale() {
@@ -91,7 +82,7 @@ public class WindowTextWidget extends WindowWidget {
 
 	public void setScale(float scale) {
 		this.scale = scale;
-		this.x2 = (int) (x1 + mc.textRenderer.getWidth(text) * scale);
+		this.x2 = (int) (x1 + mc.font.width(text) * scale);
 		this.y2 = (int) (y1 + 10 * scale);
 	}
 

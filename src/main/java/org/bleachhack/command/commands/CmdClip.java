@@ -34,13 +34,13 @@ public class CmdClip extends Command {
 			int moveStep = args[0].equalsIgnoreCase("up") ? 1 : -1;
 
 			AABB box = mc.player.getBoundingBox();
-			if (mc.player.hasVehicle()) {
-				box = box.union(mc.player.getVehicle().getBoundingBox());
+			if (mc.player.isPassenger()) {
+				box = box.minmax(mc.player.getVehicle().getBoundingBox());
 			}
 
-			for (int y = Mth.floor(box.minY) + moveStep; !mc.world.isOutOfHeightLimit(y - 1); y += moveStep) {
+			for (int y = Mth.floor(box.minY) + moveStep; !mc.level.isOutsideBuildHeight(y - 1); y += moveStep) {
 				if (WorldUtils.doesBoxCollide(new AABB(box.minX, y - 1, box.minZ, box.maxX, y - 0.01, box.maxZ))
-						&& !WorldUtils.doesBoxCollide(box.offset(0, -box.minY + y, 0))) {
+						&& !WorldUtils.doesBoxCollide(box.move(0, -box.minY + y, 0))) {
 					move(0, y - box.minY, 0);
 					return;
 				}
@@ -71,14 +71,14 @@ public class CmdClip extends Command {
 	}
 
 	private void move(double xOffset, double yOffset, double zOffset) {
-		if (mc.player.hasVehicle()) {
-			mc.player.getVehicle().updatePosition(
+		if (mc.player.isPassenger()) {
+			mc.player.getVehicle().snapTo(
 					mc.player.getVehicle().getX() + xOffset,
 					mc.player.getVehicle().getY() + yOffset,
 					mc.player.getVehicle().getZ() + zOffset);
 		}
 
-		mc.player.updatePosition(mc.player.getX() + xOffset, mc.player.getY() + yOffset, mc.player.getZ() + zOffset);
+		mc.player.snapTo(mc.player.getX() + xOffset, mc.player.getY() + yOffset, mc.player.getZ() + zOffset);
 	}
 
 }

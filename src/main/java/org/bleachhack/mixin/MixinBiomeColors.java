@@ -10,8 +10,8 @@ package org.bleachhack.mixin;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.BiomeColors;
+import net.minecraft.client.renderer.block.BlockAndTintGetter;
 import net.minecraft.core.BlockPos;
-import net.minecraft.world.level.BlockAndTintGetter;
 import net.minecraft.world.level.ColorResolver;
 import org.bleachhack.BleachHack;
 import org.bleachhack.event.events.EventBiomeColor;
@@ -23,13 +23,13 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(BiomeColors.class)
 public class MixinBiomeColors {
 
-	@Inject(method = "getColor(Lnet/minecraft/world/BlockAndTintGetter;Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/world/biome/ColorResolver;)I", at = @At("RETURN"), cancellable = true)
-	private static void getColor(BlockAndTintGetter world, BlockPos pos, ColorResolver resolver, CallbackInfoReturnable<Integer> callback) {
-		if (Minecraft.getInstance().world != null) {
-			EventBiomeColor event = 
-					resolver == BiomeColors.FOLIAGE_COLOR ? new EventBiomeColor.Foilage(world, pos, callback.getReturnValueI()) :
-						resolver == BiomeColors.GRASS_COLOR ? new EventBiomeColor.Grass(world, pos, callback.getReturnValueI()) :
-							resolver == BiomeColors.WATER_COLOR ? new EventBiomeColor.Water(world, pos, callback.getReturnValueI()) :
+	@Inject(method = "getAverageColor(Lnet/minecraft/client/renderer/block/BlockAndTintGetter;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/ColorResolver;)I", at = @At("RETURN"), cancellable = true)
+	private static void getAverageColor(BlockAndTintGetter world, BlockPos pos, ColorResolver resolver, CallbackInfoReturnable<Integer> callback) {
+		if (Minecraft.getInstance().level != null) {
+			EventBiomeColor event =
+					resolver == BiomeColors.FOLIAGE_COLOR_RESOLVER ? new EventBiomeColor.Foilage(world, pos, callback.getReturnValueI()) :
+						resolver == BiomeColors.GRASS_COLOR_RESOLVER ? new EventBiomeColor.Grass(world, pos, callback.getReturnValueI()) :
+							resolver == BiomeColors.WATER_COLOR_RESOLVER ? new EventBiomeColor.Water(world, pos, callback.getReturnValueI()) :
 								null;
 
 			if (event != null) {

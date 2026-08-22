@@ -8,8 +8,9 @@
  */
 package org.bleachhack.command.commands;
 
-import net.minecraft.block.*;
+import net.minecraft.world.level.block.*;
 import net.minecraft.client.gui.screens.inventory.ShulkerBoxScreen;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.item.BlockItem;
@@ -33,7 +34,7 @@ public class CmdPeek extends Command {
 
 	@Override
 	public void onCommand(String alias, String[] args) throws Exception {
-		ItemStack item = mc.player.getInventory().getMainHandStack();
+		ItemStack item = mc.player.getMainHandItem();
 
 		if (item.getItem() instanceof BlockItem) {
 			Block block = ((BlockItem) item.getItem()).getBlock();
@@ -54,10 +55,10 @@ public class CmdPeek extends Command {
 		SimpleContainer inv = new SimpleContainer(items.toArray(new ItemStack[27]));
 
 		BleachQueue.add(() ->
-				mc.setScreen(new PeekShulkerScreen(
+				mc.gui.setScreen(new PeekShulkerScreen(
 						new ShulkerBoxMenu(420, mc.player.getInventory(), inv),
 						mc.player.getInventory(),
-						item.getName())));
+						item.getHoverName())));
 	}
 
 	static class PeekShulkerScreen extends ShulkerBoxScreen {
@@ -66,7 +67,8 @@ public class CmdPeek extends Command {
 			super(handler, inventory, title);
 		}
 
-		public boolean mouseClicked(double mouseX, double mouseY, int button) {
+		@Override
+		public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
 			return false;
 		}
 	}

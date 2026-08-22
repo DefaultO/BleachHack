@@ -1,7 +1,7 @@
 package org.bleachhack.gui.window.widget;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.sounds.SoundEvents;
 import org.bleachhack.gui.window.Window;
@@ -35,7 +35,7 @@ public class WindowButtonWidget extends WindowWidget {
 	}
 
 	@Override
-	public void render(GuiGraphics drawContext, int windowX, int windowY, int mouseX, int mouseY) {
+	public void render(GuiGraphicsExtractor drawContext, int windowX, int windowY, int mouseX, int mouseY) {
 		super.render(drawContext, windowX, windowY, mouseX, mouseY);
 
 		int bx1 = windowX + x1;
@@ -48,7 +48,7 @@ public class WindowButtonWidget extends WindowWidget {
 				colorTop, colorBottom,
 				isInBounds(windowX, windowY, mouseX, mouseY) ? colorHoverFill : colorFill);
 
-		drawContext.drawTextWithShadow(mc.textRenderer, text, bx1 + (bx2 - bx1) / 2 - mc.textRenderer.getWidth(text) / 2, by1 + (by2 - by1) / 2 - 4, -1);
+		drawContext.text(mc.font, text, bx1 + (bx2 - bx1) / 2 - mc.font.width(text) / 2, by1 + (by2 - by1) / 2 - 4, -1);
 	}
 
 	@Override
@@ -57,7 +57,7 @@ public class WindowButtonWidget extends WindowWidget {
 
 		if (isInBounds(windowX, windowY, mouseX, mouseY)) {
 			action.run();
-			Minecraft.getInstance().getSoundManager().play(SimpleSoundInstance.master(SoundEvents.UI_BUTTON_CLICK, 1.0F));
+			Minecraft.getInstance().getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0F));
 		}
 	}
 }

@@ -9,7 +9,7 @@
 package org.bleachhack.mixin;
 
 import net.minecraft.client.Camera;
-import net.minecraft.client.render.CameraSubmersionType;
+import net.minecraft.world.level.material.FogType;
 import org.bleachhack.module.Module;
 import org.bleachhack.module.ModuleManager;
 import org.bleachhack.module.mods.BetterCamera;
@@ -26,17 +26,19 @@ public class MixinCamera {
 
 	@Unique private boolean bypassCameraClip;
 
-	@Shadow private double clipToSpace(double desiredCameraDistance) { return 0; }
+	// 26.2: clipToSpace -> getMaxZoom(float)
+	@Shadow private float getMaxZoom(float desiredCameraDistance) { return 0; }
 
-	@Inject(method = "getSubmersionType", at = @At("HEAD"), cancellable = true)
-	private void getSubmergedFluidState(CallbackInfoReturnable<CameraSubmersionType> ci) {
+	// 26.2: getSubmersionType -> getFluidInCamera, CameraSubmersionType -> FogType
+	@Inject(method = "getFluidInCamera", at = @At("HEAD"), cancellable = true)
+	private void getFluidInCamera(CallbackInfoReturnable<FogType> ci) {
 		if (ModuleManager.getModule(NoRender.class).isOverlayToggled(3)) {
-			ci.setReturnValue(CameraSubmersionType.NONE);
+			ci.setReturnValue(FogType.NONE);
 		}
 	}
 
-	@Inject(method = "clipToSpace", at = @At("HEAD"), cancellable = true)
-	private void onClipToSpace(double desiredCameraDistance, CallbackInfoReturnable<Double> info) {
+	@Inject(method = "getMaxZoom", at = @At("HEAD"), cancellable = true)
+	private void onGetMaxZoom(float desiredCameraDistance, CallbackInfoReturnable<Float> info) {
 		if (bypassCameraClip) {
 			bypassCameraClip = false;
 		} else {
@@ -45,10 +47,10 @@ public class MixinCamera {
 			if (betterCamera.isEnabled()) {
 				if (betterCamera.getSetting(0).asToggle().getState()) {
 					info.setReturnValue(betterCamera.getSetting(1).asToggle().getState()
-							? betterCamera.getSetting(1).asToggle().getChild(0).asSlider().getValue() : desiredCameraDistance);
+							? (float) betterCamera.getSetting(1).asToggle().getChild(0).asSlider().getValue() : desiredCameraDistance);
 				} else if (betterCamera.getSetting(1).asToggle().getState()) {
 					bypassCameraClip = true;
-					info.setReturnValue(clipToSpace(betterCamera.getSetting(1).asToggle().getChild(0).asSlider().getValue()));
+					info.setReturnValue(getMaxZoom((float) betterCamera.getSetting(1).asToggle().getChild(0).asSlider().getValue()));
 				}
 			}
 		}

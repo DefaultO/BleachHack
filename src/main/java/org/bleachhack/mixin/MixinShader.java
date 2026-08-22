@@ -9,31 +9,35 @@
 package org.bleachhack.mixin;
 
 import com.mojang.blaze3d.opengl.GlProgram;
-import net.minecraft.client.gl.ShaderStage;
-import net.minecraft.server.packs.resources.ResourceProvider;
-import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Shadow;
-import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.ModifyArg;
-import org.spongepowered.asm.mixin.injection.ModifyVariable;
 
 // Tweaks to the shader class to make it compatible with OpenResourceManager
+//
+// TODO(26.2): the old JsonEffectShaderProgram (yarn "Shader") no longer exists. GlProgram has no `name`
+// field, no Identifier-based constructor and no loadShader(ResourceProvider, ShaderStage.Type, String)
+// - shader programs are now compiled data-driven through ShaderManager/PostChainConfig, which loads
+// namespaced shader Identifiers natively, so the namespace-rewriting hack below likely has no 26.2
+// equivalent (and may be obsolete). Injectors commented out to keep the class compiling; needs a
+// coordinated rework together with OpenResourceManager/ShaderRender.
 @Mixin(value = GlProgram.class, priority = 1100)
 public class MixinShader {
 
-	@Shadow @Final private String name;
+	// TODO(26.2): GlProgram has no `name` field (only debugLabel).
+	// @Shadow @Final private String name;
 
-	@ModifyArg(method = "<init>", at = @At(value = "INVOKE", target = "Lnet/minecraft/util/Identifier;<init>(Ljava/lang/String;)V"), allow = 1)
-	private String modifyProgramId(String id) {
-		return replaceIdentifier(id, name);
-	}
+	// TODO(26.2): GlProgram's constructor no longer builds an Identifier from a String.
+	// @ModifyArg(method = "<init>", at = @At(value = "INVOKE", target = "Lnet/minecraft/resources/Identifier;<init>(Ljava/lang/String;)V"), allow = 1)
+	// private String modifyProgramId(String id) {
+	// 	return replaceIdentifier(id, name);
+	// }
 
-	@ModifyVariable(method = "loadShader", at = @At("STORE"), ordinal = 1)
-	private static String modifyStageId(String id, ResourceProvider factory, ShaderStage.Type type, String name) {
-		return replaceIdentifier(id, name);
-	}
-	
+	// TODO(26.2): loadShader/ShaderStage no longer exist (see GlShaderModule/ShaderManager).
+	// @ModifyVariable(method = "loadShader", at = @At("STORE"), ordinal = 1)
+	// private static String modifyStageId(String id, ResourceProvider factory, ShaderStage.Type type, String name) {
+	// 	return replaceIdentifier(id, name);
+	// }
+
+	@SuppressWarnings("unused")
 	private static String replaceIdentifier(String id, String name) {
 		String[] split = name.split(":");
 		if (split.length > 1 && id.indexOf('/') < id.indexOf(':')) {

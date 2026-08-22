@@ -33,16 +33,16 @@ public class CmdGamemode extends Command {
 		String lower = args[0].toLowerCase(Locale.ENGLISH);
 
 		if (lower.equals("0") || lower.startsWith("su")) {
-			mc.interactionManager.setGameMode(GameType.SURVIVAL);
+			mc.gameMode.setLocalMode(GameType.SURVIVAL);
 			BleachLogger.info("§l§nClientside§r gamemode has been set to survival.");
 		} else if (lower.equals("1") || lower.startsWith("c")) {
-			mc.interactionManager.setGameMode(GameType.CREATIVE);
+			mc.gameMode.setLocalMode(GameType.CREATIVE);
 			BleachLogger.info("§l§nClientside§r gamemode has been set to creative.");
 		} else if (lower.equals("2") || lower.startsWith("a")) {
-			mc.interactionManager.setGameMode(GameType.ADVENTURE);
+			mc.gameMode.setLocalMode(GameType.ADVENTURE);
 			BleachLogger.info("§l§nClientside§r gamemode has been set to adventure.");
 		} else if (lower.equals("3") || lower.startsWith("sp")) {
-			mc.interactionManager.setGameMode(GameType.SPECTATOR);
+			mc.gameMode.setLocalMode(GameType.SPECTATOR);
 			BleachLogger.info("§l§nClientside§r gamemode has been set to spectator.");
 		} else {
 			throw new CmdSyntaxException("Unknown Gamemode!");

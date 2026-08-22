@@ -13,6 +13,7 @@ import org.bleachhack.command.Command;
 import org.bleachhack.command.CommandCategory;
 import org.bleachhack.util.BleachLogger;
 
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.network.chat.Component;
 
@@ -25,14 +26,14 @@ public class CmdRename extends Command {
 
 	@Override
 	public void onCommand(String alias, String[] args) throws Exception {
-		if (!mc.interactionManager.getCurrentGameMode().isCreative()) {
+		if (!mc.gameMode.getPlayerMode().isCreative()) {
 			BleachLogger.error("Not In Creative Mode!");
 			return;
 		}
 
-		ItemStack i = mc.player.getInventory().getMainHandStack();
+		ItemStack i = mc.player.getInventory().getSelectedItem();
 
-		i.setCustomName(Component.literal(StringUtils.join(args, ' ').replace("&", "§").replace("§§", "&")));
+		i.set(DataComponents.CUSTOM_NAME, Component.literal(StringUtils.join(args, ' ').replace("&", "§").replace("§§", "&")));
 		BleachLogger.info("Renamed Item");
 	}
 

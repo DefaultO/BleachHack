@@ -59,9 +59,9 @@ public abstract class Command {
 
 	public Component getHelpTooltip() {
 		return Component.literal("§7Category: " + getCategory() + "\n")
-				.append("Aliases: §f" + getPrefix() + String.join(" §7/§f " + getPrefix(), getAliases()) + "\n").styled(s -> s.withColor(BleachLogger.INFO_COLOR))
-				.append("Usage: §f" + getSyntax() + "\n").styled(s -> s.withColor(BleachLogger.INFO_COLOR))
-				.append("Description: §f" + getDescription()).styled(s -> s.withColor(BleachLogger.INFO_COLOR));
+				.append("Aliases: §f" + getPrefix() + String.join(" §7/§f " + getPrefix(), getAliases()) + "\n").withStyle(s -> s.withColor(BleachLogger.INFO_COLOR))
+				.append("Usage: §f" + getSyntax() + "\n").withStyle(s -> s.withColor(BleachLogger.INFO_COLOR))
+				.append("Description: §f" + getDescription()).withStyle(s -> s.withColor(BleachLogger.INFO_COLOR));
 	}
 
 	public abstract void onCommand(String alias, String[] args) throws Exception;

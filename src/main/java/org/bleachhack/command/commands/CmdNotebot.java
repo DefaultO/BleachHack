@@ -21,7 +21,7 @@ public class CmdNotebot extends Command {
 
 	@Override
 	public void onCommand(String alias, String[] args) throws Exception {
-		BleachQueue.add(() -> mc.setScreen(new NotebotScreen()));
+		BleachQueue.add(() -> mc.gui.setScreen(new NotebotScreen()));
 	}
 
 }

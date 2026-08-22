@@ -8,18 +8,15 @@
  */
 package org.bleachhack.command.commands;
 
-import net.minecraft.client.gui.GuiGraphics;
 import org.bleachhack.command.Command;
 import org.bleachhack.command.CommandCategory;
 import org.bleachhack.command.exception.CmdSyntaxException;
 import org.bleachhack.util.BleachLogger;
 import org.bleachhack.util.BleachQueue;
 
-import com.mojang.blaze3d.systems.RenderSystem;
-
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.player.AbstractClientPlayer;
-import net.minecraft.client.renderer.GameRenderer;
 
 public class CmdInvPeek extends Command {
 
@@ -34,23 +31,17 @@ public class CmdInvPeek extends Command {
 			throw new CmdSyntaxException();
 		}
 
-		for (AbstractClientPlayer e: mc.world.getPlayers()) {
+		for (AbstractClientPlayer e: mc.level.players()) {
 			if (e.getDisplayName().getString().equalsIgnoreCase(args[0])) {
 				BleachQueue.add(() -> {
 					BleachLogger.info("Opened inventory for " + e.getDisplayName().getString());
 
-					mc.setScreen(new InventoryScreen(e) {
-						public boolean mouseClicked(double mouseX, double mouseY, int button) {
+					mc.gui.setScreen(new InventoryScreen(e) {
+						// ponytail: old drawBackground override just re-implemented the vanilla background
+						// (texture + entity following mouse); 26.2 extractBackground does exactly that, so it was dropped.
+						@Override
+						public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
 							return false;
-						}
-
-						protected void drawBackground(GuiGraphics drawContext, float delta, int mouseX, int mouseY) {
-							RenderSystem.setShader(GameRenderer::getPositionTexProgram);
-							RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
-							RenderSystem.setShaderTexture(0, BACKGROUND_TEXTURE);
-							drawContext.drawTexture(BACKGROUND_TEXTURE, x, y, 0, 0, this.backgroundWidth, this.backgroundHeight);
-							//TODO: Fix this
-							drawEntity(drawContext,x, y, x + 51, y + 75, 0,0.0f, (float)(x + 51) - mouseX, (float)(y + 75 - 50) - mouseY, this.client.player);
 						}
 					});
 				});
