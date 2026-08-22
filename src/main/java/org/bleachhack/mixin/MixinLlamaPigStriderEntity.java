@@ -8,7 +8,11 @@
  */
 package org.bleachhack.mixin;
 
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.animal.equine.AbstractHorse;
+import net.minecraft.world.entity.animal.pig.Pig;
+import net.minecraft.world.entity.monster.Strider;
 import org.bleachhack.BleachHack;
 import org.bleachhack.event.events.EventEntityControl;
 import org.spongepowered.asm.mixin.Mixin;
@@ -16,21 +20,18 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.animal.Animal;
-import net.minecraft.world.entity.animal.pig.Pig;
-import net.minecraft.world.entity.monster.Strider;
-import net.minecraft.world.level.Level;
-
-@Mixin({AbstractHorse.class, Pig.class, Strider.class})
-public abstract class MixinLlamaPigStriderEntity extends Animal {
-
-	private MixinLlamaPigStriderEntity(EntityType<? extends Animal> entityType, Level world) {
-		super(entityType, world);
-	}
+// 26.2: isSaddled() is declared on Mob now (the concrete equine/pig/strider classes only
+// inherit it), so we inject on Mob and gate by type to keep the original scope.
+@Mixin(Mob.class)
+public class MixinLlamaPigStriderEntity {
 
 	@Inject(method = "isSaddled", at = @At("HEAD"), cancellable = true)
 	private void isSaddled(CallbackInfoReturnable<Boolean> info) {
+		Entity self = (Entity) (Object) this;
+		if (!(self instanceof AbstractHorse || self instanceof Pig || self instanceof Strider)) {
+			return;
+		}
+
 		EventEntityControl event = new EventEntityControl();
 		BleachHack.eventBus.post(event);
 

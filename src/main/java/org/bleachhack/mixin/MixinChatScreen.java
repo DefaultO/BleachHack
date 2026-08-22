@@ -9,6 +9,7 @@
 package org.bleachhack.mixin;
 
 import net.minecraft.client.gui.screens.ChatScreen;
+import net.minecraft.client.input.KeyEvent;
 import org.bleachhack.BleachHack;
 import org.bleachhack.event.events.EventKeyPress;
 import org.spongepowered.asm.mixin.Mixin;
@@ -19,9 +20,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(ChatScreen.class)
 public class MixinChatScreen {
 
+	// 26.2: keyPressed(int,int,int) -> keyPressed(KeyEvent)
 	@Inject(method = "keyPressed", at = @At("HEAD"), cancellable = true)
-	private void keyPressed(int keyCode, int scanCode, int modifiers, CallbackInfoReturnable<Boolean> callback) {
-		EventKeyPress.InChat event = new EventKeyPress.InChat(keyCode, scanCode, EventKeyPress.Status.PRESSED, modifiers);
+	private void keyPressed(KeyEvent keyEvent, CallbackInfoReturnable<Boolean> callback) {
+		EventKeyPress.InChat event = new EventKeyPress.InChat(keyEvent.key(), keyEvent.scancode(), EventKeyPress.Status.PRESSED, keyEvent.modifiers());
 		BleachHack.eventBus.post(event);
 
 		if (event.isCancelled()) {

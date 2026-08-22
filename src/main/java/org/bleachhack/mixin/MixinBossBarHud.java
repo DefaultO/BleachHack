@@ -19,7 +19,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(BossHealthOverlay.class)
 public class MixinBossBarHud {
 
-	@Inject(method = "render", at = @At("HEAD"), cancellable = true)
+	// 26.2: BossHealthOverlay.render -> extractRenderState(GuiGraphicsExtractor)
+	@Inject(method = "extractRenderState", at = @At("HEAD"), cancellable = true)
 	private void render(CallbackInfo info) {
 		if (ModuleManager.getModule(NoRender.class).isOverlayToggled(6)) {
 			info.cancel();
