@@ -55,6 +55,10 @@ public class SettingToggle extends ModuleSetting<Boolean> {
 
 				int h = y + 12;
 				for (ModuleSetting<?> s : children) {
+					if (!s.isVisible()) {
+						continue;
+					}
+
 					s.render(window, drawContext, x + 2, h, len - 2);
 
 					h += s.getHeight(len - 3);
@@ -88,8 +92,11 @@ public class SettingToggle extends ModuleSetting<Boolean> {
 
 		if (expanded) {
 			h += 1;
-			for (ModuleSetting<?> s : children)
-				h += s.getHeight(len - 2);
+			for (ModuleSetting<?> s : children) {
+				if (s.isVisible()) {
+					h += s.getHeight(len - 2);
+				}
+			}
 		}
 
 		return h;

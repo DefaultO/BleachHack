@@ -25,11 +25,9 @@ void main() {
 
     vec4 best = texture(InSampler, texCoord);
 
-    for (int i = -8; i <= 8; i++) {
-        if (i < -radius || i > radius) {
-            continue;
-        }
-
+    // Bound the loop by the radius itself - a fixed -8..8 sweep with a `continue`
+    // still pays for every iteration, which is 17 taps even at radius 1.
+    for (int i = -radius; i <= radius; i++) {
         vec4 s = texture(InSampler, texCoord + vec2(float(i) * texel, 0.0));
         if (s.a > best.a) {
             best = s;

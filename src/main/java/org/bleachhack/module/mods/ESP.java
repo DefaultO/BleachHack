@@ -57,6 +57,7 @@ public class ESP extends Module {
 	private static final int ARMORSTANDS = 14;
 	private static final int PROJECTILES = 15;
 	private static final int OTHER = 16;
+	private static final int THROUGH_WALLS = 17;
 
 	public ESP() {
 		super("ESP", KEY_UNBOUND, ModuleCategory.RENDER, "Highlights Entities in the world.",
@@ -95,7 +96,20 @@ public class ESP extends Module {
 						new SettingColor("Color", 255, 255, 255).withDesc("Outline color for projectiles.")),
 
 				new SettingToggle("Other", false).withDesc("Highlights anything the categories above miss (tnt, falling blocks, item frames, xp...).").withChildren(
-						new SettingColor("Color", 200, 200, 200).withDesc("Outline color for everything else.")));
+						new SettingColor("Color", 200, 200, 200).withDesc("Outline color for everything else.")),
+
+				new SettingToggle("ThroughWalls", true).withDesc("Draw box mode over terrain and fluids instead of hiding behind them."));
+
+		// Only show the options that apply to the selected render mode.
+		getSetting(SHADER_FILL).visibleWhen(this::isShaderMode);
+		getSetting(SHADER_OUTLINE).visibleWhen(this::isShaderMode);
+		getSetting(BOX).visibleWhen(() -> !isShaderMode());
+		getSetting(BOX_FILL).visibleWhen(() -> !isShaderMode());
+		getSetting(THROUGH_WALLS).visibleWhen(() -> !isShaderMode());
+	}
+
+	private boolean isShaderMode() {
+		return getSetting(RENDER).asMode().getMode() == 0;
 	}
 
 	/**
@@ -145,16 +159,17 @@ public class ESP extends Module {
 
 		float width = getSetting(BOX).asSlider().getValueFloat();
 		int fill = getSetting(BOX_FILL).asSlider().getValueInt();
+		boolean throughWalls = getSetting(THROUGH_WALLS).asToggle().getState();
 
 		for (Entity e: mc.level.entitiesForRendering()) {
 			int[] color = getColor(e);
 
 			if (color != null) {
 				if (width != 0)
-					Renderer.drawBoxOutline(e.getBoundingBox(), QuadColor.single(color[0], color[1], color[2], 255), width);
+					Renderer.drawBoxOutline(e.getBoundingBox(), QuadColor.single(color[0], color[1], color[2], 255), width, throughWalls);
 
 				if (fill != 0)
-					Renderer.drawBoxFill(e.getBoundingBox(), QuadColor.single(color[0], color[1], color[2], fill));
+					Renderer.drawBoxFill(e.getBoundingBox(), QuadColor.single(color[0], color[1], color[2], fill), throughWalls);
 			}
 		}
 	}

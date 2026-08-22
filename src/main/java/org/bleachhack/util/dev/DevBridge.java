@@ -272,6 +272,10 @@ public class DevBridge {
 	private static void describe(StringBuilder sb, String index, ModuleSetting<?> setting) {
 		sb.append(index).append(' ').append(setting.getName()).append(' ');
 
+		if (!setting.isVisible()) {
+			sb.append("[hidden] ");
+		}
+
 		if (setting instanceof SettingToggle toggle) {
 			sb.append("toggle=").append(toggle.getState());
 			if (!toggle.getChildren().isEmpty()) {

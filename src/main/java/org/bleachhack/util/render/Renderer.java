@@ -14,6 +14,7 @@ import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.gizmos.GizmoProperties;
 import net.minecraft.gizmos.GizmoStyle;
 import net.minecraft.gizmos.Gizmos;
 import net.minecraft.util.ARGB;
@@ -65,21 +66,27 @@ public class Renderer {
 	}
 
 	public static void drawBoxFill(AABB box, QuadColor color, Direction... excludeDirs) {
+		drawBoxFill(box, color, false, excludeDirs);
+	}
+
+	/** @param throughWalls draw over terrain and fluids instead of being depth-tested. */
+	public static void drawBoxFill(AABB box, QuadColor color, boolean throughWalls, Direction... excludeDirs) {
 		if (!FrustumUtils.isBoxVisible(box)) {
 			return;
 		}
 
+		GizmoStyle style = GizmoStyle.fill(argb(color));
+
 		if (excludeDirs.length == 0) {
-			Gizmos.cuboid(box, GizmoStyle.fill(argb(color)));
+			onTop(Gizmos.cuboid(box, style), throughWalls);
 			return;
 		}
 
-		GizmoStyle style = GizmoStyle.fill(argb(color));
 		Vec3 min = new Vec3(box.minX, box.minY, box.minZ);
 		Vec3 max = new Vec3(box.maxX, box.maxY, box.maxZ);
 		for (Direction dir : Direction.values()) {
 			if (!contains(excludeDirs, dir)) {
-				Gizmos.rect(min, max, dir, style);
+				onTop(Gizmos.rect(min, max, dir, style), throughWalls);
 			}
 		}
 	}
@@ -91,12 +98,17 @@ public class Renderer {
 	}
 
 	public static void drawBoxOutline(AABB box, QuadColor color, float lineWidth, Direction... excludeDirs) {
+		drawBoxOutline(box, color, lineWidth, false, excludeDirs);
+	}
+
+	/** @param throughWalls draw over terrain and fluids instead of being depth-tested. */
+	public static void drawBoxOutline(AABB box, QuadColor color, float lineWidth, boolean throughWalls, Direction... excludeDirs) {
 		if (!FrustumUtils.isBoxVisible(box)) {
 			return;
 		}
 
 		if (excludeDirs.length == 0) {
-			Gizmos.cuboid(box, GizmoStyle.stroke(argb(color), lineWidth));
+			onTop(Gizmos.cuboid(box, GizmoStyle.stroke(argb(color), lineWidth)), throughWalls);
 			return;
 		}
 
@@ -106,7 +118,7 @@ public class Renderer {
 		Vec3 max = new Vec3(box.maxX, box.maxY, box.maxZ);
 		for (Direction dir : Direction.values()) {
 			if (!contains(excludeDirs, dir)) {
-				Gizmos.rect(min, max, dir, style);
+				onTop(Gizmos.rect(min, max, dir, style), throughWalls);
 			}
 		}
 	}
@@ -176,6 +188,12 @@ public class Renderer {
 	private static int argb(LineColor color) {
 		int[] c = color.getColor(0f, 0f, 0f, 0);
 		return ARGB.color(c[3], c[0], c[1], c[2]);
+	}
+
+	private static void onTop(GizmoProperties gizmo, boolean throughWalls) {
+		if (throughWalls) {
+			gizmo.setAlwaysOnTop();
+		}
 	}
 
 	private static boolean contains(Direction[] dirs, Direction dir) {

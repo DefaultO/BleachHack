@@ -19,6 +19,18 @@ import org.bleachhack.util.io.BleachFileHelper;
 
 public abstract class ModuleSetting<T> extends Setting<T> {
 
+	/** Settings can hide themselves when they're irrelevant, e.g. box options while in shader mode. */
+	private java.util.function.BooleanSupplier visibility = () -> true;
+
+	public ModuleSetting<T> visibleWhen(java.util.function.BooleanSupplier condition) {
+		this.visibility = condition;
+		return this;
+	}
+
+	public boolean isVisible() {
+		return visibility.getAsBoolean();
+	}
+
 	public ModuleSetting(String name, T value, SettingDataHandler<T> handler) {
 		super(name, "", value, handler);
 	}
