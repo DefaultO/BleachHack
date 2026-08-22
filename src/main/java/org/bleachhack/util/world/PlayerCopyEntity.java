@@ -9,6 +9,7 @@
 package org.bleachhack.util.world;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.RemotePlayer;
 import net.minecraft.world.entity.player.Player;
 
@@ -40,7 +41,19 @@ public class PlayerCopyEntity extends RemotePlayer {
 
 	public void spawn() {
 		unsetRemoved();
-		Minecraft.getInstance().level.addEntity(this);
+
+		ClientLevel level = Minecraft.getInstance().level;
+
+		// 26.2 stopped auto-assigning entity ids - they arrive with the spawn packet, and
+		// getId() throws until one is set. A client-only copy has no packet, so claim a
+		// free id from the top of the range where the server won't be handing any out.
+		int id = Integer.MAX_VALUE - 1;
+		while (level.getEntity(id) != null) {
+			id--;
+		}
+
+		setId(id);
+		level.addEntity(this);
 	}
 
 	public void despawn() {
