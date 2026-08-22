@@ -14,6 +14,7 @@ import org.bleachhack.event.events.EventWorldRender;
 import org.bleachhack.eventbus.BleachSubscribe;
 import org.bleachhack.module.Module;
 import org.bleachhack.module.ModuleCategory;
+import org.bleachhack.module.ModuleManager;
 import org.bleachhack.setting.module.SettingColor;
 import org.bleachhack.setting.module.SettingMode;
 import org.bleachhack.setting.module.SettingSlider;
@@ -64,11 +65,21 @@ public class ESP extends Module {
 						new SettingColor("Color", 160, 150, 50).withDesc("Outline color for armor stands.")));
 	}
 
+	/** True while ESP is drawing through the shader path (used to swap in our post chain). */
+	public static boolean isShaderModeActive() {
+		ESP esp = ModuleManager.getModule(ESP.class);
+		return esp != null && esp.isEnabled() && esp.getSetting(0).asMode().getMode() == 0;
+	}
+
 	/**
-	 * Shader mode: hand the entity an outline color during render-state extraction.
-	 * 26.2 then draws it into the entity_outline framebuffer and the sobel + box-blur
-	 * post chain turns that into a glow - the same GPU path vanilla uses for glowing
-	 * entities, so it renders through walls and follows the model silhouette exactly.
+	 * Shader mode: hand the entity a color during render-state extraction. 26.2 draws
+	 * every entity with a non-zero outlineColor as a flat silhouette into the
+	 * entity_outline framebuffer, which our post chain (bleachhack:entity_outline)
+	 * turns into a solid rim plus a translucent fill.
+	 *
+	 * The alpha channel carries the fill opacity: a PostPass bakes its uniforms when
+	 * it's built and can't be updated per frame, so the per-entity color is the only
+	 * channel that can carry a live setting into the shader.
 	 */
 	@BleachSubscribe
 	public void onEntityOutline(EventEntityRender.Single.Outline event) {
@@ -78,8 +89,7 @@ public class ESP extends Module {
 		int[] color = getColor(event.getEntity());
 
 		if (color != null) {
-			// Must be opaque: the sobel pass edge-detects on alpha.
-			event.setColor(ARGB.color(255, color[0], color[1], color[2]));
+			event.setColor(ARGB.color(getSetting(1).asSlider().getValueInt(), color[0], color[1], color[2]));
 		}
 	}
 

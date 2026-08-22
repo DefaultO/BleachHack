@@ -31,3 +31,6 @@ bin/
 # fabric
 
 run/
+
+# local dev server (Folia + GrimAC, world data, locked files)
+server-dev/
