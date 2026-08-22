@@ -75,7 +75,7 @@ public class Trajectories extends Module {
 		}
 
 		if (getSetting(4).asToggle().getState()) {
-			for (Entity e : mc.world.getEntities()) {
+			for (Entity e : mc.level.entitiesForRendering()) {
 				if (e instanceof ThrowableProjectile || e instanceof AbstractArrow) {
 					if (!getSetting(4).asToggle().getChild(0).asToggle().getState()
 							&& (e instanceof Snowball || e instanceof ThrownEgg || e instanceof ThrownEnderpearl)) {
@@ -86,7 +86,7 @@ public class Trajectories extends Module {
 						continue;
 					}
 
-					if (!Streams.stream(mc.world.getBlockCollisions(e, e.getBoundingBox())).allMatch(VoxelShape::isEmpty))
+					if (!Streams.stream(mc.level.getBlockCollisions(e, e.getBoundingBox())).allMatch(VoxelShape::isEmpty))
 						continue;
 
 					Triple<List<Vec3>, Entity, BlockPos> p = ProjectileSimulator.simulate(e);
@@ -98,7 +98,7 @@ public class Trajectories extends Module {
 		}
 
 		if (getSetting(5).asToggle().getState()) {
-			for (Player e : mc.world.getPlayers()) {
+			for (Player e : mc.level.players()) {
 				if (e == mc.player)
 					continue;
 
@@ -130,23 +130,23 @@ public class Trajectories extends Module {
 					}
 				} else {
 					for (Vec3 v : t.getLeft()) {
-						Renderer.drawBoxFill(new AABB(v, v).expand(0.08), QuadColor.single(col[0], col[1], col[2], opacity));
+						Renderer.drawBoxFill(new AABB(v, v).inflate(0.08), QuadColor.single(col[0], col[1], col[2], opacity));
 					}
 				}
 			}
 
-			VoxelShape hitbox = t.getMiddle() != null ? Shapes.cuboid(t.getMiddle().getBoundingBox())
-					: t.getRight() != null ? mc.world.getBlockState(t.getRight()).getCollisionShape(mc.world, t.getRight()).offset(t.getRight().getX(), t.getRight().getY(), t.getRight().getZ())
+			VoxelShape hitbox = t.getMiddle() != null ? Shapes.create(t.getMiddle().getBoundingBox())
+					: t.getRight() != null ? mc.level.getBlockState(t.getRight()).getCollisionShape(mc.level, t.getRight()).move(t.getRight().getX(), t.getRight().getY(), t.getRight().getZ())
 							: null;
 			Vec3 lastVec = !t.getLeft().isEmpty() ? t.getLeft().get(t.getLeft().size() - 1)
-					: mc.player.getEyePos();
+					: mc.player.getEyePosition();
 
 			if (hitbox != null) {
 				Renderer.drawLine(lastVec.x + 0.25, lastVec.y, lastVec.z, lastVec.x - 0.25, lastVec.y, lastVec.z, LineColor.single(col[0], col[1], col[2], 255), 1.75f);
 				Renderer.drawLine(lastVec.x, lastVec.y + 0.25, lastVec.z, lastVec.x, lastVec.y - 0.25, lastVec.z, LineColor.single(col[0], col[1], col[2], 255), 1.75f);
 				Renderer.drawLine(lastVec.x, lastVec.y, lastVec.z + 0.25, lastVec.x, lastVec.y, lastVec.z - 0.25, LineColor.single(col[0], col[1], col[2], 255), 1.75f);
 
-				for (AABB box: hitbox.getBoundingBoxes()) {
+				for (AABB box: hitbox.toAabbs()) {
 					Renderer.drawBoxOutline(box, QuadColor.single(col[0], col[1], col[2], 190), 1f);
 				}
 			}

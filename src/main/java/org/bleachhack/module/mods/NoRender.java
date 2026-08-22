@@ -29,9 +29,9 @@ import com.google.gson.JsonElement;
 
 import net.minecraft.world.level.block.entity.SignBlockEntity;
 import net.minecraft.client.particle.CampfireSmokeParticle;
-import net.minecraft.client.particle.ElderGuardianAppearanceParticle;
+import net.minecraft.client.particle.ElderGuardianParticle;
 import net.minecraft.client.particle.HugeExplosionParticle;
-import net.minecraft.client.particle.FireworkParticles.FireworkParticle;
+import net.minecraft.client.particle.FireworkParticles;
 import net.minecraft.world.entity.ExperienceOrb;
 import net.minecraft.world.entity.item.FallingBlockEntity;
 import net.minecraft.world.entity.item.ItemEntity;
@@ -154,13 +154,15 @@ public class NoRender extends Module {
 			if (signSetting.getChild(0).asMode().getMode() == 0) {
 				event.setCancelled(true);
 			} else {
-				SignBlockEntity sign = new SignBlockEntity(event.getBlockEntity().getPos(), event.getBlockEntity().getCachedState());
-				sign.setWorld(mc.world);
+				SignBlockEntity sign = new SignBlockEntity(event.getBlockEntity().getBlockPos(), event.getBlockEntity().getBlockState());
+				sign.setLevel(mc.level);
 
 				if (signSetting.getChild(0).asMode().getMode() == 2) {
+					SignText text = new SignText();
 					for (int i = 0; i < 4; i++) {
-						sign.setText((SignText) signText[i], true);
+						text = text.setMessage(i, signText[i]);
 					}
+					sign.setText(text, true);
 				}
 
 				event.setBlockEntity(sign);
@@ -170,10 +172,11 @@ public class NoRender extends Module {
 
 	@BleachSubscribe
 	public void onParticle(EventParticle.Normal event) {
-		if ((isWorldToggled(2) && event.getParticle() instanceof ElderGuardianAppearanceParticle)
+		// TODO(26.2): FireworkParticles.SparkParticle is private now, match any FireworkParticles inner particle instead
+		if ((isWorldToggled(2) && event.getParticle() instanceof ElderGuardianParticle)
 				|| (isParticleToggled(0) && event.getParticle() instanceof CampfireSmokeParticle)
 				|| (isParticleToggled(1) && event.getParticle() instanceof HugeExplosionParticle && Math.abs(event.getParticle().getBoundingBox().hashCode()) % 101 >= getParticleChild(1).getChild(0).asSlider().getValueInt())
-				|| (isParticleToggled(2) && event.getParticle() instanceof FireworkParticle)) {
+				|| (isParticleToggled(2) && event.getParticle().getClass().getDeclaringClass() == FireworkParticles.class)) {
 			event.setCancelled(true);
 		}
 	}
@@ -187,7 +190,7 @@ public class NoRender extends Module {
 
 	@BleachSubscribe
 	public void onSoundPlay(EventSoundPlay.Normal event) {
-		String path = event.getInstance().getId().getPath();
+		String path = event.getInstance().getIdentifier().getPath();
 		if (isWorldToggled(1) && getWorldChild(1).getChild(1).asToggle().getState() && path.equals("item.totem.use")) {
 			event.setCancelled(true);
 		} else if (isWorldToggled(2) && path.equals("entity.elder_guardian.curse")) {
@@ -197,7 +200,7 @@ public class NoRender extends Module {
 
 	@BleachSubscribe
 	public void onRenderGuiBackground(EventRenderScreenBackground event) {
-		if (mc.world != null && isOverlayToggled(7)) {
+		if (mc.level != null && isOverlayToggled(7)) {
 			SettingToggle guiSetting = getOverlayChild(7);
 			int opacity = (int) (guiSetting.getChild(0).asSlider().getValue() * 255);
 
@@ -206,7 +209,7 @@ public class NoRender extends Module {
 				Window.verticalGradient(
 						event.context,
 						0, 0,
-						mc.currentScreen.width, mc.currentScreen.height,
+						mc.gui.screen().width, mc.gui.screen().height,
 						(opacity2 << 24) | 0x101010,
 						(opacity  << 24) | 0x101010);
 			}

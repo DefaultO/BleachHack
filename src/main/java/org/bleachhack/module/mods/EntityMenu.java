@@ -57,7 +57,7 @@ public class EntityMenu extends Module {
 	
 	@BleachSubscribe
 	public void onTick(EventTick event) {
-		if (GLFW.glfwGetMouseButton(mc.getWindow().getHandle(), GLFW.GLFW_MOUSE_BUTTON_MIDDLE) == GLFW.GLFW_PRESS && !buttonHeld) {
+		if (GLFW.glfwGetMouseButton(mc.getWindow().handle(), GLFW.GLFW_MOUSE_BUTTON_MIDDLE) == GLFW.GLFW_PRESS && !buttonHeld) {
 			buttonHeld = true;
 			
 			Optional<Entity> lookingAt = DebugRenderer.getTargetedEntity(mc.player, 20);
@@ -66,17 +66,17 @@ public class EntityMenu extends Module {
 				Entity e = lookingAt.get();
 
 				if (e instanceof LivingEntity && (e instanceof Player || !getSetting(0).asToggle().getState())) {
-					mc.setScreen(new EntityMenuScreen((LivingEntity) e));
+					mc.gui.setScreen(new EntityMenuScreen((LivingEntity) e));
 				}
 			}
-		} else if (GLFW.glfwGetMouseButton(mc.getWindow().getHandle(), GLFW.GLFW_MOUSE_BUTTON_MIDDLE) == GLFW.GLFW_RELEASE) {
+		} else if (GLFW.glfwGetMouseButton(mc.getWindow().handle(), GLFW.GLFW_MOUSE_BUTTON_MIDDLE) == GLFW.GLFW_RELEASE) {
 			buttonHeld = false;
 		}
 	}
 	
 	@BleachSubscribe
 	public void onRenderCrosshair(EventRenderCrosshair event) {
-		if (mc.currentScreen instanceof EntityMenuScreen) {
+		if (mc.gui.screen() instanceof EntityMenuScreen) {
 			event.setCancelled(true);
 		}
 	}

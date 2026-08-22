@@ -21,10 +21,11 @@ import org.bleachhack.setting.module.SettingSlider;
 
 import net.minecraft.world.item.Items;
 import net.minecraft.network.protocol.game.ServerboundPlayerCommandPacket;
-import net.minecraft.network.protocol.game.ServerboundPlayerCommandPacket.Mode;
+import net.minecraft.network.protocol.game.ServerboundPlayerCommandPacket.Action;
 import net.minecraft.network.protocol.game.ClientboundPlayerPositionPacket;
 import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
 import net.minecraft.util.Mth;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.phys.Vec3;
 
 public class ElytraFly extends Module {
@@ -42,12 +43,12 @@ public class ElytraFly extends Module {
 	public void onClientMove(EventClientMove event) {
 		/* Cancel the retarded auto elytra movement */
 		if (getSetting(0).asMode().getMode() == 2 && mc.player.isFallFlying()) {
-			if (!mc.options.jumpKey.isPressed() && !mc.options.sneakKey.isPressed()) {
+			if (!mc.options.keyJump.isDown() && !mc.options.keyShift.isDown()) {
 				event.setVec(new Vec3(event.getVec().x, 0, event.getVec().z));
 			}
 
-			if (!mc.options.backKey.isPressed() && !mc.options.leftKey.isPressed()
-					&& !mc.options.rightKey.isPressed() && !mc.options.forwardKey.isPressed()) {
+			if (!mc.options.keyDown.isDown() && !mc.options.keyLeft.isDown()
+					&& !mc.options.keyRight.isDown() && !mc.options.keyUp.isDown()) {
 				event.setVec(new Vec3(0, event.getVec().y, 0));
 			}
 		}
@@ -56,74 +57,74 @@ public class ElytraFly extends Module {
 	@BleachSubscribe
 	public void onTick(EventTick event) {
 		Vec3 vec3d = new Vec3(0, 0, getSetting(3).asSlider().getValue())
-				.rotateY(-(float) Math.toRadians(mc.player.getYaw()));
+				.yRot(-(float) Math.toRadians(mc.player.getYRot()));
 
-		double currentVel = Math.abs(mc.player.getVelocity().x) + Math.abs(mc.player.getVelocity().y) + Math.abs(mc.player.getVelocity().z);
-		float radianYaw = (float) Math.toRadians(mc.player.getYaw());
+		double currentVel = Math.abs(mc.player.getDeltaMovement().x) + Math.abs(mc.player.getDeltaMovement().y) + Math.abs(mc.player.getDeltaMovement().z);
+		float radianYaw = (float) Math.toRadians(mc.player.getYRot());
 		float boost = getSetting(1).asSlider().getValueFloat();
 
 		switch (getSetting(0).asMode().getMode()) {
 			case 0:
 				if (mc.player.isFallFlying() && currentVel <= getSetting(2).asSlider().getValue()) {
-					if (mc.options.backKey.isPressed()) {
-						mc.player.addVelocity(Mth.sin(radianYaw) * boost, 0, Mth.cos(radianYaw) * -boost);
-					} else if (mc.player.getPitch() > 0) {
-						mc.player.addVelocity(Mth.sin(radianYaw) * -boost, 0, Mth.cos(radianYaw) * boost);
+					if (mc.options.keyDown.isDown()) {
+						mc.player.push(Mth.sin(radianYaw) * boost, 0, Mth.cos(radianYaw) * -boost);
+					} else if (mc.player.getXRot() > 0) {
+						mc.player.push(Mth.sin(radianYaw) * -boost, 0, Mth.cos(radianYaw) * boost);
 					}
 				}
 
 				break;
 			case 1:
 				if (mc.player.isFallFlying() && currentVel <= getSetting(2).asSlider().getValue()) {
-					if (mc.options.forwardKey.isPressed()) {
-						mc.player.addVelocity(Mth.sin(radianYaw) * -boost, 0, Mth.cos(radianYaw) * boost);
-					} else if (mc.options.backKey.isPressed()) {
-						mc.player.addVelocity(Mth.sin(radianYaw) * boost, 0, Mth.cos(radianYaw) * -boost);
+					if (mc.options.keyUp.isDown()) {
+						mc.player.push(Mth.sin(radianYaw) * -boost, 0, Mth.cos(radianYaw) * boost);
+					} else if (mc.options.keyDown.isDown()) {
+						mc.player.push(Mth.sin(radianYaw) * boost, 0, Mth.cos(radianYaw) * -boost);
 					}
 				}
 
 				break;
 			case 2:
 				if (mc.player.isFallFlying()) {
-					if (mc.options.backKey.isPressed()) vec3d = vec3d.negate();
-					if (mc.options.leftKey.isPressed()) vec3d = vec3d.rotateY((float) Math.toRadians(90));
-					else if (mc.options.rightKey.isPressed()) vec3d = vec3d.rotateY(-(float) Math.toRadians(90));
-					if (mc.options.jumpKey.isPressed()) vec3d = vec3d.add(0, getSetting(3).asSlider().getValue(), 0);
-					if (mc.options.sneakKey.isPressed()) vec3d = vec3d.add(0, -getSetting(3).asSlider().getValue(), 0);
+					if (mc.options.keyDown.isDown()) vec3d = vec3d.reverse();
+					if (mc.options.keyLeft.isDown()) vec3d = vec3d.yRot((float) Math.toRadians(90));
+					else if (mc.options.keyRight.isDown()) vec3d = vec3d.yRot(-(float) Math.toRadians(90));
+					if (mc.options.keyJump.isDown()) vec3d = vec3d.add(0, getSetting(3).asSlider().getValue(), 0);
+					if (mc.options.keyShift.isDown()) vec3d = vec3d.add(0, -getSetting(3).asSlider().getValue(), 0);
 
-					mc.player.networkHandler.sendPacket(new ServerboundMovePlayerPacket.PositionAndOnGround(
-							mc.player.getX() + vec3d.x, mc.player.getY() - 0.01, mc.player.getZ() + vec3d.z, false));
+					mc.player.connection.send(new ServerboundMovePlayerPacket.Pos(
+							mc.player.getX() + vec3d.x, mc.player.getY() - 0.01, mc.player.getZ() + vec3d.z, false, false));
 
-					mc.player.setVelocity(vec3d.x, vec3d.y, vec3d.z);
+					mc.player.setDeltaMovement(vec3d.x, vec3d.y, vec3d.z);
 				}
 
 				break;
 			case 3:
 				if (shouldPacketFly()) {
-					mc.player.setVelocity(vec3d);
-					mc.player.networkHandler.sendPacket(new ServerboundPlayerCommandPacket(mc.player, Mode.START_FALL_FLYING));
-					mc.player.networkHandler.sendPacket(new ServerboundMovePlayerPacket.PositionAndOnGround(
-							mc.player.getX() + vec3d.x, mc.player.getY() + vec3d.y, mc.player.getZ() + vec3d.z, true));
+					mc.player.setDeltaMovement(vec3d);
+					mc.player.connection.send(new ServerboundPlayerCommandPacket(mc.player, Action.START_FALL_FLYING));
+					mc.player.connection.send(new ServerboundMovePlayerPacket.Pos(
+							mc.player.getX() + vec3d.x, mc.player.getY() + vec3d.y, mc.player.getZ() + vec3d.z, true, false));
 				}
 
 				break;
 			case 4:
 				if (shouldPacketFly()) {
-					mc.player.networkHandler.sendPacket(new ServerboundPlayerCommandPacket(mc.player, ServerboundPlayerCommandPacket.Mode.START_FALL_FLYING));
+					mc.player.connection.send(new ServerboundPlayerCommandPacket(mc.player, ServerboundPlayerCommandPacket.Action.START_FALL_FLYING));
 					double randMult = RandomUtils.nextDouble(0.9, 1.1);
 
-					mc.player.networkHandler.sendPacket(new ServerboundMovePlayerPacket.PositionAndOnGround(
+					mc.player.connection.send(new ServerboundMovePlayerPacket.Pos(
 							mc.player.getX() + vec3d.x * randMult,
 							mc.player.getY(),
 							mc.player.getZ() + vec3d.z * randMult,
-							false));
+							false, false));
 
 					for (int i = 0; i < 6; i++) {
-						mc.player.networkHandler.sendPacket(new ServerboundMovePlayerPacket.PositionAndOnGround(
+						mc.player.connection.send(new ServerboundMovePlayerPacket.Pos(
 								mc.player.getX() + vec3d.x * (randMult + i),
 								mc.player.getY() - 0.0001,
 								mc.player.getZ() + vec3d.z * (randMult + i),
-								true));
+								true, false));
 					}
 				}
 		}
@@ -134,7 +135,7 @@ public class ElytraFly extends Module {
 	@BleachSubscribe
 	public void onMovement(EventSendMovementPackets event) {
 		if (getSetting(0).asMode().getMode() == 4 && shouldPacketFly()) {
-			mc.player.setVelocity(Vec3.ZERO);
+			mc.player.setDeltaMovement(Vec3.ZERO);
 			event.setCancelled(true);
 		}
 	}
@@ -151,30 +152,32 @@ public class ElytraFly extends Module {
 		if (getSetting(0).asMode().getMode() == 4 && shouldPacketFly() && event.getPacket() instanceof ClientboundPlayerPositionPacket) {
 			ClientboundPlayerPositionPacket p = (ClientboundPlayerPositionPacket) event.getPacket();
 
-			p.yaw = mc.player.getYaw();
-			p.pitch = mc.player.getPitch();
+			// TODO(26.2): the packet is an immutable record now, so we swap it via setPacket instead of
+			// mutating yaw/pitch in place - only takes effect if MixinClientConnection honors setPacket.
+			event.setPacket(new ClientboundPlayerPositionPacket(p.id(),
+					p.change().withRotation(mc.player.getYRot(), mc.player.getXRot()), p.relatives()));
 		}
 	}
 
 	@BleachSubscribe
 	public void onSendPacket(EventPacket.Send event) {
 		if (getSetting(0).asMode().getMode() == 4 && shouldPacketFly()) {
-			if (event.getPacket() instanceof ServerboundMovePlayerPacket.LookAndOnGround) {
+			if (event.getPacket() instanceof ServerboundMovePlayerPacket.Rot) {
 				event.setCancelled(true);
 				return;
 			}
 
-			if (event.getPacket() instanceof ServerboundMovePlayerPacket.Full) {
+			if (event.getPacket() instanceof ServerboundMovePlayerPacket.PosRot) {
 				event.setCancelled(true);
 				ServerboundMovePlayerPacket p = (ServerboundMovePlayerPacket) event.getPacket();
-				mc.player.networkHandler.sendPacket(new ServerboundMovePlayerPacket.PositionAndOnGround(p.getX(0), p.getY(0), p.getZ(0), p.isOnGround()));
+				mc.player.connection.send(new ServerboundMovePlayerPacket.Pos(p.getX(0), p.getY(0), p.getZ(0), p.isOnGround(), p.horizontalCollision()));
 			}
 		}
 	}
 
 	private boolean shouldPacketFly() {
-		return !mc.player.isOnGround()
-				&& !mc.options.sneakKey.isPressed()
-				&& mc.player.getInventory().getArmorStack(2).getItem() == Items.ELYTRA;
+		return !mc.player.onGround()
+				&& !mc.options.keyShift.isDown()
+				&& mc.player.getItemBySlot(EquipmentSlot.CHEST).getItem() == Items.ELYTRA;
 	}
 }

@@ -20,6 +20,7 @@ import org.bleachhack.setting.module.SettingSlider;
 import org.bleachhack.setting.module.SettingToggle;
 
 import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
+import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.phys.AABB;
 
 public class Step extends Module {
@@ -39,79 +40,84 @@ public class Step extends Module {
 	@Override
 	public void onDisable(boolean inWorld) {
 		if (inWorld)
-			mc.player.setStepHeight(0.5F);
+			setStepHeight(0.5F);
 
 		super.onDisable(inWorld);
 	}
 
 	@BleachSubscribe
 	public void onTick(EventTick event) {
-		mc.player.setStepHeight(getSetting(0).asMode().getMode() == 1 ? getSetting(1).asSlider().getValueFloat() : 0.5f);
+		setStepHeight(getSetting(0).asMode().getMode() == 1 ? getSetting(1).asSlider().getValueFloat() : 0.5f);
 
 		if (!mc.player.horizontalCollision) {
 			queue.clear();
 		}
 
 		if (getSetting(2).asToggle().getState()) {
-			if (!(mc.player.age < lastStep || mc.player.age >= lastStep + getSetting(2).asToggle().getChild(0).asSlider().getValue() * 20)) {
+			if (!(mc.player.tickCount < lastStep || mc.player.tickCount >= lastStep + getSetting(2).asToggle().getChild(0).asSlider().getValue() * 20)) {
 				return;
 			}
 		}
 
-		if (!mc.world.getBlockState(mc.player.getBlockPos().add(0, (int) (mc.player.getHeight() + 1), 0)).isReplaceable()
-				|| mc.player.input.jumping
-				|| !(mc.player.input.pressingForward || mc.player.input.pressingBack || mc.player.input.pressingLeft || mc.player.input.pressingRight)) {
+		if (!mc.level.getBlockState(mc.player.blockPosition().offset(0, (int) (mc.player.getBbHeight() + 1), 0)).canBeReplaced()
+				|| mc.player.input.keyPresses.jump()
+				|| !(mc.player.input.keyPresses.forward() || mc.player.input.keyPresses.backward() || mc.player.input.keyPresses.left() || mc.player.input.keyPresses.right())) {
 			return;
 		}
 
 		if (!queue.isEmpty()) {
-			mc.player.updatePosition(mc.player.getX(), queue.poll(), mc.player.getZ());
+			mc.player.absSnapTo(mc.player.getX(), queue.poll(), mc.player.getZ());
 			return;
 		}
 
-		if (getSetting(0).asMode().getMode() == 0 && mc.player.horizontalCollision && mc.player.isOnGround()) {
-			if (!isTouchingWall(mc.player.getBoundingBox().offset(0, 1, 0)) || !isTouchingWall(mc.player.getBoundingBox().offset(0, 1.5, 0))) {
-				mc.player.networkHandler.sendPacket(new ServerboundMovePlayerPacket.PositionAndOnGround(mc.player.getX(), mc.player.getY() + 0.42, mc.player.getZ(), false));
-				mc.player.networkHandler.sendPacket(new ServerboundMovePlayerPacket.PositionAndOnGround(mc.player.getX(), mc.player.getY() + 0.75, mc.player.getZ(), false));
+		if (getSetting(0).asMode().getMode() == 0 && mc.player.horizontalCollision && mc.player.onGround()) {
+			if (!isTouchingWall(mc.player.getBoundingBox().move(0, 1, 0)) || !isTouchingWall(mc.player.getBoundingBox().move(0, 1.5, 0))) {
+				mc.player.connection.send(new ServerboundMovePlayerPacket.Pos(mc.player.getX(), mc.player.getY() + 0.42, mc.player.getZ(), false, false));
+				mc.player.connection.send(new ServerboundMovePlayerPacket.Pos(mc.player.getX(), mc.player.getY() + 0.75, mc.player.getZ(), false, false));
 
-				if (isTouchingWall(mc.player.getBoundingBox().offset(0, 1, 0)) && !isTouchingWall(mc.player.getBoundingBox().offset(0, 1.5, 0))) {
-					mc.player.networkHandler.sendPacket(new ServerboundMovePlayerPacket.PositionAndOnGround(mc.player.getX(), mc.player.getY() + 1, mc.player.getZ(), false));
-					mc.player.networkHandler.sendPacket(new ServerboundMovePlayerPacket.PositionAndOnGround(mc.player.getX(), mc.player.getY() + 1.15, mc.player.getZ(), false));
-					mc.player.networkHandler.sendPacket(new ServerboundMovePlayerPacket.PositionAndOnGround(mc.player.getX(), mc.player.getY() + 1.24, mc.player.getZ(), false));
-					mc.player.networkHandler.sendPacket(new ServerboundMovePlayerPacket.PositionAndOnGround(mc.player.getX(), mc.player.getY() + 1.15, mc.player.getZ(), true));
-					mc.player.updatePosition(mc.player.getX(), mc.player.getY() + 1.0, mc.player.getZ());
+				if (isTouchingWall(mc.player.getBoundingBox().move(0, 1, 0)) && !isTouchingWall(mc.player.getBoundingBox().move(0, 1.5, 0))) {
+					mc.player.connection.send(new ServerboundMovePlayerPacket.Pos(mc.player.getX(), mc.player.getY() + 1, mc.player.getZ(), false, false));
+					mc.player.connection.send(new ServerboundMovePlayerPacket.Pos(mc.player.getX(), mc.player.getY() + 1.15, mc.player.getZ(), false, false));
+					mc.player.connection.send(new ServerboundMovePlayerPacket.Pos(mc.player.getX(), mc.player.getY() + 1.24, mc.player.getZ(), false, false));
+					mc.player.connection.send(new ServerboundMovePlayerPacket.Pos(mc.player.getX(), mc.player.getY() + 1.15, mc.player.getZ(), true, false));
+					mc.player.absSnapTo(mc.player.getX(), mc.player.getY() + 1.0, mc.player.getZ());
 				} else {
-					mc.player.updatePosition(mc.player.getX(), mc.player.getY() + 1, mc.player.getZ());
+					mc.player.absSnapTo(mc.player.getX(), mc.player.getY() + 1, mc.player.getZ());
 				}
 
-				mc.player.networkHandler.sendPacket(new ServerboundMovePlayerPacket.OnGroundOnly(true));
-				lastStep = mc.player.age;
+				mc.player.connection.send(new ServerboundMovePlayerPacket.StatusOnly(true, false));
+				lastStep = mc.player.tickCount;
 			}
 		} else if (getSetting(0).asMode().getMode() == 2) {
 			if (!mc.player.horizontalCollision && flag) {
-				mc.player.setVelocity(mc.player.getVelocity().x, -0.1, mc.player.getVelocity().z);
-				lastStep = mc.player.age;
+				mc.player.setDeltaMovement(mc.player.getDeltaMovement().x, -0.1, mc.player.getDeltaMovement().z);
+				lastStep = mc.player.tickCount;
 				flag = false;
 			} else if (mc.player.horizontalCollision) {
-				mc.player.setVelocity(mc.player.getVelocity().x, Math.min((mc.player.getY() + 1) - Math.floor(mc.player.getY()), 0.42), mc.player.getVelocity().z);
+				mc.player.setDeltaMovement(mc.player.getDeltaMovement().x, Math.min((mc.player.getY() + 1) - Math.floor(mc.player.getY()), 0.42), mc.player.getDeltaMovement().z);
 				flag = true;
 			}
 		} else if (getSetting(0).asMode().getMode() == 3) {
-			if (mc.player.horizontalCollision && mc.player.isOnGround()) {
-				mc.player.jump();
+			if (mc.player.horizontalCollision && mc.player.onGround()) {
+				mc.player.jumpFromGround();
 				flag = true;
 			}
 
 			if (flag && !mc.player.horizontalCollision /*pos + 1.065 < mc.player.getY()*/) {
-				mc.player.setVelocity(mc.player.getVelocity().x, -0.1, mc.player.getVelocity().z);
-				lastStep = mc.player.age;
+				mc.player.setDeltaMovement(mc.player.getDeltaMovement().x, -0.1, mc.player.getDeltaMovement().z);
+				lastStep = mc.player.tickCount;
 				flag = false;
 			}
 		}
 	}
 
+	// 26.2: step height is an attribute now (Entity.maxUpStep/setStepHeight removed)
+	private void setStepHeight(float height) {
+		mc.player.getAttribute(Attributes.STEP_HEIGHT).setBaseValue(height);
+	}
+
 	private boolean isTouchingWall(AABB box) {
-		// Check in 2 calls instead of just box.expand(0.01, 0, 0.01) to prevent it getting stuck in corners
-		return !mc.world.isSpaceEmpty(box.expand(0.01, 0, 0)) || !mc.world.isSpaceEmpty(box.expand(0, 0, 0.01));
+		// Check in 2 calls instead of just box.inflate(0.01, 0, 0.01) to prevent it getting stuck in corners
+		return !mc.level.noCollision(box.inflate(0.01, 0, 0)) || !mc.level.noCollision(box.inflate(0, 0, 0.01));
 	}
 }

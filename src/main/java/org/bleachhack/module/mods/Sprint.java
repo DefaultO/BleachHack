@@ -14,6 +14,8 @@ import org.bleachhack.module.Module;
 import org.bleachhack.module.ModuleCategory;
 import org.bleachhack.setting.module.SettingToggle;
 
+import net.minecraft.world.phys.Vec2;
+
 public class Sprint extends Module {
 
 	public Sprint() {
@@ -23,12 +25,13 @@ public class Sprint extends Module {
 
 	@BleachSubscribe
 	public void onTick(EventTick event) {
-		if (getSetting(0).asToggle().getState() && mc.player.getHungerManager().getFoodLevel() <= 6)
+		if (getSetting(0).asToggle().getState() && mc.player.getFoodData().getFoodLevel() <= 6)
 			return;
 
+		Vec2 move = mc.player.input.getMoveVector();
 		mc.player.setSprinting(
-				mc.player.input.movementForward > 0 && 
-				(mc.player.input.movementSideways != 0 ||mc.player.input.movementForward > 0) &&
-				!mc.player.isSneaking());
+				move.y > 0 &&
+				(move.x != 0 || move.y > 0) &&
+				!mc.player.isShiftKeyDown());
 	}
 }

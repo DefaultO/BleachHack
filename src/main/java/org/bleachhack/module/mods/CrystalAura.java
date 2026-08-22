@@ -15,6 +15,7 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.boss.enderdragon.EndCrystal;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.item.Items;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.core.BlockPos;
@@ -89,11 +90,11 @@ public class CrystalAura extends Module {
 			}
 		}
 
-		if (mc.player.isUsingItem() && mc.player.getMainHandStack().isFood()) {
+		if (mc.player.isUsingItem() && mc.player.getMainHandItem().has(DataComponents.FOOD)) {
 			return;
 		}
 
-		List<LivingEntity> targets = Streams.stream(mc.world.getEntities())
+		List<LivingEntity> targets = Streams.stream(mc.level.entitiesForRendering())
 				.filter(e -> EntityUtils.isAttackable(e, true))
 				.filter(e -> (getSetting(0).asToggle().getState() && EntityUtils.isPlayer(e))
 						|| (getSetting(1).asToggle().getState() && EntityUtils.isMob(e))
@@ -107,7 +108,7 @@ public class CrystalAura extends Module {
 
 		// Explode
 		SettingToggle explodeToggle = getSetting(3).asToggle();
-		List<EndCrystal> nearestCrystals = Streams.stream(mc.world.getEntities())
+		List<EndCrystal> nearestCrystals = Streams.stream(mc.level.entitiesForRendering())
 				.filter(e -> e instanceof EndCrystal)
 				.map(e -> (EndCrystal) e)
 				.sorted(Comparator.comparing(mc.player::distanceTo))
@@ -118,20 +119,20 @@ public class CrystalAura extends Module {
 			boolean end = false;
 			for (EndCrystal c : nearestCrystals) {
 				if (mc.player.distanceTo(c) > getSetting(7).asSlider().getValue()
-						|| mc.world.getOtherEntities(null, new AABB(c.getPos(), c.getPos()).expand(7), targets::contains).isEmpty())
+						|| mc.level.getEntities(null, new AABB(c.position(), c.position()).inflate(7), targets::contains).isEmpty())
 					continue;
 
-				float damage = DamageUtils.getExplosionDamage(c.getPos(), 6f, mc.player);
+				float damage = DamageUtils.getExplosionDamage(c.position(), 6f, mc.player);
 				if (DamageUtils.willGoBelowHealth(mc.player, damage, explodeToggle.getChild(4).asSlider().getValueFloat()))
 					continue;
 
-				int oldSlot = mc.player.getInventory().selectedSlot;
-				if (explodeToggle.getChild(0).asToggle().getState() && mc.player.hasStatusEffect(MobEffects.WEAKNESS)) {
-					InventoryUtils.selectSlot(false, true, Comparator.comparing(i -> DamageUtils.getItemAttackDamage(mc.player.getInventory().getStack(i))));
+				int oldSlot = mc.player.getInventory().getSelectedSlot();
+				if (explodeToggle.getChild(0).asToggle().getState() && mc.player.hasEffect(MobEffects.WEAKNESS)) {
+					InventoryUtils.selectSlot(false, true, Comparator.comparing(i -> DamageUtils.getItemAttackDamage(mc.player.getInventory().getItem(i))));
 				}
 
 				if (getSetting(6).asRotate().getState()) {
-					Vec3 eyeVec = mc.player.getEyePos();
+					Vec3 eyeVec = mc.player.getEyePosition();
 					Vec3 v = new Vec3(c.getX(), c.getY() + 0.5, c.getZ());
 					for (Direction d : Direction.values()) {
 						Vec3 vd = WorldUtils.getLegitLookPos(c.getBoundingBox(), d, true, 5, -0.001);
@@ -143,9 +144,9 @@ public class CrystalAura extends Module {
 					WorldUtils.facePosAuto(v.x, v.y, v.z, getSetting(6).asRotate());
 				}
 
-				mc.interactionManager.attackEntity(mc.player, c);
-				mc.player.swingHand(InteractionHand.MAIN_HAND);
-				blacklist.remove(c.getBlockPos().down());
+				mc.gameMode.attack(mc.player, c);
+				mc.player.swing(InteractionHand.MAIN_HAND);
+				blacklist.remove(c.blockPosition().below());
 
 				InventoryUtils.selectSlot(oldSlot);
 
@@ -167,10 +168,10 @@ public class CrystalAura extends Module {
 		SettingToggle placeToggle = getSetting(4).asToggle();
 		if (placeToggle.getState() && placeCooldown <= 0) {
 			int crystalSlot = !placeToggle.getChild(0).asToggle().getState()
-					? (mc.player.getMainHandStack().getItem() == Items.END_CRYSTAL ? mc.player.getInventory().selectedSlot
-							: mc.player.getOffHandStack().getItem() == Items.END_CRYSTAL ? 40
+					? (mc.player.getMainHandItem().getItem() == Items.END_CRYSTAL ? mc.player.getInventory().getSelectedSlot()
+							: mc.player.getOffhandItem().getItem() == Items.END_CRYSTAL ? 40
 									: -1)
-							: InventoryUtils.getSlot(true, i -> mc.player.getInventory().getStack(i).getItem() == Items.END_CRYSTAL);
+							: InventoryUtils.getSlot(true, i -> mc.player.getInventory().getItem(i).getItem() == Items.END_CRYSTAL);
 
 			if (crystalSlot == -1) {
 				return;
@@ -194,7 +195,7 @@ public class CrystalAura extends Module {
 						float ratio = playerDamg == 0 ? targetDamg : targetDamg / playerDamg;
 
 						if (ratio > placeToggle.getChild(5).asSlider().getValue()) {
-							placeBlocks.put(BlockPos.ofFloored(v).down(), ratio);
+							placeBlocks.put(BlockPos.containing(v).below(), ratio);
 						}
 					}
 				}
@@ -204,14 +205,14 @@ public class CrystalAura extends Module {
 					.sorted((b1, b2) -> Float.compare(b2.getValue(), b1.getValue()))
 					.collect(Collectors.toMap(Entry::getKey, Entry::getValue, (x, y) -> y, LinkedHashMap::new));
 
-			int oldSlot = mc.player.getInventory().selectedSlot;
+			int oldSlot = mc.player.getInventory().getSelectedSlot();
 			int places = 0;
 			for (Entry<BlockPos, Float> e : placeBlocks.entrySet()) {
 				BlockPos block = e.getKey();
 
-				Vec3 eyeVec = mc.player.getEyePos();
+				Vec3 eyeVec = mc.player.getEyePosition();
 
-				Vec3 vec = Vec3.ofCenter(block, 1);
+				Vec3 vec = Vec3.upFromBottomCenterOf(block, 1);
 				Direction dir = null;
 				for (Direction d : Direction.values()) {
 					Vec3 vd = WorldUtils.getLegitLookPos(block, d, true, 5);
@@ -238,7 +239,7 @@ public class CrystalAura extends Module {
 				InteractionHand hand = InventoryUtils.selectSlot(crystalSlot);
 
 				render = block;
-				mc.interactionManager.interactBlock(mc.player, hand, new BlockHitResult(vec, dir, block, false));
+				mc.gameMode.useItemOn(mc.player, hand, new BlockHitResult(vec, dir, block, false));
 
 				places++;
 				if (places >= placeToggle.getChild(6).asSlider().getValueInt()) {
@@ -272,7 +273,7 @@ public class CrystalAura extends Module {
 		for (int x = -range; x <= range; x++) {
 			for (int y = -range; y <= range; y++) {
 				for (int z = -range; z <= range; z++) {
-					BlockPos basePos = BlockPos.ofFloored(mc.player.getEyePos()).add(x, y, z);
+					BlockPos basePos = BlockPos.containing(mc.player.getEyePosition()).offset(x, y, z);
 
 					if (!canPlace(basePos) || (blacklist.containsKey(basePos) && getSetting(4).asToggle().getChild(2).asToggle().getState()))
 						continue;
@@ -291,8 +292,8 @@ public class CrystalAura extends Module {
 						}
 					}
 
-					if (mc.player.getPos().distanceTo(Vec3.of(basePos).add(0.5, 1, 0.5)) <= getSetting(7).asSlider().getValue() + 0.25)
-						poses.add(Vec3.of(basePos).add(0.5, 1, 0.5));
+					if (mc.player.position().distanceTo(Vec3.atLowerCornerOf(basePos).add(0.5, 1, 0.5)) <= getSetting(7).asSlider().getValue() + 0.25)
+						poses.add(Vec3.atLowerCornerOf(basePos).add(0.5, 1, 0.5));
 				}
 			}
 		}
@@ -301,16 +302,16 @@ public class CrystalAura extends Module {
 	}
 
 	private boolean canPlace(BlockPos basePos) {
-		BlockState baseState = mc.world.getBlockState(basePos);
+		BlockState baseState = mc.level.getBlockState(basePos);
 
 		if (baseState.getBlock() != Blocks.BEDROCK && baseState.getBlock() != Blocks.OBSIDIAN)
 			return false;
 
 		boolean oldPlace = getSetting(4).asToggle().getChild(1).asToggle().getState();
-		BlockPos placePos = basePos.up();
-		if (!mc.world.isAir(placePos) || (oldPlace && !mc.world.isAir(placePos.up())))
+		BlockPos placePos = basePos.above();
+		if (!mc.level.isEmptyBlock(placePos) || (oldPlace && !mc.level.isEmptyBlock(placePos.above())))
 			return false;
 
-		return mc.world.getOtherEntities(null, new AABB(placePos.toCenterPos(), placePos.up(oldPlace ? 2 : 1).toCenterPos())).isEmpty();
+		return mc.level.getEntities(null, new AABB(Vec3.atCenterOf(placePos), Vec3.atCenterOf(placePos.above(oldPlace ? 2 : 1)))).isEmpty();
 	}
 }

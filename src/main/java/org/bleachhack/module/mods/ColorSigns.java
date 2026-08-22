@@ -32,9 +32,9 @@ public class ColorSigns extends Module {
 		if (event.getPacket() instanceof ServerboundSignUpdatePacket) {
 			ServerboundSignUpdatePacket p = (ServerboundSignUpdatePacket) event.getPacket();
 
-			for (int l = 0; l < p.getText().length; l++) {
-				String newText = p.getText()[l].replaceAll("(?i)§|&([0-9A-FK-OR])", "§§$1$1");
-				p.getText()[l] = newText;
+			for (int l = 0; l < p.getLines().length; l++) {
+				String newText = p.getLines()[l].replaceAll("(?i)§|&([0-9A-FK-OR])", "§§$1$1");
+				p.getLines()[l] = newText;
 			}
 		}
 	}

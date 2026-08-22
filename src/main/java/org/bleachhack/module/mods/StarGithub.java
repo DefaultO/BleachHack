@@ -21,7 +21,7 @@ public class StarGithub extends Module {
 
 	public void onEnable(boolean inWorld) {
 		try {
-			Util.getOperatingSystem().open("https://github.com/BleachDev/BleachHack");
+			Util.getPlatform().openUri("https://github.com/BleachDev/BleachHack");
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

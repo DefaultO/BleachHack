@@ -28,8 +28,15 @@ import net.minecraft.world.entity.animal.equine.AbstractHorse;
 import net.minecraft.world.entity.TamableAnimal;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.text.*;
+import net.minecraft.core.Holder;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.ComponentUtils;
+import net.minecraft.network.chat.TextColor;
+import net.minecraft.tags.EnchantmentTags;
+import net.minecraft.world.entity.EntityReference;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.ChatFormatting;
+import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.level.GameType;
@@ -158,57 +165,57 @@ public class Nametags extends Module {
 
 	@BleachSubscribe
 	public void onWorldRender(EventWorldRender.Post event) {
-		for (Entity entity: mc.world.getEntities()) {
+		for (Entity entity: mc.level.entitiesForRendering()) {
 			if (entity == mc.player || entity.hasPassenger(mc.player) || mc.player.hasPassenger(entity)) {
 				continue;
 			}
 
-			Vec3 rPos = entity.getPos().subtract(Renderer.getInterpolationOffset(entity)).add(0, entity.getHeight() + 0.25, 0);
+			Vec3 rPos = entity.position().subtract(Renderer.getInterpolationOffset(entity)).add(0, entity.getBbHeight() + 0.25, 0);
 
 			if (entity instanceof Player && getSetting(1).asToggle().getState()) {
-				double scale = Math.max(getSetting(1).asToggle().getChild(0).asSlider().getValue() * (mc.cameraEntity.distanceTo(entity) / 20), 1);
+				double scale = Math.max(getSetting(1).asToggle().getChild(0).asSlider().getValue() * (mc.getCameraEntity().distanceTo(entity) / 20), 1);
 
-				List<Text> lines = getPlayerLines((Player) entity);
+				List<Component> lines = getPlayerLines((Player) entity);
 				drawLines(rPos.x, rPos.y, rPos.z, scale, lines);
 
 				if (getSetting(1).asToggle().getChild(1).asToggle().getState()) {
 					drawItems(rPos.x, rPos.y + (lines.size() + 1) * 0.25 * scale, rPos.z, scale, getMainEquipment(entity));
 				}
 			} else if (EntityUtils.isAnimal(entity) && getSetting(2).asToggle().getState()) {
-				double scale = Math.max(getSetting(2).asToggle().getChild(0).asSlider().getValue() * (mc.cameraEntity.distanceTo(entity) / 20), 1);
+				double scale = Math.max(getSetting(2).asToggle().getChild(0).asSlider().getValue() * (mc.getCameraEntity().distanceTo(entity) / 20), 1);
 
-				List<Text> lines = getAnimalLines((LivingEntity) entity);
+				List<Component> lines = getAnimalLines((LivingEntity) entity);
 				drawLines(rPos.x, rPos.y, rPos.z, scale, lines);
 
 				if (getSetting(2).asToggle().getChild(1).asToggle().getState() && entity instanceof Fox) {
-					drawItems(rPos.x, rPos.y + (lines.size() + 1) * 0.25 * scale, rPos.z, scale, List.of(((Fox) entity).getMainHandStack()));
+					drawItems(rPos.x, rPos.y + (lines.size() + 1) * 0.25 * scale, rPos.z, scale, List.of(((Fox) entity).getMainHandItem()));
 				}
 			} else if (entity instanceof Enemy && getSetting(3).asToggle().getState()) {
-				double scale = Math.max(getSetting(3).asToggle().getChild(0).asSlider().getValue() * (mc.cameraEntity.distanceTo(entity) / 20), 1);
+				double scale = Math.max(getSetting(3).asToggle().getChild(0).asSlider().getValue() * (mc.getCameraEntity().distanceTo(entity) / 20), 1);
 
-				List<Text> lines = getMobLines((LivingEntity) entity);
+				List<Component> lines = getMobLines((LivingEntity) entity);
 				drawLines(rPos.x, rPos.y, rPos.z, scale, lines);
 
 				if (getSetting(3).asToggle().getChild(1).asToggle().getState()) {
 					drawItems(rPos.x, rPos.y + (lines.size() + 1) * 0.25 * scale, rPos.z, scale, getMainEquipment(entity));
 				}
 			} else if (entity instanceof ItemEntity && getSetting(4).asToggle().getState()) {
-				double scale = Math.max(getSetting(4).asToggle().getChild(0).asSlider().getValue() * (mc.cameraEntity.distanceTo(entity) / 20), 1);
+				double scale = Math.max(getSetting(4).asToggle().getChild(0).asSlider().getValue() * (mc.getCameraEntity().distanceTo(entity) / 20), 1);
 
-				List<Text> lines = getItemLines((ItemEntity) entity);
+				List<Component> lines = getItemLines((ItemEntity) entity);
 				drawLines(rPos.x, rPos.y, rPos.z, scale, lines);
 			} else if (entity instanceof ArmorStand && getSetting(5).asToggle().getState()) {
-				double scale = Math.max(getSetting(5).asToggle().getChild(0).asSlider().getValue() * (mc.cameraEntity.distanceTo(entity) / 20), 1);
+				double scale = Math.max(getSetting(5).asToggle().getChild(0).asSlider().getValue() * (mc.getCameraEntity().distanceTo(entity) / 20), 1);
 
 				drawItems(rPos.x, rPos.y + 0.25 * scale, rPos.z, scale, getMainEquipment(entity));
 			}
 		}
 	}
 
-	private void drawLines(double x, double y, double z, double scale, List<Text> lines) {
+	private void drawLines(double x, double y, double z, double scale, List<Component> lines) {
 		double offset = lines.size() * 0.25 * scale;
 
-		for (Text t: lines) {
+		for (Component t: lines) {
 			WorldRenderer.drawText(t, x, y + offset, z, scale, true);
 			offset -= 0.25 * scale;
 		}
@@ -228,45 +235,51 @@ public class Nametags extends Module {
 
 		WorldRenderer.drawGuiItem(x, y, z, offX * scale, offY * scale, scale, item);
 
-		double w = mc.textRenderer.getWidth("x" + item.getCount()) / 52d;
-		WorldRenderer.drawText(Text.literal("x" + item.getCount()),
+		double w = mc.font.width("x" + item.getCount()) / 52d;
+		WorldRenderer.drawText(Component.literal("x" + item.getCount()),
 				x, y, z, (offX - w) * scale, (offY - 0.07) * scale, scale * 1.75, false);
 
 		int c = 0;
-		for (Entry<Enchantment, Integer> m : EnchantmentHelper.get(item).entrySet()) {
-			String text = I18n.translate(m.getKey().getName(2).getString());
+		for (Object2IntMap.Entry<Holder<Enchantment>> m : EnchantmentHelper.getEnchantmentsForCrafting(item).entrySet()) {
+			String text = Enchantment.getFullname(m.getKey(), m.getIntValue()).getString();
 
 			if (text.isEmpty())
 				continue;
 
 			text = text.replaceFirst("Curse of (.)", "C$1");
 
-			String subText = text.substring(0, Math.min(text.length(), 2)) + m.getValue();
+			String subText = text.substring(0, Math.min(text.length(), 2)) + m.getIntValue();
 
-			WorldRenderer.drawText(Text.literal(subText).styled(s -> s.withColor(TextColor.fromRgb(m.getKey().isCursed() ? 0xff5050 : 0xffb0e0))),
+			WorldRenderer.drawText(Component.literal(subText).withStyle(s -> s.withColor(TextColor.fromRgb(m.getKey().is(EnchantmentTags.CURSE) ? 0xff5050 : 0xffb0e0))),
 					x, y, z, (offX + 0.02) * scale, (offY + 0.75 - c * 0.34) * scale, scale * 1.4, false);
 			c--;
 		}
 	}
-	
+
 	private List<ItemStack> getMainEquipment(Entity e) {
-		List<ItemStack> list = Lists.newArrayList(e.getItemsEquipped());
-		list.add(list.remove(1));
-		return list;
+		// Old getItemsEquipped() order with offhand moved last: [main, feet, legs, chest, head, off]
+		LivingEntity le = (LivingEntity) e;
+		return Lists.newArrayList(
+				le.getItemBySlot(EquipmentSlot.MAINHAND),
+				le.getItemBySlot(EquipmentSlot.FEET),
+				le.getItemBySlot(EquipmentSlot.LEGS),
+				le.getItemBySlot(EquipmentSlot.CHEST),
+				le.getItemBySlot(EquipmentSlot.HEAD),
+				le.getItemBySlot(EquipmentSlot.OFFHAND));
 	}
 
-	public List<Text> getPlayerLines(Player player) {
-		List<Text> lines = new ArrayList<>();
-		List<Text> mainText = new ArrayList<>();
+	public List<Component> getPlayerLines(Player player) {
+		List<Component> lines = new ArrayList<>();
+		List<Component> mainText = new ArrayList<>();
 
-		PlayerInfo playerEntry = mc.player.networkHandler.getPlayerListEntry(player.getGameProfile().getId());
+		PlayerInfo playerEntry = mc.player.connection.getPlayerInfo(player.getGameProfile().id());
 
 		if (getSetting(1).asToggle().getChild(4).asToggle().getState() && playerEntry != null) { // Ping
-			mainText.add(Text.literal(playerEntry.getLatency() + "ms").formatted(ChatFormatting.GRAY));
+			mainText.add(Component.literal(playerEntry.getLatency() + "ms").withStyle(ChatFormatting.GRAY));
 		}
 
 		if (getSetting(1).asToggle().getChild(2).asToggle().getState()) { // Name
-			mainText.add(((MutableText) player.getName()).formatted(BleachHack.friendMang.has(player) ? ChatFormatting.AQUA : ChatFormatting.RED));
+			mainText.add(player.getName().copy().withStyle(BleachHack.friendMang.has(player) ? ChatFormatting.AQUA : ChatFormatting.RED));
 		}
 
 		if (getSetting(1).asToggle().getChild(3).asToggle().getState()) { // Health
@@ -278,65 +291,66 @@ public class Nametags extends Module {
 		}
 
 		if (getSetting(1).asToggle().getChild(5).asToggle().getState() && playerEntry != null) { // GM
-			mainText.add(Text.literal("[" + playerEntry.getGameMode().toString().substring(0, playerEntry.getGameMode() == GameType.SPECTATOR ? 2 : 1) + "]").formatted(ChatFormatting.GOLD));
+			mainText.add(Component.literal("[" + playerEntry.getGameMode().toString().substring(0, playerEntry.getGameMode() == GameType.SPECTATOR ? 2 : 1) + "]").withStyle(ChatFormatting.GOLD));
 		}
 
 		if (!mainText.isEmpty())
-			lines.add(Texts.join(mainText, Text.literal(" ")));
+			lines.add(ComponentUtils.formatList(mainText, Component.literal(" ")));
 
 		return lines;
 	}
 
-	public List<Text> getAnimalLines(LivingEntity animal) {
-		List<Text> lines = new ArrayList<>();
+	public List<Component> getAnimalLines(LivingEntity animal) {
+		List<Component> lines = new ArrayList<>();
 
 		if (animal instanceof AbstractHorse || animal instanceof TamableAnimal) {
 			boolean tame = animal instanceof AbstractHorse
-					? ((AbstractHorse) animal).isTame() : ((TamableAnimal) animal).isTamed();
+					? ((AbstractHorse) animal).isTamed() : ((TamableAnimal) animal).isTame();
 
-			UUID ownerUUID = animal instanceof AbstractHorse
-					? ((AbstractHorse) animal).getOwnerUuid() : ((TamableAnimal) animal).getOwnerUuid();
+			EntityReference<LivingEntity> ownerRef = animal instanceof AbstractHorse
+					? ((AbstractHorse) animal).getOwnerReference() : ((TamableAnimal) animal).getOwnerReference();
+			UUID ownerUUID = ownerRef == null ? null : ownerRef.getUUID();
 
 			if (getSetting(2).asToggle().getChild(4).asToggle().getState() && !animal.isBaby()
 					&& (getSetting(2).asToggle().getChild(4).asToggle().getChild(0).asMode().getMode() != 1 || tame)) {
-				lines.add(0, Text.literal(tame ? "Tamed: Yes" : "Tamed: No").formatted(tame ? ChatFormatting.GREEN : ChatFormatting.RED));
+				lines.add(0, Component.literal(tame ? "Tamed: Yes" : "Tamed: No").withStyle(tame ? ChatFormatting.GREEN : ChatFormatting.RED));
 			}
 
 			if (getSetting(2).asToggle().getChild(5).asToggle().getState() && ownerUUID != null) {
 				if (uuidCache.containsKey(ownerUUID)) {
-					lines.add(0, Text.literal("Owner: " + uuidCache.get(ownerUUID)).formatted(ChatFormatting.GREEN));
+					lines.add(0, Component.literal("Owner: " + uuidCache.get(ownerUUID)).withStyle(ChatFormatting.GREEN));
 				} else if (failedUUIDs.contains(ownerUUID)) {
-					lines.add(0, Text.literal("Owner: " + ChatFormatting.GRAY + "Invalid UUID!").formatted(ChatFormatting.GREEN));
+					lines.add(0, Component.literal("Owner: " + ChatFormatting.GRAY + "Invalid UUID!").withStyle(ChatFormatting.GREEN));
 				} else {
 					// Try to see if the owner is online on the server before calling the mojang api
-					Optional<GameProfile> owner = mc.player.networkHandler.getPlayerList().stream()
+					Optional<GameProfile> owner = mc.player.connection.getOnlinePlayers().stream()
 							.map(PlayerInfo::getProfile)
-							.filter(profile -> profile != null && ownerUUID.equals(profile.getId()) && profile.getName() != null)
+							.filter(profile -> profile != null && ownerUUID.equals(profile.id()) && profile.name() != null)
 							.findFirst();
 
 					if (owner.isPresent()) {
-						uuidCache.put(ownerUUID, owner.get().getName());
+						uuidCache.put(ownerUUID, owner.get().name());
 					} else if (!uuidQueue.contains(ownerUUID) && !uuidFutures.containsKey(ownerUUID)) {
 						uuidQueue.add(ownerUUID);
 					}
 
-					lines.add(0, Text.literal("Owner: " + ChatFormatting.GRAY + "Loading...").formatted(ChatFormatting.GREEN));
+					lines.add(0, Component.literal("Owner: " + ChatFormatting.GRAY + "Loading...").withStyle(ChatFormatting.GREEN));
 				}
 			}
 
 			if (getSetting(2).asToggle().getChild(6).asToggle().getState() && animal instanceof AbstractHorse) {
 				AbstractHorse he = (AbstractHorse) animal;
 
-				lines.add(0, Text.literal(
+				lines.add(0, Component.literal(
 						CmdEntityStats.getSpeed(he) + " m/s" + ChatFormatting.GRAY + " | " + ChatFormatting.RESET + CmdEntityStats.getJumpHeight(he) + " Jump")
-						.formatted(ChatFormatting.GREEN));
+						.withStyle(ChatFormatting.GREEN));
 			}
 		}
 		
-		List<Text> mainText = new ArrayList<>();
+		List<Component> mainText = new ArrayList<>();
 
 		if (getSetting(2).asToggle().getChild(2).asToggle().getState()) { // Name
-			mainText.add(((MutableText) animal.getName()).formatted(ChatFormatting.GREEN));
+			mainText.add(animal.getName().copy().withStyle(ChatFormatting.GREEN));
 		}
 
 		if (getSetting(2).asToggle().getChild(3).asToggle().getState()) { // Health
@@ -348,17 +362,17 @@ public class Nametags extends Module {
 		}
 		
 		if (!mainText.isEmpty())
-			lines.add(Texts.join(mainText, Text.literal(" ")));
+			lines.add(ComponentUtils.formatList(mainText, Component.literal(" ")));
 
 		return lines;
 	}
 
-	public List<Text> getMobLines(LivingEntity mob) {
-		List<Text> lines = new ArrayList<>();
-		List<Text> mainText = new ArrayList<>();
+	public List<Component> getMobLines(LivingEntity mob) {
+		List<Component> lines = new ArrayList<>();
+		List<Component> mainText = new ArrayList<>();
 
 		if (getSetting(3).asToggle().getChild(2).asToggle().getState()) { // Name
-			mainText.add(((MutableText) mob.getName()).formatted(ChatFormatting.DARK_PURPLE));
+			mainText.add(mob.getName().copy().withStyle(ChatFormatting.DARK_PURPLE));
 		}
 
 		if (getSetting(3).asToggle().getChild(3).asToggle().getState()) { // Health
@@ -370,33 +384,33 @@ public class Nametags extends Module {
 		}
 
 		if (!mainText.isEmpty())
-			lines.add(Texts.join(mainText, Text.literal(" ")));
+			lines.add(ComponentUtils.formatList(mainText, Component.literal(" ")));
 
 		return lines;
 	}
 
-	public List<Text> getItemLines(ItemEntity item) {
-		List<Text> lines = new ArrayList<>();
+	public List<Component> getItemLines(ItemEntity item) {
+		List<Component> lines = new ArrayList<>();
 
-		if (!item.getName().getString().equals(item.getStack().getName().getString()) && getSetting(4).asToggle().getChild(1).asToggle().getState()) {
+		if (!item.getName().getString().equals(item.getItem().getHoverName().getString()) && getSetting(4).asToggle().getChild(1).asToggle().getState()) {
 			lines.add(
-					Text.literal("\"").formatted(ChatFormatting.GOLD)
-					.append(((MutableText) item.getStack().getName()).formatted(ChatFormatting.YELLOW))
-					.append(Text.literal("\"").formatted(ChatFormatting.GOLD)));
+					Component.literal("\"").withStyle(ChatFormatting.GOLD)
+					.append(item.getItem().getHoverName().copy().withStyle(ChatFormatting.YELLOW))
+					.append(Component.literal("\"").withStyle(ChatFormatting.GOLD)));
 		}
 
-		lines.add(((MutableText) item.getName()).formatted(ChatFormatting.GOLD).append(getSetting(4).asToggle().getChild(2).asToggle().getState() ? ChatFormatting.YELLOW + " [x" + item.getStack().getCount() + "]" : ""));
+		lines.add(item.getName().copy().withStyle(ChatFormatting.GOLD).append(getSetting(4).asToggle().getChild(2).asToggle().getState() ? ChatFormatting.YELLOW + " [x" + item.getItem().getCount() + "]" : ""));
 
 		return lines;
 	}
 
-	private Text getHealthText(LivingEntity e) {
+	private Component getHealthText(LivingEntity e) {
 		int totalHealth = (int) (e.getHealth() + e.getAbsorptionAmount());
 
 		if (getSetting(0).asMode().getMode() == 0) {
-			return Text.literal(Integer.toString(totalHealth)).styled(s -> s.withColor(getHealthColor(e)));
+			return Component.literal(Integer.toString(totalHealth)).withStyle(s -> s.withColor(getHealthColor(e)));
 		} else if (getSetting(0).asMode().getMode() == 1) {
-			return Text.literal(Integer.toString(totalHealth) + ChatFormatting.GREEN + "/" + (int) e.getMaxHealth()).styled(s -> s.withColor(getHealthColor(e)));
+			return Component.literal(Integer.toString(totalHealth) + ChatFormatting.GREEN + "/" + (int) e.getMaxHealth()).withStyle(s -> s.withColor(getHealthColor(e)));
 		} else if (getSetting(0).asMode().getMode() == 2) {
 			// Health bar
 			String health = "";
@@ -415,15 +429,15 @@ public class Nametags extends Module {
 				health += ChatFormatting.YELLOW + " +" + (totalHealth - (int) e.getMaxHealth());
 			}
 
-			return Text.literal(health);
+			return Component.literal(health);
 		} else {
-			return Text.literal((int) (totalHealth / e.getMaxHealth() * 100) + "%").styled(s -> s.withColor(getHealthColor(e)));
+			return Component.literal((int) (totalHealth / e.getMaxHealth() * 100) + "%").withStyle(s -> s.withColor(getHealthColor(e)));
 		}
 	}
 
 	private int getHealthColor(LivingEntity entity) {
 		if (entity.getHealth() + entity.getAbsorptionAmount() > entity.getMaxHealth()) {
-			return ChatFormatting.YELLOW.getColorValue();
+			return TextColor.fromLegacyFormat(ChatFormatting.YELLOW).getValue();
 		} else {
 			return Mth.hsvToRgb((entity.getHealth() + entity.getAbsorptionAmount()) / (entity.getMaxHealth() * 3), 1f, 1f);
 		}

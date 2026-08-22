@@ -118,9 +118,9 @@ public class Module {
 	public void toggle() {
 		enabled = !enabled;
 		if (enabled) {
-			onEnable(mc.world != null);
+			onEnable(mc.level != null);
 		} else {
-			onDisable(mc.world != null);
+			onDisable(mc.level != null);
 		}
 	}
 

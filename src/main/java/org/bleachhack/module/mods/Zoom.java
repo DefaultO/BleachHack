@@ -27,17 +27,17 @@ public class Zoom extends Module {
 	public void onEnable(boolean inWorld) {
 		super.onEnable(inWorld);
 
-		prevFov = mc.options.getFov().getValue();
-		prevSens = mc.options.getMouseSensitivity().getValue();
+		prevFov = mc.options.fov().get();
+		prevSens = mc.options.sensitivity().get();
 
-		mc.options.getFov().setValue((int) (prevFov / getSetting(0).asSlider().getValue()));
-		mc.options.getMouseSensitivity().setValue(prevSens / getSetting(0).asSlider().getValue());
+		mc.options.fov().set((int) (prevFov / getSetting(0).asSlider().getValue()));
+		mc.options.sensitivity().set(prevSens / getSetting(0).asSlider().getValue());
 	}
 
 	@Override
 	public void onDisable(boolean inWorld) {
-		mc.options.getFov().setValue(prevFov);
-		mc.options.getMouseSensitivity().setValue(prevSens);
+		mc.options.fov().set(prevFov);
+		mc.options.sensitivity().set(prevSens);
 
 		super.onDisable(inWorld);
 	}

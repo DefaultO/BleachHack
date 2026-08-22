@@ -35,7 +35,7 @@ import net.minecraft.client.renderer.debug.DebugRenderer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.network.protocol.game.ServerboundPlayerCommandPacket;
-import net.minecraft.network.protocol.game.ServerboundPlayerCommandPacket.Mode;
+import net.minecraft.network.protocol.game.ServerboundPlayerCommandPacket.Action;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
@@ -72,7 +72,7 @@ public class Killaura extends Module {
 		int reqDelay = (int) Math.rint(20 / getSetting(12).asSlider().getValue());
 
 		boolean cooldownDone = getSetting(10).asToggle().getState()
-				? mc.player.getAttackCooldownProgress(mc.getTickDelta()) == 1.0f
+				? mc.player.getAttackStrengthScale(mc.getDeltaTracker().getGameTimeDeltaPartialTick(true)) == 1.0f
 				: (delay > reqDelay || reqDelay == 0);
 
 		if (cooldownDone) {
@@ -80,19 +80,19 @@ public class Killaura extends Module {
 				boolean shouldRotate = getSetting(8).asRotate().getState() && DebugRenderer.getTargetedEntity(mc.player, 7).orElse(null) != e;
 
 				if (shouldRotate) {
-					WorldUtils.facePosAuto(e.getX(), e.getY() + e.getHeight() / 2, e.getZ(), getSetting(8).asRotate());
+					WorldUtils.facePosAuto(e.getX(), e.getY() + e.getBbHeight() / 2, e.getZ(), getSetting(8).asRotate());
 				}
 
 				boolean wasSprinting = mc.player.isSprinting();
 
 				if (wasSprinting)
-					mc.player.networkHandler.sendPacket(new ServerboundPlayerCommandPacket(mc.player, Mode.STOP_SPRINTING));
+					mc.player.connection.send(new ServerboundPlayerCommandPacket(mc.player, Action.STOP_SPRINTING));
 
-				mc.interactionManager.attackEntity(mc.player, e);
-				mc.player.swingHand(InteractionHand.MAIN_HAND);
+				mc.gameMode.attack(mc.player, e);
+				mc.player.swing(InteractionHand.MAIN_HAND);
 
 				if (wasSprinting)
-					mc.player.networkHandler.sendPacket(new ServerboundPlayerCommandPacket(mc.player, Mode.START_SPRINTING));
+					mc.player.connection.send(new ServerboundPlayerCommandPacket(mc.player, Action.START_SPRINTING));
 
 				delay = 0;
 			}
@@ -111,7 +111,7 @@ public class Killaura extends Module {
 
 			targets = Stream.of(entity.get());
 		} else {
-			targets = Streams.stream(mc.world.getEntities());
+			targets = Streams.stream(mc.level.entitiesForRendering());
 		}
 
 		Comparator<Entity> comparator;
@@ -129,7 +129,7 @@ public class Killaura extends Module {
 				float yaw = (float) Math.toDegrees(Math.atan2(diffZ, diffX)) - 90F;
 				float pitch = (float) -Math.toDegrees(Math.atan2(diffY, diffXZ));
 
-				return Math.abs(Mth.wrapDegrees(yaw - mc.player.getYaw())) + Math.abs(Mth.wrapDegrees(pitch - mc.player.getPitch()));
+				return Math.abs(Mth.wrapDegrees(yaw - mc.player.getYRot())) + Math.abs(Mth.wrapDegrees(pitch - mc.player.getXRot()));
 			});
 		} else {
 			comparator = Comparator.comparing(mc.player::distanceTo);
@@ -138,7 +138,7 @@ public class Killaura extends Module {
 		return targets
 				.filter(e -> EntityUtils.isAttackable(e, true)
 						&& mc.player.distanceTo(e) <= getSetting(11).asSlider().getValue()
-						&& (mc.player.canSee(e) || !getSetting(9).asToggle().getState()))
+						&& (mc.player.hasLineOfSight(e) || !getSetting(9).asToggle().getState()))
 				.filter(e -> (EntityUtils.isPlayer(e) && getSetting(1).asToggle().getState())
 						|| (EntityUtils.isMob(e) && getSetting(2).asToggle().getState())
 						|| (EntityUtils.isAnimal(e) && getSetting(3).asToggle().getState())

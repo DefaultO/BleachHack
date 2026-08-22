@@ -8,8 +8,6 @@
  */
 package org.bleachhack.module.mods;
 
-import java.io.IOException;
-
 import org.bleachhack.BleachHack;
 import org.bleachhack.event.events.EventEntityRender;
 import org.bleachhack.event.events.EventWorldRender;
@@ -75,11 +73,12 @@ public class ESP extends Module {
 						new SettingColor("Color", 160, 150, 50).withDesc("Outline color for armor stands.")));
 		
 		try {
+			// TODO(26.2): shaders are data-driven now, the shader util classes are inert stubs - shader mode is a no-op.
 			shader = new ShaderEffectWrapper(
-					ShaderLoader.loadEffect(mc.getFramebuffer(), new Identifier("bleachhack", "shaders/post/entity_outline.json")));
-			
+					ShaderLoader.loadEffect(mc.gameRenderer.mainRenderTarget(), Identifier.fromNamespaceAndPath("bleachhack", "shaders/post/entity_outline.json")));
+
 			colorVertexer = new ColorVertexConsumerProvider(shader.getFramebuffer("main"), BleachCoreShaders::getColorOverlayShader);
-		} catch (JsonSyntaxException | IOException e) {
+		} catch (JsonSyntaxException e) {
 			throw new RuntimeException("Failed to initialize ESP Shader! loaded too early?", e);
 		}
 	}
@@ -112,7 +111,7 @@ public class ESP extends Module {
 			float width = getSetting(2).asSlider().getValueFloat();
 			int fill = getSetting(3).asSlider().getValueInt();
 
-			for (Entity e: mc.world.getEntities()) {
+			for (Entity e: mc.level.entitiesForRendering()) {
 				int[] color = getColor(e);
 
 				if (color != null) {

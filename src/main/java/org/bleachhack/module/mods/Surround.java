@@ -58,9 +58,9 @@ public class Surround extends Module {
 
 		if (inWorld) {
 			if (getSetting(3).asToggle().getState()) {
-				Vec3 centerPos = Vec3.ofBottomCenter(mc.player.getBlockPos());
-				mc.player.updatePosition(centerPos.x, centerPos.y, centerPos.z);
-				mc.player.networkHandler.sendPacket(new ServerboundMovePlayerPacket.PositionAndOnGround(centerPos.x, centerPos.y, centerPos.z, mc.player.isOnGround()));
+				Vec3 centerPos = Vec3.atBottomCenterOf(mc.player.blockPosition());
+				mc.player.snapTo(centerPos.x, centerPos.y, centerPos.z);
+				mc.player.connection.send(new ServerboundMovePlayerPacket.Pos(centerPos.x, centerPos.y, centerPos.z, mc.player.onGround(), mc.player.horizontalCollision));
 			}
 
 			place();
@@ -69,7 +69,7 @@ public class Surround extends Module {
 
 	@BleachSubscribe
 	public void onTick(EventTick event) {
-		if (getSetting(5).asToggle().getState() && mc.options.jumpKey.isPressed()) {
+		if (getSetting(5).asToggle().getState() && mc.options.keyJump.isDown()) {
 			setEnabled(false);
 			return;
 		}
@@ -79,7 +79,7 @@ public class Surround extends Module {
 
 	private void place() {
 		int slot = InventoryUtils.getSlot(true,
-				i -> getSetting(7).asList(Block.class).contains(Block.getBlockFromItem(mc.player.getInventory().getStack(i).getItem())));
+				i -> getSetting(7).asList(Block.class).contains(Block.byItem(mc.player.getInventory().getItem(i).getItem())));
 
 		if (slot == -1) {
 			BleachLogger.error("No blocks to surround with!");
@@ -92,14 +92,14 @@ public class Surround extends Module {
 		AABB box = mc.player.getBoundingBox();
 		Set<BlockPos> placePoses = getSetting(0).asMode().getMode() == 0
 				? Sets.newHashSet(
-						mc.player.getBlockPos().north(), mc.player.getBlockPos().east(),
-						mc.player.getBlockPos().south(), mc.player.getBlockPos().west())
+						mc.player.blockPosition().north(), mc.player.blockPosition().east(),
+						mc.player.blockPosition().south(), mc.player.blockPosition().west())
 						: Sets.newHashSet(
-								BlockPos.ofFloored(box.minX - 1, box.minY, box.minZ), BlockPos.ofFloored(box.minX, box.minY, box.minZ - 1),
-								BlockPos.ofFloored(box.maxX + 1, box.minY, box.minZ), BlockPos.ofFloored(box.maxX, box.minY, box.minZ - 1),
-								BlockPos.ofFloored(box.minX - 1, box.minY, box.maxZ), BlockPos.ofFloored(box.minX, box.minY, box.maxZ + 1),
-								BlockPos.ofFloored(box.maxX + 1, box.minY, box.maxZ), BlockPos.ofFloored(box.maxX, box.minY, box.maxZ + 1));
-		placePoses.removeIf(pos -> !mc.world.getBlockState(pos).isReplaceable());
+								BlockPos.containing(box.minX - 1, box.minY, box.minZ), BlockPos.containing(box.minX, box.minY, box.minZ - 1),
+								BlockPos.containing(box.maxX + 1, box.minY, box.minZ), BlockPos.containing(box.maxX, box.minY, box.minZ - 1),
+								BlockPos.containing(box.minX - 1, box.minY, box.maxZ), BlockPos.containing(box.minX, box.minY, box.maxZ + 1),
+								BlockPos.containing(box.maxX + 1, box.minY, box.maxZ), BlockPos.containing(box.maxX, box.minY, box.maxZ + 1));
+		placePoses.removeIf(pos -> !mc.level.getBlockState(pos).canBeReplaced());
 
 		if (placePoses.isEmpty()) {
 			return;
@@ -118,7 +118,7 @@ public class Surround extends Module {
 					continue;
 				}
 
-				if (WorldUtils.placeBlock(pos.down(), slot, getSetting(6).asRotate(), false, supportMode == 1, true)) {
+				if (WorldUtils.placeBlock(pos.below(), slot, getSetting(6).asRotate(), false, supportMode == 1, true)) {
 					cap++;
 
 					if (cap >= getSetting(2).asSlider().getValueInt()) {

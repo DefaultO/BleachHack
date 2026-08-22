@@ -21,13 +21,13 @@ public class AutoWalk extends Module {
 
 	@Override
 	public void onDisable(boolean inWorld) {
-		mc.options.forwardKey.setPressed(false);
+		mc.options.keyUp.setDown(false);
 
 		super.onDisable(inWorld);
 	}
 
 	@BleachSubscribe
 	public void onTick(EventTick event) {
-		mc.options.forwardKey.setPressed(true);
+		mc.options.keyUp.setDown(true);
 	}
 }

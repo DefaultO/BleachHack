@@ -75,8 +75,8 @@ public class FakeLag extends Module {
 
 	public void sendPackets() {
 		for (ServerboundMovePlayerPacket p : new ArrayList<>(queue)) {
-			if (!(p instanceof ServerboundMovePlayerPacket.LookAndOnGround)) {
-				mc.player.networkHandler.sendPacket(p);
+			if (!(p instanceof ServerboundMovePlayerPacket.Rot)) {
+				mc.player.connection.send(p);
 			}
 		}
 

@@ -20,8 +20,12 @@ import org.bleachhack.setting.module.SettingMode;
 import org.bleachhack.setting.module.SettingSlider;
 import org.bleachhack.setting.module.SettingToggle;
 
-import net.minecraft.client.render.DimensionEffects;
+import java.util.Map;
+
+import net.minecraft.core.Holder;
 import net.minecraft.network.protocol.common.ClientboundDisconnectPacket;
+import net.minecraft.world.clock.ClockNetworkState;
+import net.minecraft.world.clock.WorldClock;
 import net.minecraft.network.protocol.game.ClientboundGameEventPacket;
 import net.minecraft.network.protocol.game.ClientboundSetTimePacket;
 import net.minecraft.world.phys.Vec3;
@@ -67,7 +71,7 @@ public class Ambience extends Module {
 	@Override
 	public void onDisable(boolean inWorld) {
 		if (inWorld)
-			weatherManager.applyWeather(mc.world);
+			weatherManager.applyWeather(mc.level);
 
 		weatherManager.reset();
 
@@ -77,25 +81,30 @@ public class Ambience extends Module {
 	@BleachSubscribe
 	public void onTick(EventTick event) {
 		if (getSetting(0).asToggle().getState()) {
+			float tickDelta = mc.getDeltaTracker().getGameTimeDeltaPartialTick(true);
+
 			if (!weatherManager.isActive()) {
-				weatherManager.setRain(mc.world.getRainGradient(mc.getTickDelta()));
-				weatherManager.setThunder(mc.world.getThunderGradient(mc.getTickDelta()));
+				weatherManager.setRain(mc.level.getRainLevel(tickDelta));
+				weatherManager.setThunder(mc.level.getThunderLevel(tickDelta));
 			}
 
+			// isRaining() is derived from the rain level in 26.2, no separate raining flag anymore
 			if (getSetting(0).asToggle().getChild(0).asMode().getMode() == 0) {
-				mc.world.getLevelProperties().setRaining(false);
-				mc.world.setRainGradient(0f);
+				mc.level.setRainLevel(0f);
 			} else {
-				mc.world.getLevelProperties().setRaining(true);
-				mc.world.setRainGradient(getSetting(0).asToggle().getChild(1).asSlider().getValueFloat());
+				mc.level.setRainLevel(getSetting(0).asToggle().getChild(1).asSlider().getValueFloat());
 			}
 		} else if (weatherManager.isActive()) {
-			weatherManager.applyWeather(mc.world);
+			weatherManager.applyWeather(mc.level);
 			weatherManager.reset();
 		}
 
 		if (getSetting(1).asToggle().getState()) {
-			mc.world.setTimeOfDay(getSetting(1).asToggle().getChild(0).asSlider().getValueLong());
+			// TODO(26.2): day time is data-driven now (WorldClock system); freeze the dimension's clock at the chosen time
+			long time = getSetting(1).asToggle().getChild(0).asSlider().getValueLong();
+			mc.level.dimensionType().defaultClock().ifPresent(clock -> mc.level.clockManager()
+					.handleUpdates(mc.level.getGameTime(), Map.<Holder<WorldClock>, ClockNetworkState>of(clock, new ClockNetworkState(time, 0f, 0f))));
+			mc.level.environmentAttributes().invalidateTickCache();
 		}
 	}
 
@@ -103,14 +112,14 @@ public class Ambience extends Module {
 	public void readPacket(EventPacket.Read event) {
 		if (event.getPacket() instanceof ClientboundGameEventPacket && getSetting(0).asToggle().getState()) {
 			ClientboundGameEventPacket packet = (ClientboundGameEventPacket) event.getPacket();
-			if (packet.getReason() == ClientboundGameEventPacket.RAIN_STARTED) {
+			if (packet.getEvent() == ClientboundGameEventPacket.START_RAINING) {
 				weatherManager.setRain(1f);
-			} else if (packet.getReason() == ClientboundGameEventPacket.RAIN_STOPPED) {
+			} else if (packet.getEvent() == ClientboundGameEventPacket.STOP_RAINING) {
 				weatherManager.setRain(0f);
-			} else if (packet.getReason() == ClientboundGameEventPacket.RAIN_GRADIENT_CHANGED) {
-				weatherManager.setRain(packet.getValue());
-			} else if (packet.getReason() == ClientboundGameEventPacket.THUNDER_GRADIENT_CHANGED) {
-				weatherManager.setThunder(packet.getValue());
+			} else if (packet.getEvent() == ClientboundGameEventPacket.RAIN_LEVEL_CHANGE) {
+				weatherManager.setRain(packet.getParam());
+			} else if (packet.getEvent() == ClientboundGameEventPacket.THUNDER_LEVEL_CHANGE) {
+				weatherManager.setThunder(packet.getParam());
 			} else {
 				return;
 			}
@@ -142,27 +151,14 @@ public class Ambience extends Module {
 
 	@BleachSubscribe
 	public void onSkyProperties(EventSkyRender.Properties event) {
-		if (getCurrentDimSetting().getState() && getCurrentDimSetting().getChild(0).asToggle().getState()
-				&& getCurrentDimSetting().getChild(0).asToggle().getChild(0).asToggle().getState()) {
-			event.setSky(new DimensionEffects(event.getSky().getCloudsHeight(), false, DimensionEffects.SkyType.END, true, false) {
-
-				public Vec3 adjustFogColor(Vec3 color, float sunHeight) {
-					return color.multiply(0.15000000596046448D);
-				}
-
-				public boolean useThickFog(int camouseX, int camouseY) {
-					return false;
-				}
-
-				public float[] getFogColorOverride(float skyAngle, float tickDelta) {
-					return null;
-				}
-			});
-		}
+		// TODO(26.2): DimensionEffects/DimensionSpecialEffects was removed; the sky is now data-driven
+		// (SkyRenderer + DimensionType.Skybox + EnvironmentAttributes) and EventSkyRender.Properties is
+		// an inert Object holder. The "End Skybox" override can't be reimplemented here until the sky
+		// event pipeline is rebuilt. Sky *color* still works via onSkyColor above.
 	}
 
 	private SettingToggle getCurrentDimSetting() {
-		return getSetting(mc.world.getRegistryKey() == Level.END ? 4 : mc.world.getRegistryKey() == Level.NETHER ? 3 : 2).asToggle();
+		return getSetting(mc.level.dimension() == Level.END ? 4 : mc.level.dimension() == Level.NETHER ? 3 : 2).asToggle();
 	}
 
 	private static class WeatherManager {
@@ -185,12 +181,11 @@ public class Ambience extends Module {
 
 		public void applyWeather(Level world) {
 			if (rain >= 0f) {
-				world.getLevelProperties().setRaining(rain > 0f);
-				world.setRainGradient(rain);
+				world.setRainLevel(rain);
 			}
 
 			if (thunder >= 0f) {
-				world.setThunderGradient(thunder);
+				world.setThunderLevel(thunder);
 			}
 		}
 

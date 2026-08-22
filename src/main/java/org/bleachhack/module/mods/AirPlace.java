@@ -46,7 +46,7 @@ public class AirPlace extends Module {
 
 	@BleachSubscribe
 	public void onTick(EventTick event) {
-		boolean isKeyUsePressed = mc.options.useKey.isPressed();
+		boolean isKeyUsePressed = mc.options.keyUse.isDown();
 
 		if (!canPlaceAtCrosshair()) {
 			return;
@@ -54,11 +54,11 @@ public class AirPlace extends Module {
 
 		if (getSetting(1).asMode().getMode() == 0) {
 			if (((AccessorMinecraftClient) mc).getItemUseCooldown() == 4 && isKeyUsePressed) {
-				mc.getNetworkHandler().sendPacket(new ServerboundUseItemOnPacket(InteractionHand.MAIN_HAND, (BlockHitResult) mc.crosshairTarget, 0));
+				mc.getConnection().send(new ServerboundUseItemOnPacket(InteractionHand.MAIN_HAND, (BlockHitResult) mc.hitResult, 0));
 			}
 		} else if (getSetting(1).asMode().getMode() == 1) {
 			if (!pressed && isKeyUsePressed) {
-				mc.getNetworkHandler().sendPacket(new ServerboundUseItemOnPacket(InteractionHand.MAIN_HAND, (BlockHitResult) mc.crosshairTarget, 0));
+				mc.getConnection().send(new ServerboundUseItemOnPacket(InteractionHand.MAIN_HAND, (BlockHitResult) mc.hitResult, 0));
 				pressed = true;
 			} else if (!isKeyUsePressed) {
 				pressed = false;
@@ -72,7 +72,7 @@ public class AirPlace extends Module {
 			return;
 		}
 
-		BlockPos pos = ((BlockHitResult) mc.crosshairTarget).getBlockPos();
+		BlockPos pos = ((BlockHitResult) mc.hitResult).getBlockPos();
 
 		int mode = getSetting(0).asToggle().getChild(0).asMode().getMode();
 		int[] rgb = getSetting(0).asToggle().getChild(3).asColor().getRGBArray();
@@ -90,7 +90,7 @@ public class AirPlace extends Module {
 	}
 	
 	private boolean canPlaceAtCrosshair() {
-		return mc.crosshairTarget instanceof BlockHitResult
-				&& mc.world.getBlockState(((BlockHitResult) mc.crosshairTarget).getBlockPos()).isReplaceable();
+		return mc.hitResult instanceof BlockHitResult
+				&& mc.level.getBlockState(((BlockHitResult) mc.hitResult).getBlockPos()).canBeReplaced();
 	}
 }

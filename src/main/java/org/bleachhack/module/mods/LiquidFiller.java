@@ -69,12 +69,12 @@ public class LiquidFiller extends Module {
 	public void onTick(EventTick event) {
 		int cap = 0;
 		int ceilRange = (int) Math.ceil(getSetting(1).asSlider().getValue());
-		for (BlockPos pos: BlockPos.iterateOutwards(mc.player.getBlockPos().up(), ceilRange, ceilRange, ceilRange)) {
-			FluidState fluid = mc.world.getFluidState(pos);
+		for (BlockPos pos: BlockPos.withinManhattan(mc.player.blockPosition().above(), ceilRange, ceilRange, ceilRange)) {
+			FluidState fluid = mc.level.getFluidState(pos);
 
-			int slot = InventoryUtils.getSlot(true, i -> shouldUseItem(mc.player.getInventory().getStack(i).getItem()));
-			if ((fluid.getFluid() instanceof WaterFluid.Still && getSetting(0).asMode().getMode() != 0)
-							|| (fluid.getFluid() instanceof LavaFluid.Still && getSetting(0).asMode().getMode() != 1)) {
+			int slot = InventoryUtils.getSlot(true, i -> shouldUseItem(mc.player.getInventory().getItem(i).getItem()));
+			if ((fluid.getType() instanceof WaterFluid.Source && getSetting(0).asMode().getMode() != 0)
+							|| (fluid.getType() instanceof LavaFluid.Source && getSetting(0).asMode().getMode() != 1)) {
 					if (WorldUtils.placeBlock(
 							pos, slot,
 							getSetting(6).asRotate(),
@@ -99,13 +99,13 @@ public class LiquidFiller extends Module {
 			QuadColor lavaColor = QuadColor.single((opacity << 24) | getSetting(7).asToggle().getChild(2).asColor().getRGB());
 			
 			int ceilRange = (int) Math.ceil(getSetting(1).asSlider().getValue());
-			for (BlockPos pos: BlockPos.iterateOutwards(mc.player.getBlockPos().up(), ceilRange, ceilRange, ceilRange)) {
-				FluidState fluid = mc.world.getFluidState(pos);
+			for (BlockPos pos: BlockPos.withinManhattan(mc.player.blockPosition().above(), ceilRange, ceilRange, ceilRange)) {
+				FluidState fluid = mc.level.getFluidState(pos);
 
-				if (fluid.getFluid() instanceof WaterFluid.Still && getSetting(0).asMode().getMode() != 0) {
-					Renderer.drawBoxBoth(fluid.getShape(mc.world, pos).getBoundingBox().offset(pos), waterColor, 3f);
-				} else if (fluid.getFluid() instanceof LavaFluid.Still && getSetting(0).asMode().getMode() != 1) {
-					Renderer.drawBoxBoth(fluid.getShape(mc.world, pos).getBoundingBox().offset(pos), lavaColor, 3f);
+				if (fluid.getType() instanceof WaterFluid.Source && getSetting(0).asMode().getMode() != 0) {
+					Renderer.drawBoxBoth(fluid.getShape(mc.level, pos).bounds().move(pos), waterColor, 3f);
+				} else if (fluid.getType() instanceof LavaFluid.Source && getSetting(0).asMode().getMode() != 1) {
+					Renderer.drawBoxBoth(fluid.getShape(mc.level, pos).bounds().move(pos), lavaColor, 3f);
 				}
 			}
 		}

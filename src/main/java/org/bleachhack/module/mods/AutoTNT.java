@@ -40,7 +40,7 @@ public class AutoTNT extends Module {
 
 	@BleachSubscribe
 	public void onTick(EventTick event) {
-		int tntSlot = InventoryUtils.getSlot(true, i -> mc.player.getInventory().getStack(i).getItem() == Items.TNT);
+		int tntSlot = InventoryUtils.getSlot(true, i -> mc.player.getInventory().getItem(i).getItem() == Items.TNT);
 		if (tntSlot == -1)
 			return;
 
@@ -63,7 +63,7 @@ public class AutoTNT extends Module {
 
 				for (int k = -3; k < 4; k++) {
 					int y = (int) mc.player.getY() + k;
-					if (mc.player.squaredDistanceTo(x + 0.5, y + 0.5, z + 0.5) < 4.25
+					if (mc.player.distanceToSqr(x + 0.5, y + 0.5, z + 0.5) < 4.25
 							&& WorldUtils.placeBlock(new BlockPos(x, y, z), tntSlot, 0, false, false, true)) {
 						blacklist.add(x);
 						blacklist.add(z);

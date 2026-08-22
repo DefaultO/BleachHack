@@ -13,7 +13,11 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.LiquidBlock;
 import net.minecraft.client.particle.TerrainParticle;
 import net.minecraft.world.InteractionHand;
-import net.minecraft.util.math.*;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.util.Mth;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
@@ -81,20 +85,20 @@ public class Nuker extends Module {
 
 		double range = getSetting(4).asSlider().getValue();
 
-		ImmutablePairList<BlockPos, Pair<Vec3d, Direction>> blocks = new ImmutablePairList<>();
+		ImmutablePairList<BlockPos, Pair<Vec3, Direction>> blocks = new ImmutablePairList<>();
 
 		// Add blocks around player
 		SettingToggle filterToggler = getSetting(6).asToggle();
-		for (int x = MathHelper.ceil(range); x >= MathHelper.floor(-range); x--) {
-			for (int y = MathHelper.ceil(range); y >= (getSetting(8).asToggle().getState() ? -mc.player.getEyeHeight(mc.player.getPose()) + 0.2 : MathHelper.floor(-range)); y--) {
-				for (int z = MathHelper.ceil(range); z >= MathHelper.floor(-range); z--) {
-					BlockPos pos = BlockPos.ofFloored(mc.player.getEyePos().add(x, y, z));
+		for (int x = Mth.ceil(range); x >= Mth.floor(-range); x--) {
+			for (int y = Mth.ceil(range); y >= (getSetting(8).asToggle().getState() ? -mc.player.getEyeHeight(mc.player.getPose()) + 0.2 : Mth.floor(-range)); y--) {
+				for (int z = Mth.ceil(range); z >= Mth.floor(-range); z--) {
+					BlockPos pos = BlockPos.containing(mc.player.getEyePosition().add(x, y, z));
 
 					double distTo = getSetting(3).asMode().getMode() == 0
-							? MathHelper.absMax(MathHelper.absMax(mc.player.getX() - (pos.getX() + 0.5), mc.player.getEyeY() - (pos.getY() + 0.5)), mc.player.getZ() - (pos.getZ() + 0.5))
-									: mc.player.getPos().distanceTo(Vec3d.ofCenter(pos));
+							? Mth.absMax(Mth.absMax(mc.player.getX() - (pos.getX() + 0.5), mc.player.getEyeY() - (pos.getY() + 0.5)), mc.player.getZ() - (pos.getZ() + 0.5))
+									: mc.player.position().distanceTo(Vec3.atCenterOf(pos));
 
-					BlockState state = mc.world.getBlockState(pos);
+					BlockState state = mc.level.getBlockState(pos);
 					if (distTo - 0.5 > getSetting(4).asSlider().getValue() || state.isAir() || state.getBlock() instanceof LiquidBlock)
 						continue;
 
@@ -107,12 +111,12 @@ public class Nuker extends Module {
 						}
 					}
 
-					Pair<Vec3d, Direction> vec = getBlockAngle(pos);
+					Pair<Vec3, Direction> vec = getBlockAngle(pos);
 
 					if (vec != null) {
 						blocks.add(pos, vec);
 					} else if (!getSetting(7).asToggle().getState()) {
-						blocks.add(pos, Pair.of(Vec3d.ofCenter(pos), Direction.UP));
+						blocks.add(pos, Pair.of(Vec3.atCenterOf(pos), Direction.UP));
 					}
 				}
 			}
@@ -124,11 +128,11 @@ public class Nuker extends Module {
 		blocks.sortByKey(getBlockOrderComparator());
 
 		int broken = 0;
-		for (ImmutablePair<BlockPos, Pair<Vec3d, Direction>> pos : blocks) {
-			float breakingDelta = mc.world.getBlockState(pos.getKey()).calcBlockBreakingDelta(mc.player, mc.world, pos.getKey());
+		for (ImmutablePair<BlockPos, Pair<Vec3, Direction>> pos : blocks) {
+			float breakingDelta = mc.level.getBlockState(pos.getKey()).getDestroyProgress(mc.player, mc.level, pos.getKey());
 
 			// Unbreakable block
-			if (mc.interactionManager.getCurrentGameMode().isSurvivalLike() && breakingDelta == 0) {
+			if (mc.gameMode.getPlayerMode().isSurvival() && breakingDelta == 0) {
 				continue;
 			}
 
@@ -137,14 +141,14 @@ public class Nuker extends Module {
 			}
 
 			if (getSetting(9).asRotate().getState()) {
-				Vec3d v = pos.getValue().getLeft();
+				Vec3 v = pos.getValue().getLeft();
 				WorldUtils.facePosAuto(v.x, v.y, v.z, getSetting(9).asRotate());
 			}
 
-			mc.interactionManager.updateBlockBreakingProgress(pos.getKey(), pos.getValue().getRight());
+			mc.gameMode.continueDestroyBlock(pos.getKey(), pos.getValue().getRight());
 			renderBlocks.add(pos.getKey());
 
-			mc.player.swingHand(InteractionHand.MAIN_HAND);
+			mc.player.swing(InteractionHand.MAIN_HAND);
 
 			broken++;
 			if (getSetting(0).asMode().getMode() == 0
@@ -161,17 +165,18 @@ public class Nuker extends Module {
 		if (getSetting(11).asToggle().getState()) {
 			int[] color = getSetting(11).asToggle().getChild(1).asColor().getRGBArray();
 
-			float breakingProgress = mc.interactionManager.currentBreakingProgress;
+			// TODO(26.2): MultiPlayerGameMode.destroyProgress is private now; getDestroyStage() only exposes it in 0.1 steps
+			float breakingProgress = Math.max(0, mc.gameMode.getDestroyStage()) / 10f;
 
 			for (BlockPos pos: renderBlocks) {
-				VoxelShape shape = mc.world.getBlockState(pos).getOutlineShape(mc.world, pos);
+				VoxelShape shape = mc.level.getBlockState(pos).getShape(mc.level, pos);
 
 				if (!shape.isEmpty()) {
 					if (getSetting(11).asToggle().getChild(0).asMode().getMode() == 0) {
-						Renderer.drawBoxBoth(shape.getBoundingBox().offset(pos),
+						Renderer.drawBoxBoth(shape.bounds().move(pos),
 								QuadColor.single(color[0], color[1], color[2], (int) (breakingProgress * 200)), 2.5f);
 					} else {
-						Renderer.drawBoxBoth(Boxes.multiply(shape.getBoundingBox().offset(pos), breakingProgress),
+						Renderer.drawBoxBoth(Boxes.multiply(shape.bounds().move(pos), breakingProgress),
 								QuadColor.single(color[0], color[1], color[2], 128), 2.5f);
 					}
 				}
@@ -179,20 +184,20 @@ public class Nuker extends Module {
 		}
 
 		if (getSetting(12).asToggle().getState()) {
-			Vec3d pos = mc.player.getPos().subtract(Renderer.getInterpolationOffset(mc.player));
+			Vec3 pos = mc.player.position().subtract(Renderer.getInterpolationOffset(mc.player));
 			double range = getSetting(4).asSlider().getValue();
 			int color = 0xff000000 | getSetting(12).asToggle().getChild(1).asColor().getRGB();
 			float width = getSetting(12).asToggle().getChild(0).asSlider().getValueFloat();
 
 			if (getSetting(3).asMode().getMode() == 0) {
-				Renderer.drawBoxOutline(new Box(pos, pos).expand(range, 0, range), QuadColor.single(color), width,
+				Renderer.drawBoxOutline(new AABB(pos, pos).inflate(range, 0, range), QuadColor.single(color), width,
 						Direction.NORTH, Direction.WEST, Direction.SOUTH, Direction.EAST, Direction.DOWN);
 			} else {
 				double lastX = 0;
 				double lastZ = range;
 				for (int angle = 0; angle <= 360; angle += 6) {
-					float cos = MathHelper.cos((float) Math.toRadians(angle));
-					float sin = MathHelper.sin((float) Math.toRadians(angle));
+					float cos = Mth.cos((float) Math.toRadians(angle));
+					float sin = Mth.sin((float) Math.toRadians(angle));
 
 					double x = range * sin;
 					double z = range * cos;
@@ -220,10 +225,10 @@ public class Nuker extends Module {
 		event.setCooldown(getSetting(2).asSlider().getValueInt());
 	}
 
-	private Pair<Vec3d, Direction> getBlockAngle(BlockPos pos) {
+	private Pair<Vec3, Direction> getBlockAngle(BlockPos pos) {
 		for (Direction d: Direction.values()) {
-			if (!mc.world.getBlockState(pos.offset(d)).isFullCube(mc.world, pos.offset(d))) {
-				Vec3d vec = WorldUtils.getLegitLookPos(pos, d, true, 5);
+			if (!mc.level.getBlockState(pos.relative(d)).isCollisionShapeFullBlock(mc.level, pos.relative(d))) {
+				Vec3 vec = WorldUtils.getLegitLookPos(pos, d, true, 5);
 
 				if (vec != null) {
 					return Pair.of(vec, d);
@@ -237,10 +242,10 @@ public class Nuker extends Module {
 	private Comparator<BlockPos> getBlockOrderComparator() {
 		// Comparator that moves the block under the player to last
 		// so it doesn't mine itself down without clearing everything above first
-		Comparator<BlockPos> keepBlockUnderComparator = Comparator.comparing(BlockPos.ofFloored(mc.player.getPos().add(0, -0.8, 0))::equals);
+		Comparator<BlockPos> keepBlockUnderComparator = Comparator.comparing(BlockPos.containing(mc.player.position().add(0, -0.8, 0))::equals);
 
-		Comparator<BlockPos> distComparator = Comparator.comparingDouble(b -> mc.player.getEyePos().distanceTo(Vec3d.ofCenter(b)));
-		Comparator<BlockPos> hardnessComparator = Comparator.comparing(b -> mc.world.getBlockState(b).getHardness(mc.world, b));
+		Comparator<BlockPos> distComparator = Comparator.comparingDouble(b -> mc.player.getEyePosition().distanceTo(Vec3.atCenterOf(b)));
+		Comparator<BlockPos> hardnessComparator = Comparator.comparing(b -> mc.level.getBlockState(b).getDestroySpeed(mc.level, b));
 
 		return switch (getSetting(5).asMode().getMode()) {
 			case 0 -> keepBlockUnderComparator.thenComparing(distComparator);

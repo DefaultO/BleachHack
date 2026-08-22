@@ -12,6 +12,8 @@ import org.bleachhack.module.ModuleCategory;
 import org.bleachhack.setting.module.SettingMode;
 import org.bleachhack.util.InventoryUtils;
 
+import it.unimi.dsi.fastutil.objects.Object2IntMap;
+
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.minecraft.world.entity.projectile.FishingHook;
 import net.minecraft.world.item.ItemStack;
@@ -38,15 +40,15 @@ public class AutoFish extends Module {
 
 	@BleachSubscribe
 	public void onTick(EventTick event) {
-		if (mc.player.fishHook != null) {
+		if (mc.player.fishing != null) {
 			threwRod = false;
 
-			boolean caughtFish = mc.player.fishHook.getDataTracker().get(FishingHook.CAUGHT_FISH);
+			boolean caughtFish = mc.player.fishing.getEntityData().get(FishingHook.DATA_BITING);
 			if (!reeledFish && caughtFish) {
 				InteractionHand hand = getHandWithRod();
 				if (hand != null) {
 					// reel back
-					mc.interactionManager.interactItem(mc.player, hand);
+					mc.gameMode.useItem(mc.player, hand);
 					reeledFish = true;
 					return;
 				}
@@ -55,11 +57,11 @@ public class AutoFish extends Module {
 			}
 		}
 
-		if (!threwRod && mc.player.fishHook == null && getSetting(0).asMode().getMode() != 2) {
+		if (!threwRod && mc.player.fishing == null && getSetting(0).asMode().getMode() != 2) {
 			InteractionHand newHand = getSetting(0).asMode().getMode() == 1 ? InventoryUtils.selectSlot(getBestRodSlot()) : getHandWithRod();
 			if (newHand != null) {
 				// throw again
-				mc.interactionManager.interactItem(mc.player, newHand);
+				mc.gameMode.useItem(mc.player, newHand);
 				threwRod = true;
 				reeledFish = false;
 			}
@@ -67,21 +69,21 @@ public class AutoFish extends Module {
 	}
 
 	private InteractionHand getHandWithRod() {
-		return mc.player.getMainHandStack().getItem() == Items.FISHING_ROD ? InteractionHand.MAIN_HAND
-				: mc.player.getOffHandStack().getItem() == Items.FISHING_ROD ? InteractionHand.OFF_HAND
+		return mc.player.getMainHandItem().getItem() == Items.FISHING_ROD ? InteractionHand.MAIN_HAND
+				: mc.player.getOffhandItem().getItem() == Items.FISHING_ROD ? InteractionHand.OFF_HAND
 						: null;
 	}
 
 	private int getBestRodSlot() {
 		int slot = InventoryUtils.getSlot(true, true, Comparator.comparingInt(i -> {
-			ItemStack is = mc.player.getInventory().getStack(i);
+			ItemStack is = mc.player.getInventory().getItem(i);
 			if (is.getItem() != Items.FISHING_ROD)
 				return -1;
 
-			return EnchantmentHelper.get(is).values().stream().mapToInt(Integer::intValue).sum();
+			return EnchantmentHelper.getEnchantmentsForCrafting(is).entrySet().stream().mapToInt(Object2IntMap.Entry::getIntValue).sum();
 		}));
 
-		if (mc.player.getInventory().getStack(slot).getItem() == Items.FISHING_ROD) {
+		if (mc.player.getInventory().getItem(slot).getItem() == Items.FISHING_ROD) {
 			return slot;
 		}
 

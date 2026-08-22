@@ -9,7 +9,7 @@
 package org.bleachhack.module.mods;
 
 import net.minecraft.world.level.block.NoteBlock;
-import net.minecraft.block.enums.Instrument;
+import net.minecraft.world.level.block.state.properties.NoteBlockInstrument;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.core.BlockPos;
@@ -71,7 +71,7 @@ public class Notebot extends Module {
 		super.onEnable(inWorld);
 		blockPitches.clear();
 
-		if (!mc.interactionManager.getCurrentGameMode().isSurvivalLike()) {
+		if (!mc.gameMode.getPlayerMode().isSurvival()) {
 			BleachLogger.error("Not In Survival Mode!");
 			setEnabled(false);
 			return;
@@ -83,9 +83,9 @@ public class Notebot extends Module {
 
 		timer = -10;
 
-		List<BlockPos> noteblocks = BlockPos.streamOutwards(BlockPos.ofFloored(mc.player.getEyePos()), 4, 4, 4)
+		List<BlockPos> noteblocks = BlockPos.withinManhattanStream(BlockPos.containing(mc.player.getEyePosition()), 4, 4, 4)
 				.filter(this::isNoteblock)
-				.map(BlockPos::toImmutable)
+				.map(BlockPos::immutable)
 				.toList();
 
 		for (Note note : song.requirements) {
@@ -143,13 +143,13 @@ public class Notebot extends Module {
 				if (note != e.getValue()) {
 					if (tuneMode <= 2) {
 						if (tuneMode >= 1) {
-							if (mc.player.age % 2 == 0 ||
-									(mc.player.age % 3 == 0 && tuneMode == 2))
+							if (mc.player.tickCount % 2 == 0 ||
+									(mc.player.tickCount % 3 == 0 && tuneMode == 2))
 								return;
 						}
 
-						mc.interactionManager.interactBlock(mc.player, InteractionHand.MAIN_HAND,
-								new BlockHitResult(Vec3.ofCenter(e.getKey(), 1), Direction.UP, e.getKey(), true));
+						mc.gameMode.useItemOn(mc.player, InteractionHand.MAIN_HAND,
+								new BlockHitResult(Vec3.upFromBottomCenterOf(e.getKey(), 1), Direction.UP, e.getKey(), true));
 					} else if (tuneMode >= 3) {
 						if (tuneDelay < (tuneMode == 3 ? 3 : 5)) {
 							tuneDelay++;
@@ -159,8 +159,8 @@ public class Notebot extends Module {
 						int neededNote = e.getValue() < note ? e.getValue() + 25 : e.getValue();
 						int reqTunes = Math.min(tuneMode == 3 ? 5 : 25, neededNote - note);
 						for (int i = 0; i < reqTunes; i++)
-							mc.interactionManager.interactBlock(mc.player,
-									InteractionHand.MAIN_HAND, new BlockHitResult(Vec3.ofCenter(e.getKey(), 1), Direction.UP, e.getKey(), true));
+							mc.gameMode.useItemOn(mc.player,
+									InteractionHand.MAIN_HAND, new BlockHitResult(Vec3.upFromBottomCenterOf(e.getKey(), 1), Direction.UP, e.getKey(), true));
 
 						tuneDelay = 0;
 					}
@@ -203,32 +203,32 @@ public class Notebot extends Module {
 		}
 	}
 
-	public Instrument getInstrument(BlockPos pos) {
+	public NoteBlockInstrument getInstrument(BlockPos pos) {
 		if (!isNoteblock(pos))
-			return Instrument.HARP;
+			return NoteBlockInstrument.HARP;
 
-		return mc.world.getBlockState(pos).get(NoteBlock.INSTRUMENT);
+		return mc.level.getBlockState(pos).getValue(NoteBlock.INSTRUMENT);
 	}
 
 	public int getNote(BlockPos pos) {
 		if (!isNoteblock(pos))
 			return -1;
 
-		return mc.world.getBlockState(pos).get(NoteBlock.NOTE);
+		return mc.level.getBlockState(pos).getValue(NoteBlock.NOTE);
 	}
 
 	public boolean isNoteblock(BlockPos pos) {
 		// Checks if this block is a noteblock and the noteblock can be played
-		return mc.world.getBlockState(pos).getBlock() instanceof NoteBlock
-				&& mc.world.getBlockState(pos.up()).isAir();
+		return mc.level.getBlockState(pos).getBlock() instanceof NoteBlock
+				&& mc.level.getBlockState(pos.above()).isAir();
 	}
 
 	public void playBlock(BlockPos pos) {
 		if (!isNoteblock(pos))
 			return;
 
-		mc.interactionManager.attackBlock(pos, Direction.UP);
-		mc.player.swingHand(InteractionHand.MAIN_HAND);
+		mc.gameMode.startDestroyBlock(pos, Direction.UP);
+		mc.player.swing(InteractionHand.MAIN_HAND);
 	}
 
 	public static class Song {

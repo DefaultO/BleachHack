@@ -32,13 +32,15 @@ public class Ghosthand extends Module {
 
 	@BleachSubscribe
 	public void onTick(EventTick event) {
-		if (!mc.options.useKey.isPressed() || mc.player.isSneaking())
+		if (!mc.options.keyUse.isDown() || mc.player.isShiftKeyDown())
 			return;
 
+		float tickDelta = mc.getDeltaTracker().getGameTimeDeltaPartialTick(true);
+
 		// Return if we are looking at any block entities
-		BlockPos lookingPos = BlockPos.ofFloored(mc.player.raycast(4.25, mc.getTickDelta(), false).getPos());
+		BlockPos lookingPos = BlockPos.containing(mc.player.pick(4.25, tickDelta, false).getLocation());
 		for (BlockEntity b : WorldUtils.getBlockEntities()) {
-			if (lookingPos.equals(b.getPos())) {
+			if (lookingPos.equals(b.getBlockPos())) {
 				return;
 			}
 		}
@@ -46,18 +48,18 @@ public class Ghosthand extends Module {
 		Set<BlockPos> posList = new HashSet<>();
 
 		Vec3 nextPos = new Vec3(0, 0, 0.1)
-				.rotateX(-(float) Math.toRadians(mc.player.getPitch()))
-				.rotateY(-(float) Math.toRadians(mc.player.getYaw()));
+				.xRot(-(float) Math.toRadians(mc.player.getXRot()))
+				.yRot(-(float) Math.toRadians(mc.player.getYRot()));
 
 		for (int i = 1; i < 50; i++) {
-			BlockPos curPos = BlockPos.ofFloored(mc.player.getCameraPosVec(mc.getTickDelta()).add(nextPos.multiply(i)));
+			BlockPos curPos = BlockPos.containing(mc.player.getEyePosition(tickDelta).add(nextPos.scale(i)));
 			if (!posList.contains(curPos)) {
 				posList.add(curPos);
-	
+
 				for (BlockEntity b : WorldUtils.getBlockEntities()) {
-					if (b.getPos().equals(curPos)) {
-						mc.interactionManager.interactBlock(mc.player, InteractionHand.MAIN_HAND,
-								new BlockHitResult(Vec3.ofCenter(curPos, 1), Direction.UP, curPos, true));
+					if (b.getBlockPos().equals(curPos)) {
+						mc.gameMode.useItemOn(mc.player, InteractionHand.MAIN_HAND,
+								new BlockHitResult(Vec3.upFromBottomCenterOf(curPos, 1), Direction.UP, curPos, true));
 						return;
 					}
 				}

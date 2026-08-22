@@ -8,6 +8,8 @@
  */
 package org.bleachhack.module.mods;
 
+import java.util.Optional;
+
 import org.bleachhack.event.events.EventPlayerPushed;
 import org.bleachhack.event.events.EventPacket;
 import org.bleachhack.eventbus.BleachSubscribe;
@@ -18,6 +20,7 @@ import org.bleachhack.setting.module.SettingToggle;
 
 import net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket;
 import net.minecraft.network.protocol.game.ClientboundExplodePacket;
+import net.minecraft.world.phys.Vec3;
 
 /**
  * @author sl First Module utilizing EventBus!
@@ -52,29 +55,30 @@ public class NoVelocity extends Module {
 		if (mc.player == null)
 			return;
 
-		if (event.getPacket() instanceof ClientboundSetEntityMotionPacket && getSetting(0).asToggle().getState()) {
-			ClientboundSetEntityMotionPacket packet = (ClientboundSetEntityMotionPacket) event.getPacket();
-			if (packet.getId() == mc.player.getId()) {
+		// 26.2: both packets are immutable records now, so replace the packet instead of mutating fields.
+		if (event.getPacket() instanceof ClientboundSetEntityMotionPacket packet && getSetting(0).asToggle().getState()) {
+			if (packet.id() == mc.player.getId()) {
 				double velXZ = getSetting(0).asToggle().getChild(0).asSlider().getValue() / 100;
 				double velY = getSetting(0).asToggle().getChild(1).asSlider().getValue() / 100;
-				
-				double pvelX = (packet.getVelocityX() / 8000d - mc.player.getVelocity().x) * velXZ;
-				double pvelY = (packet.getVelocityY() / 8000d - mc.player.getVelocity().y) * velY;
-				double pvelZ = (packet.getVelocityZ() / 8000d - mc.player.getVelocity().z) * velXZ;
 
-				packet.velocityX = (int) (pvelX * 8000 + mc.player.getVelocity().x * 8000);
-				packet.velocityY = (int) (pvelY * 8000 + mc.player.getVelocity().y * 8000);
-				packet.velocityZ = (int) (pvelZ * 8000 + mc.player.getVelocity().z * 8000);
+				Vec3 playerVel = mc.player.getDeltaMovement();
+				Vec3 packetVel = packet.movement();
+
+				event.setPacket(new ClientboundSetEntityMotionPacket(packet.id(), new Vec3(
+						playerVel.x + (packetVel.x - playerVel.x) * velXZ,
+						playerVel.y + (packetVel.y - playerVel.y) * velY,
+						playerVel.z + (packetVel.z - playerVel.z) * velXZ)));
 			}
-		} else if (event.getPacket() instanceof ClientboundExplodePacket && getSetting(1).asToggle().getState()) {
-			ClientboundExplodePacket packet = (ClientboundExplodePacket) event.getPacket();
+		} else if (event.getPacket() instanceof ClientboundExplodePacket packet && getSetting(1).asToggle().getState()) {
+			if (packet.playerKnockback().isPresent()) {
+				double velXZ = getSetting(1).asToggle().getChild(0).asSlider().getValue() / 100;
+				double velY = getSetting(1).asToggle().getChild(1).asSlider().getValue() / 100;
 
-			double velXZ = getSetting(1).asToggle().getChild(0).asSlider().getValue() / 100;
-			double velY = getSetting(1).asToggle().getChild(1).asSlider().getValue() / 100;
-			
-			packet.playerVelocityX = (float) (packet.getPlayerVelocityX() * velXZ);
-			packet.playerVelocityY = (float) (packet.getPlayerVelocityY() * velY);
-			packet.playerVelocityZ = (float) (packet.getPlayerVelocityZ() * velXZ);
+				Vec3 kb = packet.playerKnockback().get();
+				event.setPacket(new ClientboundExplodePacket(packet.center(), packet.radius(), packet.blockCount(),
+						Optional.of(new Vec3(kb.x * velXZ, kb.y * velY, kb.z * velXZ)),
+						packet.explosionParticle(), packet.explosionSound(), packet.blockParticles()));
+			}
 		}
 	}
 

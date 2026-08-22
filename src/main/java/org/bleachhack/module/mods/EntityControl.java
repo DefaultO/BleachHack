@@ -27,6 +27,7 @@ import net.minecraft.network.protocol.game.ClientboundSetPassengersPacket;
 import net.minecraft.network.protocol.game.ClientboundPlayerPositionPacket;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.core.BlockPos;
+import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.Vec3;
 
 public class EntityControl extends Module {
@@ -57,17 +58,17 @@ public class EntityControl extends Module {
 		Entity e = mc.player.getVehicle();
 		double speed = getSetting(0).asToggle().getChild(0).asSlider().getValue();
 
-		double forward = mc.player.forwardSpeed;
-		double strafe = mc.player.sidewaysSpeed;
-		float yaw = mc.player.getYaw();
+		double forward = mc.player.zza;
+		double strafe = mc.player.xxa;
+		float yaw = mc.player.getYRot();
 
-		e.setYaw(yaw);
+		e.setYRot(yaw);
 		if (e instanceof Llama) {
-			((Llama) e).headYaw = mc.player.headYaw;
+			((Llama) e).yHeadRot = mc.player.yHeadRot;
 		}
 
 		if (getSetting(5).asToggle().getState() && forward == 0 && strafe == 0) {
-			e.setVelocity(new Vec3(0, e.getVelocity().y, 0));
+			e.setDeltaMovement(new Vec3(0, e.getDeltaMovement().y, 0));
 		}
 
 		if (getSetting(0).asToggle().getState()) {
@@ -87,32 +88,32 @@ public class EntityControl extends Module {
 				strafe = 0.0D;
 			}
 
-			e.setVelocity(forward * speed * Math.cos(Math.toRadians(yaw + 90.0F)) + strafe * speed * Math.sin(Math.toRadians(yaw + 90.0F)),
-					e.getVelocity().y,
+			e.setDeltaMovement(forward * speed * Math.cos(Math.toRadians(yaw + 90.0F)) + strafe * speed * Math.sin(Math.toRadians(yaw + 90.0F)),
+					e.getDeltaMovement().y,
 					forward * speed * Math.sin(Math.toRadians(yaw + 90.0F)) - strafe * speed * Math.cos(Math.toRadians(yaw + 90.0F)));
 		}
 
 		if (getSetting(1).asToggle().getState()) {
-			if (mc.options.jumpKey.isPressed()) {
-				e.setVelocity(e.getVelocity().x, getSetting(1).asToggle().getChild(0).asSlider().getValue(), e.getVelocity().z);
+			if (mc.options.keyJump.isDown()) {
+				e.setDeltaMovement(e.getDeltaMovement().x, getSetting(1).asToggle().getChild(0).asSlider().getValue(), e.getDeltaMovement().z);
 			} else {
-				e.setVelocity(e.getVelocity().x, -getSetting(1).asToggle().getChild(1).asSlider().getValue(), e.getVelocity().z);
+				e.setDeltaMovement(e.getDeltaMovement().x, -getSetting(1).asToggle().getChild(1).asSlider().getValue(), e.getDeltaMovement().z);
 			}
 		}
 
 		if (getSetting(3).asToggle().getState()) {
-			BlockPos p = BlockPos.ofFloored(e.getPos());
-			if (!mc.world.getBlockState(p.down()).isReplaceable() && e.fallDistance > 0.01) {
-				e.setVelocity(e.getVelocity().x, -1, e.getVelocity().z);
+			BlockPos p = BlockPos.containing(e.position());
+			if (!mc.level.getBlockState(p.below()).canBeReplaced() && e.fallDistance > 0.01) {
+				e.setDeltaMovement(e.getDeltaMovement().x, -1, e.getDeltaMovement().z);
 			}
 		}
 
 		if (getSetting(4).asToggle().getState()) {
-			Vec3 vel = e.getVelocity().multiply(2);
-			if (WorldUtils.doesBoxCollide(e.getBoundingBox().offset(vel.x, 0, vel.z))) {
+			Vec3 vel = e.getDeltaMovement().scale(2);
+			if (WorldUtils.doesBoxCollide(e.getBoundingBox().move(vel.x, 0, vel.z))) {
 				for (int i = 2; i < 10; i++) {
-					if (!WorldUtils.doesBoxCollide(e.getBoundingBox().offset(vel.x / i, 0, vel.z / i))) {
-						e.setVelocity(vel.x / i / 2, vel.y, vel.z / i / 2);
+					if (!WorldUtils.doesBoxCollide(e.getBoundingBox().move(vel.x / i, 0, vel.z / i))) {
+						e.setDeltaMovement(vel.x / i / 2, vel.y, vel.z / i / 2);
 						break;
 					}
 				}
@@ -125,25 +126,25 @@ public class EntityControl extends Module {
 		if (getSetting(6).asToggle().getState()) {
 			if (event.getPacket() instanceof ServerboundMoveVehiclePacket) {
 				ServerboundMoveVehiclePacket packet = (ServerboundMoveVehiclePacket) event.getPacket();
-				packet.yaw = getSetting(6).asToggle().getChild(0).asSlider().getValueFloat();
-				packet.pitch = getSetting(6).asToggle().getChild(1).asSlider().getValueFloat();
+				packet.yRot = getSetting(6).asToggle().getChild(0).asSlider().getValueFloat();
+				packet.xRot = getSetting(6).asToggle().getChild(1).asSlider().getValueFloat();
 			} else if (event.getPacket() instanceof ServerboundMovePlayerPacket
-					&& mc.player.hasVehicle()
+					&& mc.player.isPassenger()
 					&& getSetting(6).asToggle().getChild(2).asToggle().getState()) {
 				ServerboundMovePlayerPacket packet = (ServerboundMovePlayerPacket) event.getPacket();
-				packet.yaw = getSetting(6).asToggle().getChild(0).asSlider().getValueFloat();
-				packet.pitch = getSetting(6).asToggle().getChild(1).asSlider().getValueFloat();
+				packet.yRot = getSetting(6).asToggle().getChild(0).asSlider().getValueFloat();
+				packet.xRot = getSetting(6).asToggle().getChild(1).asSlider().getValueFloat();
 			}
 		}
 
-		if (getSetting(7).asToggle().getState() && event.getPacket() instanceof ServerboundMoveVehiclePacket && mc.player.hasVehicle()) {
-			mc.interactionManager.interactEntity(mc.player, mc.player.getVehicle(), InteractionHand.MAIN_HAND);
+		if (getSetting(7).asToggle().getState() && event.getPacket() instanceof ServerboundMoveVehiclePacket && mc.player.isPassenger()) {
+			mc.gameMode.interact(mc.player, mc.player.getVehicle(), new EntityHitResult(mc.player.getVehicle()), InteractionHand.MAIN_HAND);
 		}
 	}
 
 	@BleachSubscribe
 	public void onReadPacket(EventPacket.Read event) {
-		if (getSetting(7).asToggle().getState() && mc.player != null && mc.player.hasVehicle() && !mc.player.input.sneaking
+		if (getSetting(7).asToggle().getState() && mc.player != null && mc.player.isPassenger() && !mc.player.input.keyPresses.shift()
 				&& (event.getPacket() instanceof ClientboundPlayerPositionPacket || event.getPacket() instanceof ClientboundSetPassengersPacket)) {
 			event.setCancelled(true);
 		}
@@ -151,7 +152,7 @@ public class EntityControl extends Module {
 
 	@BleachSubscribe
 	public void onEntityControl(EventEntityControl event) {
-		if (mc.player.getVehicle() instanceof ItemSteerable && mc.player.forwardSpeed == 0 && mc.player.sidewaysSpeed == 0) {
+		if (mc.player.getVehicle() instanceof ItemSteerable && mc.player.zza == 0 && mc.player.xxa == 0) {
 			return;
 		}
 

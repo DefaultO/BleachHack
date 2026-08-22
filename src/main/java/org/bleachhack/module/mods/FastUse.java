@@ -40,17 +40,17 @@ public class FastUse extends Module {
 	@BleachSubscribe
 	public void onTick(EventTick event) {
 		if (getSetting(2).asToggle().getState()) {
-			if (!(THROWABLE.contains(mc.player.getMainHandStack().getItem())
-					&& (!getSetting(2).asToggle().getChild(0).asToggle().getState() 
-							|| mc.player.getMainHandStack().getItem() == Items.EXPERIENCE_BOTTLE))) {
+			if (!(THROWABLE.contains(mc.player.getMainHandItem().getItem())
+					&& (!getSetting(2).asToggle().getChild(0).asToggle().getState()
+							|| mc.player.getMainHandItem().getItem() == Items.EXPERIENCE_BOTTLE))) {
 				return;
 			}
 		}
 
-		mc.itemUseCooldown = 0;
-		if (getSetting(0).asMode().getMode() == 1 && mc.options.useKey.isPressed()) {
+		mc.rightClickDelay = 0;
+		if (getSetting(0).asMode().getMode() == 1 && mc.options.keyUse.isDown()) {
 			for (int i = 0; i < getSetting(1).asSlider().getValueInt(); i++) {
-				mc.doItemUse();
+				mc.startUseItem();
 			}
 		}
 	}

@@ -46,7 +46,7 @@ public class Fullbright extends Module {
 		}
 
 		if (inWorld)
-			mc.player.removeStatusEffect(MobEffects.NIGHT_VISION);
+			mc.player.removeEffect(MobEffects.NIGHT_VISION);
 	}
 
 	@Override
@@ -64,7 +64,7 @@ public class Fullbright extends Module {
 		}
 
 		if (getSetting(0).asMode().getMode() == 2) {
-			mc.player.addStatusEffect(new MobEffectInstance(MobEffects.NIGHT_VISION, 500, 0));
+			mc.player.addEffect(new MobEffectInstance(MobEffects.NIGHT_VISION, 500, 0));
 		}
 	}
 

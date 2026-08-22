@@ -77,7 +77,7 @@ public class Scaffold extends Module {
 	public void onTick(EventTick event) {
 		renderBlocks.clear();
 
-		int slot = InventoryUtils.getSlot(false, i -> shouldUseItem(mc.player.getInventory().getStack(i).getItem()));
+		int slot = InventoryUtils.getSlot(false, i -> shouldUseItem(mc.player.getInventory().getItem(i).getItem()));
 
 		if (slot == -1) {
 			if (getSetting(10).asToggle().getState()) {
@@ -90,31 +90,31 @@ public class Scaffold extends Module {
 		double range = getSetting(2).asSlider().getValue();
 		int mode = getSetting(0).asMode().getMode();
 
-		Vec3 placeVec = mc.player.getPos().add(0, -0.85, 0);
+		Vec3 placeVec = mc.player.position().add(0, -0.85, 0);
 		Set<BlockPos> blocks = mode == 0
 				? Sets.newHashSet(
-						BlockPos.ofFloored(placeVec),
-						BlockPos.ofFloored(placeVec.add(range, 0, 0)),
-						BlockPos.ofFloored(placeVec.add(-range, 0, 0)),
-						BlockPos.ofFloored(placeVec.add(0, 0, range)),
-						BlockPos.ofFloored(placeVec.add(0, 0, -range)))
-						: getSpiral(mode, BlockPos.ofFloored(placeVec));
+						BlockPos.containing(placeVec),
+						BlockPos.containing(placeVec.add(range, 0, 0)),
+						BlockPos.containing(placeVec.add(-range, 0, 0)),
+						BlockPos.containing(placeVec.add(0, 0, range)),
+						BlockPos.containing(placeVec.add(0, 0, -range)))
+						: getSpiral(mode, BlockPos.containing(placeVec));
 
 		if (getSetting(6).asToggle().getState()
-				&& InputConstants.isKeyPressed(mc.getWindow().getHandle(), InputConstants.fromTranslationKey(mc.options.jumpKey.getBoundKeyTranslationKey()).getCode())) {
+				&& InputConstants.isKeyDown(mc.getWindow(), InputConstants.getKey(mc.options.keyJump.saveString()).getValue())) {
 
-			if (mc.world.getBlockState(mc.player.getBlockPos().down()).isReplaceable()
-					&& !mc.world.getBlockState(mc.player.getBlockPos().down(2)).isReplaceable()
-					&& mc.player.getVelocity().y > 0) {
-				mc.player.setVelocity(mc.player.getVelocity().x, -0.1, mc.player.getVelocity().z);
+			if (mc.level.getBlockState(mc.player.blockPosition().below()).canBeReplaced()
+					&& !mc.level.getBlockState(mc.player.blockPosition().below(2)).canBeReplaced()
+					&& mc.player.getDeltaMovement().y > 0) {
+				mc.player.setDeltaMovement(mc.player.getDeltaMovement().x, -0.1, mc.player.getDeltaMovement().z);
 
 				if (!getSetting(6).asToggle().getChild(0).asToggle().getState()) {
-					mc.player.jump();
+					mc.player.jumpFromGround();
 				}
 			}
 
-			if (getSetting(6).asToggle().getChild(0).asToggle().getState() && mc.player.isOnGround()) {
-				mc.player.jump();
+			if (getSetting(6).asToggle().getChild(0).asToggle().getState() && mc.player.onGround()) {
+				mc.player.jumpFromGround();
 			}
 		}
 
@@ -180,13 +180,13 @@ public class Scaffold extends Module {
 
 			for (int j = 0; j < step; j++) {
 				if (i % 4 == 0) {
-					currentPos = currentPos.add(-1, 0, 0);
+					currentPos = currentPos.offset(-1, 0, 0);
 				} else if (i % 4 == 1) {
-					currentPos = currentPos.add(0, 0, -1);
+					currentPos = currentPos.offset(0, 0, -1);
 				} else if (i % 4 == 2) {
-					currentPos = currentPos.add(1, 0, 0);
+					currentPos = currentPos.offset(1, 0, 0);
 				} else {
-					currentPos = currentPos.add(0, 0, 1);
+					currentPos = currentPos.offset(0, 0, 1);
 				}
 
 				list.add(currentPos);

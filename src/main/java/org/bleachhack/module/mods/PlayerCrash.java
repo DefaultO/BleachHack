@@ -27,8 +27,8 @@ public class PlayerCrash extends Module {
 	@BleachSubscribe
 	public void onTick(EventTick event) {
 		for (int i = 0; i < getSetting(0).asSlider().getValue(); i++) {
-			mc.player.networkHandler.sendPacket(new ServerboundMovePlayerPacket.OnGroundOnly(Math.random() >= 0.5));
-			mc.player.networkHandler.sendPacket(new ServerboundKeepAlivePacket((int) (Math.random() * 8)));
+			mc.player.connection.send(new ServerboundMovePlayerPacket.StatusOnly(Math.random() >= 0.5, false));
+			mc.player.connection.send(new ServerboundKeepAlivePacket((int) (Math.random() * 8)));
 		}
 	}
 

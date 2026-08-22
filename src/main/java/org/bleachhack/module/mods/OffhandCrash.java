@@ -32,9 +32,9 @@ public class OffhandCrash extends Module {
 	@BleachSubscribe
 	public void onTick(EventTick event) {
 		for (int i = 0; i < getSetting(0).asSlider().getValue(); i++) {
-			mc.player.networkHandler.sendPacket(new ServerboundPlayerActionPacket(Action.SWAP_ITEM_WITH_OFFHAND, BlockPos.ORIGIN, Direction.DOWN));
+			mc.player.connection.send(new ServerboundPlayerActionPacket(Action.SWAP_ITEM_WITH_OFFHAND, BlockPos.ZERO, Direction.DOWN));
 			if (getSetting(1).asToggle().getState())
-				mc.player.networkHandler.sendPacket(new ServerboundMovePlayerPacket.OnGroundOnly(true));
+				mc.player.connection.send(new ServerboundMovePlayerPacket.StatusOnly(true, false));
 		}
 	}
 }

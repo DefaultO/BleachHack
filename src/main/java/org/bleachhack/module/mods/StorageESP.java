@@ -9,15 +9,9 @@
 package org.bleachhack.module.mods;
 
 import com.google.gson.JsonSyntaxException;
-import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.ChestBlock;
-import net.minecraft.block.entity.*;
+import net.minecraft.world.level.block.entity.*;
 import net.minecraft.world.level.block.state.properties.ChestType;
-import net.minecraft.client.renderer.LightTexture;
-import net.minecraft.client.renderer.texture.OverlayTexture;
-import net.minecraft.client.renderer.rendertype.RenderTypes;
-import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
-import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.decoration.ItemFrame;
 import net.minecraft.world.entity.vehicle.minecart.MinecartChest;
@@ -29,7 +23,6 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Direction.Axis;
-import net.minecraft.util.RandomSource;
 
 import org.bleachhack.event.events.EventEntityRender;
 import org.bleachhack.event.events.EventWorldRender;
@@ -39,7 +32,6 @@ import org.bleachhack.module.ModuleCategory;
 import org.bleachhack.setting.module.SettingMode;
 import org.bleachhack.setting.module.SettingSlider;
 import org.bleachhack.setting.module.SettingToggle;
-import org.bleachhack.util.BleachLogger;
 import org.bleachhack.util.Boxes;
 import org.bleachhack.util.render.Renderer;
 import org.bleachhack.util.render.color.QuadColor;
@@ -79,7 +71,7 @@ public class StorageESP extends Module {
 		
 		try {
 			shader = new ShaderEffectWrapper(
-					ShaderLoader.loadEffect(mc.getFramebuffer(), new Identifier("bleachhack", "shaders/post/entity_outline.json")));
+					ShaderLoader.loadEffect(mc.gameRenderer.mainRenderTarget(), Identifier.fromNamespaceAndPath("bleachhack", "shaders/post/entity_outline.json")));
 
 			colorVertexer = new ColorVertexConsumerProvider(shader.getFramebuffer("main"), BleachCoreShaders::getColorOverlayShader);
 		} catch (JsonSyntaxException | IOException e) {
@@ -113,26 +105,10 @@ public class StorageESP extends Module {
 				int[] color = getColorForBlock(be);
 
 				if (color != null) {
-					BlockEntityRenderer<BlockEntity> renderer = mc.getBlockEntityRenderDispatcher().get(be);
-					PoseStack matrices = Renderer.matrixFrom(be.getPos().getX(), be.getPos().getY(), be.getPos().getZ());
-					try {
-						if (renderer != null) {
-							renderer.render(be, mc.getTickDelta(), matrices,
-									colorVertexer.createSingleProvider(mc.getBufferBuilders().getEntityVertexConsumers(), color[0], color[1], color[2], getSetting(1).asSlider().getValueInt()),
-									LightTexture.MAX_LIGHT_COORDINATE, OverlayTexture.DEFAULT_UV);
-						} else {
-							BlockState state = be.getCachedState();
-							mc.getBlockRenderManager().getModelRenderer().renderFlat(mc.world,
-									mc.getBlockRenderManager().getModel(state), state, be.getPos(), matrices,
-									colorVertexer.createSingleProvider(mc.getBufferBuilders().getEntityVertexConsumers(), color[0], color[1], color[2], getSetting(1).asSlider().getValueInt()).getBuffer(RenderTypes.getMovingBlockLayer(state)),
-									false, RandomSource.create(0L), 0L, OverlayTexture.DEFAULT_UV);
-						}
-					} catch (Exception e) {
-						BleachLogger.error("Disabling StorageESP, another mod conflicting with shader mode?");
-						e.printStackTrace();
-						setEnabled(false);
-						return;
-					}
+					// TODO(26.2): manual block-entity rendering is gone — BlockEntityRenderer is now a
+					// createRenderState/extractRenderState/submit pipeline and the custom shader pipeline
+					// (ShaderEffectWrapper/ColorVertexConsumerProvider) is stubbed inert, so shader mode
+					// currently draws nothing for block entities.
 				}
 			}
 
@@ -143,13 +119,13 @@ public class StorageESP extends Module {
 			float width = getSetting(2).asSlider().getValueFloat();
 			int fill = getSetting(3).asSlider().getValueInt();
 
-			for (Entity e: mc.world.getEntities()) {
+			for (Entity e: mc.level.entitiesForRendering()) {
 				int[] color = getColorForEntity(e);
 				AABB box = e.getBoundingBox();
 
-				if (e instanceof ItemFrame && ((ItemFrame) e).getHeldItemStack().getItem() == Items.FILLED_MAP) {
-					Axis axis = e.getHorizontalFacing().getAxis();
-					box = box.expand(axis == Axis.X ? 0 : 0.125, axis == Axis.Y ? 0 : 0.125, axis == Axis.Z ? 0 : 0.125);
+				if (e instanceof ItemFrame && ((ItemFrame) e).getItem().is(Items.FILLED_MAP)) {
+					Axis axis = e.getDirection().getAxis();
+					box = box.inflate(axis == Axis.X ? 0 : 0.125, axis == Axis.Y ? 0 : 0.125, axis == Axis.Z ? 0 : 0.125);
 				}
 
 				if (color != null) {
@@ -163,16 +139,16 @@ public class StorageESP extends Module {
 
 			Set<BlockPos> skip = new HashSet<>();
 			for (BlockEntity be: WorldUtils.getBlockEntities()) {
-				if (skip.contains(be.getPos()))
+				if (skip.contains(be.getBlockPos()))
 					continue;
 
 				int[] color = getColorForBlock(be);
-				AABB box = be.getCachedState().getOutlineShape(mc.world, be.getPos()).getBoundingBox().offset(be.getPos());
+				AABB box = be.getBlockState().getShape(mc.level, be.getBlockPos()).bounds().move(be.getBlockPos());
 
 				Direction dir = getChestDirection(be);
 				if (dir != null) {
 					box = Boxes.stretch(box, dir, 0.94);
-					skip.add(be.getPos().offset(dir));
+					skip.add(be.getBlockPos().relative(dir));
 				}
 
 				if (color != null) {
@@ -214,9 +190,9 @@ public class StorageESP extends Module {
 		} else if (e instanceof MinecartHopper && getSetting(13).asToggle().getState()) {
 			return new int[] { 115, 115, 155 };
 		} else if (e instanceof ItemFrame && getSetting(14).asToggle().getState()) {
-			if (((ItemFrame) e).getHeldItemStack().isEmpty()) {
+			if (((ItemFrame) e).getItem().isEmpty()) {
 				return new int[] { 115, 25, 25 };
-			} else if (((ItemFrame) e).getHeldItemStack().getItem() == Items.FILLED_MAP) {
+			} else if (((ItemFrame) e).getItem().is(Items.FILLED_MAP)) {
 				return new int[] { 25, 25, 128 };
 			} else {
 				return new int[] { 25, 115, 25 };
@@ -228,8 +204,8 @@ public class StorageESP extends Module {
 
 	/** returns the direction of the other chest if its linked, otherwise null **/
 	private Direction getChestDirection(BlockEntity entity) {
-		if (entity instanceof ChestBlockEntity && entity.getCachedState().get(ChestBlock.CHEST_TYPE) != ChestType.SINGLE) {
-			return ChestBlock.getFacing(entity.getCachedState());
+		if (entity instanceof ChestBlockEntity && entity.getBlockState().getValue(ChestBlock.TYPE) != ChestType.SINGLE) {
+			return ChestBlock.getConnectedDirection(entity.getBlockState());
 		}
 
 		return null;

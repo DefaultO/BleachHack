@@ -16,9 +16,13 @@ import org.bleachhack.setting.module.SettingSlider;
 import org.bleachhack.setting.module.SettingToggle;
 import org.bleachhack.util.InventoryUtils;
 
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.world.effect.MobEffectCategory;
-import net.minecraft.item.FoodComponent;
-import net.minecraft.item.FoodComponents;
+import net.minecraft.world.food.FoodProperties;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.item.component.Consumable;
+import net.minecraft.world.item.consume_effects.ApplyStatusEffectsConsumeEffect;
 import net.minecraft.world.InteractionHand;
 
 public class AutoEat extends Module {
@@ -39,19 +43,19 @@ public class AutoEat extends Module {
 
 	@Override
 	public void onDisable(boolean inWorld) {
-		mc.options.useKey.setPressed(false);
+		mc.options.keyUse.setDown(false);
 
 		super.onDisable(inWorld);
 	}
 
 	@BleachSubscribe
 	public void onTick(EventTick event) {
-		if (eating && mc.options.useKey.isPressed() && !mc.player.isUsingItem()) {
+		if (eating && mc.options.keyUse.isDown() && !mc.player.isUsingItem()) {
 			eating = false;
-			mc.options.useKey.setPressed(false);
+			mc.options.keyUse.setDown(false);
 		}
 
-		if (getSetting(0).asToggle().getState() && mc.player.getHungerManager().getFoodLevel() <= getSetting(0).asToggle().getChild(0).asSlider().getValueInt()) {
+		if (getSetting(0).asToggle().getState() && mc.player.getFoodData().getFoodLevel() <= getSetting(0).asToggle().getChild(0).asSlider().getValueInt()) {
 			startEating();
 		} else if (getSetting(1).asToggle().getState() && (int) mc.player.getHealth() + (int) mc.player.getAbsorptionAmount() <= getSetting(1).asToggle().getChild(0).asSlider().getValueInt()) {
 			startEating();
@@ -67,18 +71,20 @@ public class AutoEat extends Module {
 		int slot = -1;
 		int hunger = -1;
 		for (int s: InventoryUtils.getInventorySlots(true)) {
-			FoodComponent food = mc.player.getInventory().getStack(s).getItem().getFoodComponent();
+			ItemStack stack = mc.player.getInventory().getItem(s);
+			FoodProperties food = stack.get(DataComponents.FOOD);
 
 			if (food == null)
 				continue;
 
-			int h = preferGapples && (food == FoodComponents.GOLDEN_APPLE || food == FoodComponents.ENCHANTED_GOLDEN_APPLE)
-					? Integer.MAX_VALUE : food.getHunger();
+			boolean isGapple = stack.is(Items.GOLDEN_APPLE) || stack.is(Items.ENCHANTED_GOLDEN_APPLE);
+
+			int h = preferGapples && isGapple ? Integer.MAX_VALUE : food.nutrition();
 
 			if (h <= hunger
-					|| (!gapples && (food == FoodComponents.GOLDEN_APPLE || food == FoodComponents.ENCHANTED_GOLDEN_APPLE))
-					|| (!chorus && food == FoodComponents.CHORUS_FRUIT)
-					|| (!poison && isPoisonous(food)))
+					|| (!gapples && isGapple)
+					|| (!chorus && stack.is(Items.CHORUS_FRUIT))
+					|| (!poison && isPoisonous(stack)))
 				continue;
 
 			slot = s;
@@ -86,9 +92,9 @@ public class AutoEat extends Module {
 		}
 
 		if (hunger != -1) {
-			if (slot == mc.player.getInventory().selectedSlot || slot == 40) {
-				mc.options.useKey.setPressed(true);
-				mc.interactionManager.interactItem(mc.player, slot == 40 ? InteractionHand.OFF_HAND : InteractionHand.MAIN_HAND);
+			if (slot == mc.player.getInventory().getSelectedSlot() || slot == 40) {
+				mc.options.keyUse.setDown(true);
+				mc.gameMode.useItem(mc.player, slot == 40 ? InteractionHand.OFF_HAND : InteractionHand.MAIN_HAND);
 				eating = true;
 			} else {
 				InventoryUtils.selectSlot(slot);
@@ -96,7 +102,12 @@ public class AutoEat extends Module {
 		}
 	}
 
-	private boolean isPoisonous(FoodComponent food) {
-		return food.getStatusEffects().stream().anyMatch(e -> e.getFirst().getEffectType().getCategory() == MobEffectCategory.HARMFUL);
+	private boolean isPoisonous(ItemStack stack) {
+		// 26.2: food status effects moved from FoodProperties to the CONSUMABLE component
+		Consumable consumable = stack.get(DataComponents.CONSUMABLE);
+		return consumable != null && consumable.onConsumeEffects().stream()
+				.filter(e -> e instanceof ApplyStatusEffectsConsumeEffect)
+				.flatMap(e -> ((ApplyStatusEffectsConsumeEffect) e).effects().stream())
+				.anyMatch(e -> e.getEffect().value().getCategory() == MobEffectCategory.HARMFUL);
 	}
 }

@@ -31,18 +31,18 @@ public class AntiVoid extends Module {
 
 	@BleachSubscribe
 	public void onTick(EventTick event) {
-		if (mc.player.getY() < mc.world.getBottomY()) {
+		if (mc.player.getY() < mc.level.getMinY()) {
 			switch (getSetting(0).asMode().getMode()) {
 				case 0:
-					mc.player.jump();
+					mc.player.jumpFromGround();
 					break;
 				case 1:
 					mc.player.setOnGround(true);
 					break;
 				case 2:
-					for (int i = mc.world.getBottomY() + 3; i < mc.world.getTopY() + 1; i++) {
-						if (!WorldUtils.doesBoxCollide(mc.player.getBoundingBox().offset(0, -mc.player.getY() + i, 0))) {
-							mc.player.updatePosition(mc.player.getX(), i, mc.player.getZ());
+					for (int i = mc.level.getMinY() + 3; i < mc.level.getMaxY() + 2; i++) {
+						if (!WorldUtils.doesBoxCollide(mc.player.getBoundingBox().move(0, -mc.player.getY() + i, 0))) {
+							mc.player.snapTo(mc.player.getX(), i, mc.player.getZ());
 							break;
 						}
 					}
@@ -58,27 +58,35 @@ public class AntiVoid extends Module {
 			ServerboundMovePlayerPacket packet = (ServerboundMovePlayerPacket) event.getPacket();
 
 			if (getSetting(1).asToggle().getState()
-					&& mc.player.getY() >= mc.world.getBottomY() && packet.getY(mc.player.getY()) < mc.world.getBottomY()) {
+					&& mc.player.getY() >= mc.level.getMinY() && packet.getY(mc.player.getY()) < mc.level.getMinY()) {
 				event.setCancelled(true);
 				return;
 			}
-			
-			if (getSetting(0).asMode().getMode() == 1 && mc.player.getY() < mc.world.getBottomY() && packet.getY(mc.player.getY()) < mc.player.getY()) {
-				packet.y = mc.player.getY();
+
+			if (getSetting(0).asMode().getMode() == 1 && mc.player.getY() < mc.level.getMinY() && packet.getY(mc.player.getY()) < mc.player.getY()) {
+				// TODO(26.2): packet fields are final now - replace the packet with a y-corrected copy instead of mutating it
+				event.setCancelled(true);
+				if (packet instanceof ServerboundMovePlayerPacket.PosRot) {
+					mc.player.connection.send(new ServerboundMovePlayerPacket.PosRot(packet.getX(0), mc.player.getY(), packet.getZ(0),
+							packet.getYRot(0), packet.getXRot(0), packet.isOnGround(), packet.horizontalCollision()));
+				} else {
+					mc.player.connection.send(new ServerboundMovePlayerPacket.Pos(packet.getX(0), mc.player.getY(), packet.getZ(0),
+							packet.isOnGround(), packet.horizontalCollision()));
+				}
 			}
 		}
 	}
 
 	@BleachSubscribe
 	public void onClientMove(EventClientMove event) {
-		if (getSetting(1).asToggle().getState() && mc.player.getY() >= mc.world.getBottomY() && mc.player.getY() - event.getVec().y < mc.world.getBottomY()) {
+		if (getSetting(1).asToggle().getState() && mc.player.getY() >= mc.level.getMinY() && mc.player.getY() - event.getVec().y < mc.level.getMinY()) {
 			event.setCancelled(true);
 			return;
 		}
-		
-		if (getSetting(0).asMode().getMode() == 1 && mc.player.getY() < mc.world.getBottomY() && event.getVec().y < 0) {
+
+		if (getSetting(0).asMode().getMode() == 1 && mc.player.getY() < mc.level.getMinY() && event.getVec().y < 0) {
 			event.setVec(new Vec3(event.getVec().x, 0, event.getVec().z));
-			mc.player.addVelocity(0, -mc.player.getVelocity().y, 0);
+			mc.player.push(0, -mc.player.getDeltaMovement().y, 0);
 		}
 	}
 

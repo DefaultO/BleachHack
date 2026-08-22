@@ -72,8 +72,8 @@ public class AutoLog extends Module {
 	}
 
 	private Component getLogText() {
-		boolean hasTotem = mc.player.getMainHandStack().getItem() == Items.TOTEM_OF_UNDYING 
-				|| mc.player.getOffHandStack().getItem() == Items.TOTEM_OF_UNDYING;
+		boolean hasTotem = mc.player.getMainHandItem().is(Items.TOTEM_OF_UNDYING)
+				|| mc.player.getOffhandItem().is(Items.TOTEM_OF_UNDYING);
 
 		int playerHealth = (int) (mc.player.getHealth() + mc.player.getAbsorptionAmount());
 
@@ -95,7 +95,7 @@ public class AutoLog extends Module {
 		}
 
 		if (getSetting(1).asToggle().getState() && !hasTotem) {
-			for (Player player: mc.world.getPlayers()) {
+			for (Player player: mc.level.players()) {
 				if ((!getSetting(1).asToggle().getChild(0).asToggle().getState() && BleachHack.friendMang.has(player))
 						|| player == mc.player) {
 					continue;
@@ -110,7 +110,7 @@ public class AutoLog extends Module {
 		}
 
 		if (getSetting(2).asToggle().getState()) {
-			for (Entity e: mc.world.getEntities()) {
+			for (Entity e: mc.level.entitiesForRendering()) {
 				if (e instanceof EndCrystal && mc.player.distanceTo(e) <= getSetting(2).asToggle().getChild(0).asSlider().getValue()) {
 					return Component.literal("[AutoLog] End crystal appeared within range.");
 				}
@@ -122,7 +122,7 @@ public class AutoLog extends Module {
 					? getSetting(3).asToggle().getChild(0).asToggle().getChild(0).asSlider().getValue()
 							: Double.MAX_VALUE;
 
-			for (Player player: mc.world.getPlayers()) {
+			for (Player player: mc.level.players()) {
 				if (!EntityUtils.isOtherServerPlayer(player)
 						|| (!getSetting(3).asToggle().getChild(1).asToggle().getState() && BleachHack.friendMang.has(player))) {
 					continue;
@@ -138,7 +138,7 @@ public class AutoLog extends Module {
 	}
 
 	private void log(Component reason) {
-		mc.player.networkHandler.getConnection().disconnect(reason);
+		mc.player.connection.getConnection().disconnect(reason);
 
 		if (getSetting(4).asToggle().getState()) {
 			smartDisabled = true;

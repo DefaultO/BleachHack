@@ -8,7 +8,7 @@
  */
 package org.bleachhack.module.mods;
 
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import org.bleachhack.event.events.EventOpenScreen;
 import org.bleachhack.event.events.EventPacket;
 import org.bleachhack.eventbus.BleachSubscribe;
@@ -42,7 +42,7 @@ public class AutoReconnect extends Module {
 	public void onOpenScreen(EventOpenScreen event) {
 		if (event.getScreen() instanceof DisconnectedScreen
 				&& !(event.getScreen() instanceof NewDisconnectScreen)) {
-			mc.setScreen(new NewDisconnectScreen((DisconnectedScreen) event.getScreen()));
+			mc.gui.setScreen(new NewDisconnectScreen((DisconnectedScreen) event.getScreen()));
 			event.setCancelled(true);
 		}
 	}
@@ -51,7 +51,7 @@ public class AutoReconnect extends Module {
 	public void sendPacket(EventPacket.Send event) {
 		if (event.getPacket() instanceof ClientIntentionPacket) {
 			ClientIntentionPacket packet = (ClientIntentionPacket) event.getPacket();
-			server = new ServerData("Server", packet.address() + ":" + packet.port(), ServerData.ServerType.LAN);
+			server = new ServerData("Server", packet.hostName() + ":" + packet.port(), ServerData.Type.LAN);
 		}
 	}
 
@@ -62,7 +62,9 @@ public class AutoReconnect extends Module {
 		private Button reconnectButton;
 
 		public NewDisconnectScreen(DisconnectedScreen screen) {
-			super(screen.parent, screen.getTitle(), screen.reason);
+			// TODO(26.2): DisconnectedScreen.parent/details are private now - the parent falls back to the
+			// multiplayer screen and the reason is recovered from the narration message (title + reason).
+			super(new JoinMultiplayerScreen(new TitleScreen()), screen.getTitle(), screen.getNarrationMessage());
 		}
 
 		public void init() {
@@ -71,18 +73,19 @@ public class AutoReconnect extends Module {
 			reconnectTime = System.currentTimeMillis();
 			int buttonH = Math.min(height / 2 + this.height / 2 + 9, height - 30);
 
-			addDrawableChild(Button.builder(Component.literal("Reconnect"), button -> {
+			addRenderableWidget(Button.builder(Component.literal("Reconnect"), button -> {
 				if (server != null)
-					ConnectScreen.connect(new JoinMultiplayerScreen(new TitleScreen()), client, ServerAddress.parse(server.address), server, false);
-			}).position(width / 2 - 100, buttonH + 22).size(200, 20).build());
-			reconnectButton = addDrawableChild(Button.builder(Component.empty(), button -> {
+					ConnectScreen.startConnecting(new JoinMultiplayerScreen(new TitleScreen()), minecraft, ServerAddress.parseString(server.ip), server, false, null);
+			}).pos(width / 2 - 100, buttonH + 22).size(200, 20).build());
+			reconnectButton = addRenderableWidget(Button.builder(Component.empty(), button -> {
 				getSetting(0).asToggle().setValue(!getSetting(0).asToggle().getState());
 				reconnectTime = System.currentTimeMillis();
-			}).position(width / 2 - 100, buttonH + 44).size(200, 20).build());
+			}).pos(width / 2 - 100, buttonH + 44).size(200, 20).build());
 		}
 
-		public void render(GuiGraphics drawContext, int mouseX, int mouseY, float delta) {
-			super.render(drawContext, mouseX, mouseY, delta);
+		@Override
+		public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta) {
+			super.extractRenderState(graphics, mouseX, mouseY, delta);
 
 			int startTime = (int) (getSetting(0).asToggle().getChild(0).asSlider().getValue() * 1000);
 			reconnectButton.setMessage(Component.literal(
@@ -92,7 +95,7 @@ public class AutoReconnect extends Module {
 
 			if (reconnectTime + startTime < System.currentTimeMillis() && getSetting(0).asToggle().getState()) {
 				if (server != null)
-					ConnectScreen.connect(new JoinMultiplayerScreen(new TitleScreen()), client, ServerAddress.parse(server.address), server, false);
+					ConnectScreen.startConnecting(new JoinMultiplayerScreen(new TitleScreen()), minecraft, ServerAddress.parseString(server.ip), server, false, null);
 			}
 		}
 

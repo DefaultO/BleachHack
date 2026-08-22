@@ -43,7 +43,7 @@ public class AutoSign extends Module {
 	@BleachSubscribe
 	public void sendPacket(EventPacket.Send event) {
 		if (event.getPacket() instanceof ServerboundSignUpdatePacket && text.length < 3) {
-			text = ((ServerboundSignUpdatePacket) event.getPacket()).getText();
+			text = ((ServerboundSignUpdatePacket) event.getPacket()).getLines();
 		}
 	}
 
@@ -66,8 +66,8 @@ public class AutoSign extends Module {
 				}
 			}
 
-			SignBlockEntity sign = ((SignEditScreen) event.getScreen()).blockEntity;
-			mc.player.networkHandler.sendPacket(new ServerboundSignUpdatePacket(sign.getPos(), true, text[0], text[1], text[2], text[3]));
+			SignBlockEntity sign = ((SignEditScreen) event.getScreen()).sign;
+			mc.player.connection.send(new ServerboundSignUpdatePacket(sign.getBlockPos(), true, text[0], text[1], text[2], text[3]));
 		}
 	}
 }

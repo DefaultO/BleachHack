@@ -20,17 +20,19 @@ import org.bleachhack.setting.module.SettingSlider;
 import org.bleachhack.setting.module.SettingToggle;
 import org.bleachhack.util.BleachQueue;
 
+import net.minecraft.core.Holder;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.world.item.enchantment.Enchantment;
-import net.minecraft.world.item.enchantment.EnchantmentHelper;
-import net.minecraft.enchantment.ProtectionEnchantment;
+import net.minecraft.world.item.enchantment.Enchantments;
+import net.minecraft.world.item.enchantment.ItemEnchantments;
 import net.minecraft.world.entity.EquipmentSlot;
-import net.minecraft.item.ArmorItem;
-import net.minecraft.item.ElytraItem;
+import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.inventory.ContainerInput;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.item.ToolItem;
+import net.minecraft.world.item.component.ItemAttributeModifiers;
+import net.minecraft.world.item.equipment.Equippable;
 import net.minecraft.network.protocol.game.ServerboundSetCarriedItemPacket;
-import net.minecraft.world.inventory.ClickType;
 
 public class AutoArmor extends Module {
 
@@ -46,7 +48,7 @@ public class AutoArmor extends Module {
 
 	@BleachSubscribe
 	public void onTick(EventTick event) {
-		if (mc.player.playerScreenHandler != mc.player.currentScreenHandler || !BleachQueue.isEmpty("autoarmor_equip"))
+		if (mc.player.inventoryMenu != mc.player.containerMenu || !BleachQueue.isEmpty("autoarmor_equip"))
 			return;
 
 		if (tickDelay > 0) {
@@ -58,28 +60,28 @@ public class AutoArmor extends Module {
 
 		/* [Slot type, [Armor slot, Armor prot, New armor slot, New armor prot]] */
 		Map<EquipmentSlot, int[]> armorMap = new HashMap<>(4);
-		armorMap.put(EquipmentSlot.FEET, new int[] { 36, getProtection(mc.player.getInventory().getStack(36)), -1, -1 });
-		armorMap.put(EquipmentSlot.LEGS, new int[] { 37, getProtection(mc.player.getInventory().getStack(37)), -1, -1 });
-		armorMap.put(EquipmentSlot.CHEST, new int[] { 38, getProtection(mc.player.getInventory().getStack(38)), -1, -1 });
-		armorMap.put(EquipmentSlot.HEAD, new int[] { 39, getProtection(mc.player.getInventory().getStack(39)), -1, -1 });
+		armorMap.put(EquipmentSlot.FEET, new int[] { 36, getProtection(mc.player.getInventory().getItem(36)), -1, -1 });
+		armorMap.put(EquipmentSlot.LEGS, new int[] { 37, getProtection(mc.player.getInventory().getItem(37)), -1, -1 });
+		armorMap.put(EquipmentSlot.CHEST, new int[] { 38, getProtection(mc.player.getInventory().getItem(38)), -1, -1 });
+		armorMap.put(EquipmentSlot.HEAD, new int[] { 39, getProtection(mc.player.getInventory().getItem(39)), -1, -1 });
 
 		/* Anti Break */
 		if (getSetting(0).asToggle().getState()) {
 			for (Entry<EquipmentSlot, int[]> e: armorMap.entrySet()) {
-				ItemStack is = mc.player.getInventory().getStack(e.getValue()[0]);
+				ItemStack is = mc.player.getInventory().getItem(e.getValue()[0]);
 				int armorSlot = (e.getValue()[0] - 34) + (39 - e.getValue()[0]) * 2;
 
-				if (is.isDamageable() && is.getMaxDamage() - is.getDamage() < 7) {
+				if (is.isDamageableItem() && is.getMaxDamage() - is.getDamageValue() < 7) {
 					/* Look for an empty slot to quick move to */
 					int forceMoveSlot = -1;
 					for (int s = 0; s < 36; s++) {
-						if (mc.player.getInventory().getStack(s).isEmpty()) {
-							mc.interactionManager.clickSlot(mc.player.currentScreenHandler.syncId, armorSlot, 1, ClickType.QUICK_MOVE, mc.player);
+						if (mc.player.getInventory().getItem(s).isEmpty()) {
+							mc.gameMode.handleContainerInput(mc.player.containerMenu.containerId, armorSlot, 1, ContainerInput.QUICK_MOVE, mc.player);
 							return;
-						} else if (!(mc.player.getInventory().getStack(s).getItem() instanceof ToolItem)
-								&& !(mc.player.getInventory().getStack(s).getItem() instanceof ArmorItem)
-								&& !(mc.player.getInventory().getStack(s).getItem() instanceof ElytraItem)
-								&& mc.player.getInventory().getStack(s).getItem() != Items.TOTEM_OF_UNDYING && forceMoveSlot == -1) {
+						} else if (!mc.player.getInventory().getItem(s).has(DataComponents.TOOL)
+								&& !isArmor(mc.player.getInventory().getItem(s))
+								&& mc.player.getInventory().getItem(s).getItem() != Items.ELYTRA
+								&& mc.player.getInventory().getItem(s).getItem() != Items.TOTEM_OF_UNDYING && forceMoveSlot == -1) {
 							forceMoveSlot = s;
 						}
 					}
@@ -87,25 +89,26 @@ public class AutoArmor extends Module {
 					/* Bruh no empty spots, then force move to a non-totem/tool/armor item */
 					if (forceMoveSlot != -1) {
 						//System.out.println(forceMoveSlot);
-						mc.interactionManager.clickSlot(mc.player.currentScreenHandler.syncId,
-								forceMoveSlot < 9 ? 36 + forceMoveSlot : forceMoveSlot, 1, ClickType.THROW, mc.player);
-						mc.interactionManager.clickSlot(mc.player.currentScreenHandler.syncId, armorSlot, 1, ClickType.QUICK_MOVE, mc.player);
+						mc.gameMode.handleContainerInput(mc.player.containerMenu.containerId,
+								forceMoveSlot < 9 ? 36 + forceMoveSlot : forceMoveSlot, 1, ContainerInput.THROW, mc.player);
+						mc.gameMode.handleContainerInput(mc.player.containerMenu.containerId, armorSlot, 1, ContainerInput.QUICK_MOVE, mc.player);
 						return;
 					}
 
 					/* No spots to move to, yeet the armor to not cause any bruh moments */
-					mc.interactionManager.clickSlot(mc.player.currentScreenHandler.syncId, armorSlot, 1, ClickType.THROW, mc.player);
+					mc.gameMode.handleContainerInput(mc.player.containerMenu.containerId, armorSlot, 1, ContainerInput.THROW, mc.player);
 					return;
 				}
 			}
 		}
 
 		for (int s = 0; s < 36; s++) {
-			int prot = getProtection(mc.player.getInventory().getStack(s));
+			int prot = getProtection(mc.player.getInventory().getItem(s));
 
 			if (prot > 0) {
-				EquipmentSlot slot = (mc.player.getInventory().getStack(s).getItem() instanceof ElytraItem
-						? EquipmentSlot.CHEST : ((ArmorItem) mc.player.getInventory().getStack(s).getItem()).getSlotType());
+				ItemStack st = mc.player.getInventory().getItem(s);
+				EquipmentSlot slot = (st.getItem() == Items.ELYTRA
+						? EquipmentSlot.CHEST : st.get(DataComponents.EQUIPPABLE).slot());
 
 				for (Entry<EquipmentSlot, int[]> e: armorMap.entrySet()) {
 					if (e.getKey() == slot) {
@@ -121,22 +124,22 @@ public class AutoArmor extends Module {
 		for (Entry<EquipmentSlot, int[]> e: armorMap.entrySet()) {
 			if (e.getValue()[2] != -1) {
 				if (e.getValue()[1] == -1 && e.getValue()[2] < 9) {
-					if (e.getValue()[2] != mc.player.getInventory().selectedSlot) {
-						mc.player.getInventory().selectedSlot = e.getValue()[2];
-						mc.player.networkHandler.sendPacket(new ServerboundSetCarriedItemPacket(e.getValue()[2]));
+					if (e.getValue()[2] != mc.player.getInventory().getSelectedSlot()) {
+						mc.player.getInventory().setSelectedSlot(e.getValue()[2]);
+						mc.player.connection.send(new ServerboundSetCarriedItemPacket(e.getValue()[2]));
 					}
 
-					mc.interactionManager.clickSlot(mc.player.currentScreenHandler.syncId, 36 + e.getValue()[2], 1, ClickType.QUICK_MOVE, mc.player);
-				} else if (mc.player.playerScreenHandler == mc.player.currentScreenHandler) {
+					mc.gameMode.handleContainerInput(mc.player.containerMenu.containerId, 36 + e.getValue()[2], 1, ContainerInput.QUICK_MOVE, mc.player);
+				} else if (mc.player.inventoryMenu == mc.player.containerMenu) {
 					/* Convert inventory slots to container slots */
 					int armorSlot = (e.getValue()[0] - 34) + (39 - e.getValue()[0]) * 2;
 					int newArmorslot = e.getValue()[2] < 9 ? 36 + e.getValue()[2] : e.getValue()[2];
 
-					mc.interactionManager.clickSlot(mc.player.currentScreenHandler.syncId, newArmorslot, 0, ClickType.PICKUP, mc.player);
-					mc.interactionManager.clickSlot(mc.player.currentScreenHandler.syncId, armorSlot, 0, ClickType.PICKUP, mc.player);
+					mc.gameMode.handleContainerInput(mc.player.containerMenu.containerId, newArmorslot, 0, ContainerInput.PICKUP, mc.player);
+					mc.gameMode.handleContainerInput(mc.player.containerMenu.containerId, armorSlot, 0, ContainerInput.PICKUP, mc.player);
 
 					if (e.getValue()[1] != -1)
-						mc.interactionManager.clickSlot(mc.player.currentScreenHandler.syncId, newArmorslot, 0, ClickType.PICKUP, mc.player);
+						mc.gameMode.handleContainerInput(mc.player.containerMenu.containerId, newArmorslot, 0, ContainerInput.PICKUP, mc.player);
 				}
 
 				return;
@@ -145,11 +148,12 @@ public class AutoArmor extends Module {
 	}
 
 	private int getProtection(ItemStack is) {
-		if (is.getItem() instanceof ArmorItem || is.getItem() == Items.ELYTRA) {
+		if (isArmor(is) || is.getItem() == Items.ELYTRA) {
 			int prot = 0;
 
-			if (is.getItem() instanceof ElytraItem) {
-				if (!ElytraItem.isUsable(is))
+			if (is.getItem() == Items.ELYTRA) {
+				// 26.2: ElytraItem.isUsable(stack) -> !stack.nextDamageWillBreak()
+				if (is.nextDamageWillBreak())
 					return 0;
 
 				if (getSetting(1).asToggle().getState()) {
@@ -157,22 +161,42 @@ public class AutoArmor extends Module {
 				} else {
 					prot = 1;
 				}
-			} else if (is.getMaxDamage() - is.getDamage() < 7 && getSetting(0).asToggle().getState()) {
+			} else if (is.getMaxDamage() - is.getDamageValue() < 7 && getSetting(0).asToggle().getState()) {
 				return 0;
 			}
 
-			if (is.hasEnchantments()) {
-				for (Entry<Enchantment, Integer> e: EnchantmentHelper.get(is).entrySet()) {
-					if (e.getKey() instanceof ProtectionEnchantment)
-						prot += e.getValue();
+			if (is.isEnchanted()) {
+				// 26.2: enchantments are data components now, protection enchants matched by key
+				ItemEnchantments ench = is.getEnchantments();
+				for (Holder<Enchantment> e: ench.keySet()) {
+					if (e.is(Enchantments.PROTECTION) || e.is(Enchantments.FIRE_PROTECTION)
+							|| e.is(Enchantments.BLAST_PROTECTION) || e.is(Enchantments.PROJECTILE_PROTECTION)
+							|| e.is(Enchantments.FEATHER_FALLING))
+						prot += ench.getLevel(e);
 				}
 			}
 
-			return (is.getItem() instanceof ArmorItem ? ((ArmorItem) is.getItem()).getProtection() : 0) + prot;
+			return (isArmor(is) ? getArmorPoints(is) : 0) + prot;
 		} else if (!is.isEmpty()) {
 			return 0;
 		}
 
 		return -1;
+	}
+
+	/** 26.2: ArmorItem is gone, armor = item with an EQUIPPABLE component in a humanoid armor slot. */
+	private static boolean isArmor(ItemStack is) {
+		Equippable eq = is.get(DataComponents.EQUIPPABLE);
+		return eq != null && eq.slot().getType() == EquipmentSlot.Type.HUMANOID_ARMOR;
+	}
+
+	/** 26.2: ArmorItem.getProtection() -> armor attribute from the ATTRIBUTE_MODIFIERS component. */
+	private static int getArmorPoints(ItemStack is) {
+		int armor = 0;
+		for (ItemAttributeModifiers.Entry entry: is.getOrDefault(DataComponents.ATTRIBUTE_MODIFIERS, ItemAttributeModifiers.EMPTY).modifiers()) {
+			if (entry.attribute().is(Attributes.ARMOR))
+				armor += (int) entry.modifier().amount();
+		}
+		return armor;
 	}
 }

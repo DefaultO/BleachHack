@@ -22,7 +22,7 @@ import org.bleachhack.util.world.WorldUtils;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.DoublePlantBlock;
-import net.minecraft.client.renderer.rendertype.RenderType;
+import net.minecraft.client.renderer.rendertype.RenderTypes;
 
 public class Xray extends Module {
 
@@ -49,7 +49,7 @@ public class Xray extends Module {
 						Blocks.DEEPSLATE_REDSTONE_ORE,
 						Blocks.DEEPSLATE_DIAMOND_ORE,
 						Blocks.DEEPSLATE_EMERALD_ORE,
-						Blocks.COPPER_BLOCK,
+						Blocks.COPPER_BLOCK.weathering().unaffected(),
 						Blocks.IRON_BLOCK,
 						Blocks.GOLD_BLOCK,
 						Blocks.LAPIS_BLOCK,
@@ -64,18 +64,18 @@ public class Xray extends Module {
 	public void onEnable(boolean inWorld) {
 		super.onEnable(inWorld);
 
-		mc.chunkCullingEnabled = false;
-		mc.worldRenderer.reload();
+		mc.smartCull = false;
+		mc.levelExtractor.allChanged();
 
-		gamma = mc.options.getGamma().getValue();
+		gamma = mc.options.gamma().get();
 	}
 
 	@Override
 	public void onDisable(boolean inWorld) {
-		mc.options.getGamma().setValue(gamma);
+		mc.options.gamma().set(gamma);
 
-		mc.chunkCullingEnabled = true;
-		mc.worldRenderer.reload();
+		mc.smartCull = true;
+		mc.levelExtractor.allChanged();
 
 		super.onDisable(inWorld);
 	}
@@ -116,7 +116,8 @@ public class Xray extends Module {
 					return;
 				}
 
-				event.getVertexConsumer().fixedColor(-1, -1, -1, getSetting(1).asToggle().getChild(0).asSlider().getValueInt());
+				// TODO(26.2): VertexConsumer.fixedColor was removed (color is now per-vertex only),
+				// so the adjustable opacity for non-xray blocks can't be applied here anymore.
 			} else {
 				event.setCancelled(true);
 			}
@@ -126,7 +127,9 @@ public class Xray extends Module {
 	@BleachSubscribe
 	public void onRenderBlockLayer(EventRenderBlock.Layer event) {
 		if (getSetting(1).asToggle().getState() && !getSetting(2).asList(Block.class).contains(event.getState().getBlock())) {
-			event.setLayer(RenderType.getTranslucent());
+			// TODO(26.2): terrain layers are now ChunkSectionLayer, not RenderType;
+			// translucentMovingBlock() is the closest RenderType-based translucent block layer.
+			event.setLayer(RenderTypes.translucentMovingBlock());
 		}
 	}
 

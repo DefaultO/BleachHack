@@ -13,10 +13,9 @@ import org.bleachhack.eventbus.BleachSubscribe;
 import org.bleachhack.module.Module;
 import org.bleachhack.module.ModuleCategory;
 
-import net.minecraft.item.ElytraItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.inventory.ClickType;
+import net.minecraft.world.inventory.ContainerInput;
 
 public class ElytraReplace extends Module {
 
@@ -28,18 +27,18 @@ public class ElytraReplace extends Module {
 
 	@BleachSubscribe
 	public void onTick(EventTick event) {
-		if (mc.player.playerScreenHandler != mc.player.currentScreenHandler)
+		if (mc.player.inventoryMenu != mc.player.containerMenu)
 			return;
 
 		int chestSlot = 38;
-		ItemStack chest = mc.player.getInventory().getStack(chestSlot);
-		if (chest.getItem() instanceof ElytraItem && chest.getDamage() == (Items.ELYTRA.getMaxDamage() - 1)) {
+		ItemStack chest = mc.player.getInventory().getItem(chestSlot);
+		if (chest.getItem() == Items.ELYTRA && chest.getDamageValue() == (chest.getMaxDamage() - 1)) {
 			// search inventory for elytra
 
 			Integer elytraSlot = null;
 			for (int slot = 0; slot < 36; slot++) {
-				ItemStack stack = mc.player.getInventory().getStack(slot);
-				if (stack.getItem() instanceof ElytraItem && stack.getDamage() != (Items.ELYTRA.getMaxDamage() - 1)) {
+				ItemStack stack = mc.player.getInventory().getItem(slot);
+				if (stack.getItem() == Items.ELYTRA && stack.getDamageValue() != (stack.getMaxDamage() - 1)) {
 					elytraSlot = slot;
 					break;
 				}
@@ -49,15 +48,15 @@ public class ElytraReplace extends Module {
 				return;
 			}
 
-			mc.interactionManager.clickSlot(mc.player.currentScreenHandler.syncId, 6, 0, ClickType.PICKUP, mc.player);
-			mc.interactionManager.clickSlot(mc.player.currentScreenHandler.syncId, elytraSlot < 9 ? (elytraSlot + 36) : (elytraSlot), 0, ClickType.PICKUP,
+			mc.gameMode.handleContainerInput(mc.player.containerMenu.containerId, 6, 0, ContainerInput.PICKUP, mc.player);
+			mc.gameMode.handleContainerInput(mc.player.containerMenu.containerId, elytraSlot < 9 ? (elytraSlot + 36) : (elytraSlot), 0, ContainerInput.PICKUP,
 					mc.player);
-			mc.interactionManager.clickSlot(mc.player.currentScreenHandler.syncId, 6, 0, ClickType.PICKUP, mc.player);
+			mc.gameMode.handleContainerInput(mc.player.containerMenu.containerId, 6, 0, ContainerInput.PICKUP, mc.player);
 
-			mc.options.jumpKey.setPressed(true); // Make them fly again
+			mc.options.keyJump.setDown(true); // Make them fly again
 			jump = true;
 		} else if (jump) {
-			mc.options.jumpKey.setPressed(false); // Make them fly again
+			mc.options.keyJump.setDown(false); // Make them fly again
 			jump = false;
 		}
 	}

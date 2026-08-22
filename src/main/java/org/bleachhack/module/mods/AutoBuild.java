@@ -162,12 +162,12 @@ public class AutoBuild extends Module {
 	@BleachSubscribe
 	public void onTick(EventTick event) {
 		if (!active) {
-			ray = (BlockHitResult) mc.player.raycast(40, mc.getTickDelta(), false);
-			Direction dir = ray.getSide().getAxis() == Axis.Y ? Direction.fromRotation(mc.player.getYaw()) : ray.getSide();
+			ray = (BlockHitResult) mc.player.pick(40, mc.getDeltaTracker().getGameTimeDeltaPartialTick(true), false);
+			Direction dir = ray.getDirection().getAxis() == Axis.Y ? Direction.fromYRot(mc.player.getYRot()) : ray.getDirection();
 
-			current = OperationList.create(BLUEPRINTS.get(getSetting(0).asMode().getMode()), ray.getBlockPos().offset(ray.getSide()), dir);
+			current = OperationList.create(BLUEPRINTS.get(getSetting(0).asMode().getMode()), ray.getBlockPos().relative(ray.getDirection()), dir);
 
-			if (mc.mouse.wasLeftButtonClicked() || mc.mouse.wasRightButtonClicked()) {
+			if (mc.mouseHandler.isLeftPressed() || mc.mouseHandler.isRightPressed()) {
 				active = true;
 			}
 		} else {
@@ -190,13 +190,13 @@ public class AutoBuild extends Module {
 				o.render();
 			}
 
-			Renderer.drawBoxOutline(new AABB(current.getNext().pos).contract(0.01), QuadColor.single(1f, 1f, 0f, 0.5f), 3f);
+			Renderer.drawBoxOutline(new AABB(current.getNext().pos).deflate(0.01), QuadColor.single(1f, 1f, 0f, 0.5f), 3f);
 		}
 
 		if (ray != null && !active) {
 			BlockPos pos = ray.getBlockPos();
 
-			Renderer.drawBoxFill(pos, QuadColor.single(1f, 1f, 0f, 0.3f), ArrayUtils.remove(Direction.values(), ray.getSide().ordinal()));
+			Renderer.drawBoxFill(pos, QuadColor.single(1f, 1f, 0f, 0.3f), ArrayUtils.remove(Direction.values(), ray.getDirection().ordinal()));
 		}
 	}
 

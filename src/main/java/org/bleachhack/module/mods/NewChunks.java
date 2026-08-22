@@ -11,6 +11,7 @@ package org.bleachhack.module.mods;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.chunk.status.ChunkStatus;
 import net.minecraft.core.Direction;
 import org.bleachhack.event.events.EventWorldRender;
 import org.bleachhack.eventbus.BleachSubscribe;
@@ -37,13 +38,13 @@ public class NewChunks extends Module {
 	
 	private ChunkProcessor processor = new ChunkProcessor(1,
 			(cp, chunk) -> {
-				if (!newChunks.contains(cp) && mc.world.getChunkManager().getChunk(cp.x, cp.z) == null) {
+				if (!newChunks.contains(cp) && mc.level.getChunkSource().getChunk(cp.x(), cp.z(), ChunkStatus.FULL, false) == null) {
 					for (int x = 0; x < 16; x++) {
-						for (int y = mc.world.getBottomY(); y < mc.world.getTopY(); y++) {
+						for (int y = mc.level.getMinY(); y <= mc.level.getMaxY(); y++) {
 							for (int z = 0; z < 16; z++) {
 								FluidState fluid = chunk.getFluidState(x, y, z);
-								
-								if (!fluid.isEmpty() && !fluid.isStill()) {
+
+								if (!fluid.isEmpty() && !fluid.isSource()) {
 									oldChunks.add(cp);
 									return;
 								}
@@ -54,10 +55,10 @@ public class NewChunks extends Module {
 			},
 			null,
 			(pos, state) -> {
-				if (!state.getFluidState().isEmpty() && !state.getFluidState().isStill()) {
-					ChunkPos cpos = new ChunkPos(pos);
+				if (!state.getFluidState().isEmpty() && !state.getFluidState().isSource()) {
+					ChunkPos cpos = ChunkPos.containing(pos);
 					for (Direction dir: SEARCH_DIRS) {
-						if (mc.world.getBlockState(pos.offset(dir)).getFluidState().isStill() && !oldChunks.contains(cpos)) {
+						if (mc.level.getBlockState(pos.relative(dir)).getFluidState().isSource() && !oldChunks.contains(cpos)) {
 							newChunks.add(cpos);
 							return;
 						}
@@ -96,7 +97,7 @@ public class NewChunks extends Module {
 
 	@BleachSubscribe
 	public void onWorldRender(EventWorldRender.Post event) {
-		int renderY = mc.world.getBottomY() + getSetting(0).asSlider().getValueInt();
+		int renderY = mc.level.getMinY() + getSetting(0).asSlider().getValueInt();
 		int opacity = (int) (getSetting(2).asToggle().getChild(0).asSlider().getValueFloat() * 255);
 
 		if (getSetting(3).asToggle().getState()) {
@@ -106,10 +107,10 @@ public class NewChunks extends Module {
 
 			synchronized (newChunks) {
 				for (ChunkPos c: newChunks) {
-					if (mc.getCameraEntity().getBlockPos().isWithinDistance(c.getStartPos(), 1024)) {
+					if (mc.getCameraEntity().blockPosition().closerThan(c.getWorldPosition(), 1024)) {
 						AABB box = new AABB(
-								c.getStartX(), renderY, c.getStartZ(),
-								c.getStartX() + 16, renderY, c.getStartZ() + 16);
+								c.getMinBlockX(), renderY, c.getMinBlockZ(),
+								c.getMinBlockX() + 16, renderY, c.getMinBlockZ() + 16);
 
 						if (getSetting(2).asToggle().getState()) {
 							Renderer.drawBoxFill(box, fillColor, SKIP_DIRS);
@@ -128,10 +129,10 @@ public class NewChunks extends Module {
 
 			synchronized (oldChunks) {
 				for (ChunkPos c: oldChunks) {
-					if (mc.getCameraEntity().getBlockPos().isWithinDistance(c.getStartPos(), 1024)) {
+					if (mc.getCameraEntity().blockPosition().closerThan(c.getWorldPosition(), 1024)) {
 						AABB box = new AABB(
-								c.getStartX(), renderY, c.getStartZ(),
-								c.getStartX() + 16, renderY, c.getStartZ() + 16);
+								c.getMinBlockX(), renderY, c.getMinBlockZ(),
+								c.getMinBlockX() + 16, renderY, c.getMinBlockZ() + 16);
 
 						if (getSetting(2).asToggle().getState()) {
 							Renderer.drawBoxFill(box, fillColor, SKIP_DIRS);

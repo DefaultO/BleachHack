@@ -32,17 +32,17 @@ public class Jesus extends Module {
 	public void onTick(EventTick event) {
 		Entity e = mc.player.getRootVehicle();
 
-		if (e.isSneaking() || e.fallDistance > 3f) 
+		if (e.isShiftKeyDown() || e.fallDistance > 3f)
 			return;
 
-		if (isSubmerged(e.getPos().add(0, 0.3, 0))) {
-			e.setVelocity(e.getVelocity().x, 0.08, e.getVelocity().z);
-		} else if (isSubmerged(e.getPos().add(0, 0.1, 0))) {
-			e.setVelocity(e.getVelocity().x, 0.05, e.getVelocity().z);
-		} else if (isSubmerged(e.getPos().add(0, 0.05, 0))) {
-			e.setVelocity(e.getVelocity().x, 0.01, e.getVelocity().z);
-		} else if (isSubmerged(e.getPos())) {
-			e.setVelocity(e.getVelocity().x, -0.005, e.getVelocity().z);
+		if (isSubmerged(e.position().add(0, 0.3, 0))) {
+			e.setDeltaMovement(e.getDeltaMovement().x, 0.08, e.getDeltaMovement().z);
+		} else if (isSubmerged(e.position().add(0, 0.1, 0))) {
+			e.setDeltaMovement(e.getDeltaMovement().x, 0.05, e.getDeltaMovement().z);
+		} else if (isSubmerged(e.position().add(0, 0.05, 0))) {
+			e.setDeltaMovement(e.getDeltaMovement().x, 0.01, e.getDeltaMovement().z);
+		} else if (isSubmerged(e.position())) {
+			e.setDeltaMovement(e.getDeltaMovement().x, -0.005, e.getDeltaMovement().z);
 			e.setOnGround(true);
 		}
 	}
@@ -50,18 +50,18 @@ public class Jesus extends Module {
 	@BleachSubscribe
 	public void onBlockShape(EventBlockShape event) {
 		if (getSetting(0).asMode().getMode() == 1
-				&& !mc.world.getFluidState(event.getPos()).isEmpty()
-				&& !mc.player.isSneaking()
-				&& !mc.player.isTouchingWater()
+				&& !mc.level.getFluidState(event.getPos()).isEmpty()
+				&& !mc.player.isShiftKeyDown()
+				&& !mc.player.isInWater()
 				&& mc.player.getY() >= event.getPos().getY() + 0.9) {
-			event.setShape(Shapes.cuboid(0, 0, 0, 1, 0.9, 1));
+			event.setShape(Shapes.box(0, 0, 0, 1, 0.9, 1));
 		}
 	}
 	
 	private boolean isSubmerged(Vec3 pos) {
-		BlockPos bp = BlockPos.ofFloored(pos);
-		FluidState state = mc.world.getFluidState(bp);
+		BlockPos bp = BlockPos.containing(pos);
+		FluidState state = mc.level.getFluidState(bp);
 
-		return !state.isEmpty() && pos.y - bp.getY() <= state.getHeight();
+		return !state.isEmpty() && pos.y - bp.getY() <= state.getOwnHeight();
 	}
 }

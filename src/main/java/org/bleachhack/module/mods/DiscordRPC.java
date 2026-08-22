@@ -112,39 +112,39 @@ public class DiscordRPC extends Module {
 
 		if (tick % 40 == 0) {
 			RichPresence.Builder builder = new RichPresence.Builder()
-					.setLargeImage(silent ? "mc" : "bh", silent ? "Minecraft " + SharedConstants.getGameVersion().getName() : "BleachHack " + BleachHack.VERSION);
+					.setLargeImage(silent ? "mc" : "bh", silent ? "Minecraft " + SharedConstants.getCurrentVersion().name() : "BleachHack " + BleachHack.VERSION);
 
 			// Top text
 			builder.setDetails(switch (getSetting(0).asMode().getMode()) {
-				case 0 ->"Playing " + (mc.getCurrentServerEntry() == null ? "Singleplayer" : mc.getCurrentServerEntry().address);
-				case 1 -> mc.getCurrentServerEntry() == null ? "Singleplayer" : mc.getCurrentServerEntry().address;
-				case 2 -> mc.getCurrentServerEntry() == null ? "Singleplayer" : "Multiplayer";
+				case 0 ->"Playing " + (mc.getCurrentServer() == null ? "Singleplayer" : mc.getCurrentServer().ip);
+				case 1 -> mc.getCurrentServer() == null ? "Singleplayer" : mc.getCurrentServer().ip;
+				case 2 -> mc.getCurrentServer() == null ? "Singleplayer" : "Multiplayer";
 				case 3 -> mc.player.getName() + " Ontop!";
-				case 4 -> "Minecraft " + SharedConstants.getGameVersion().getName();
+				case 4 -> "Minecraft " + SharedConstants.getCurrentVersion().name();
 				case 5 -> mc.player.getDisplayName().toString();
 				case 6 -> "<- bad client";
 				default -> customText1;
 			});
 
 			// Bottom text
-			ItemStack currentItem = mc.player.getInventory().getMainHandStack();
+			ItemStack currentItem = mc.player.getMainHandItem();
 
-			String customName = StringUtils.strip(currentItem.getName().getString());
+			String customName = StringUtils.strip(currentItem.getHoverName().getString());
 			if (customName.length() > 25) {
 				customName = customName.substring(0, 23) + "..";
 			}
 
-			String name = currentItem.getItem().getName().getString();
+			String name = currentItem.getItem().getName(currentItem).getString();
 			String itemName = currentItem.isEmpty() ? "Nothing"
 					: (currentItem.getCount() > 1 ? currentItem.getCount() + " " : "")
-					+ (currentItem.hasCustomName() ? customName : name);
+					+ (currentItem.getCustomName() != null ? customName : name);
 
 			builder.setState(switch (getSetting(1).asMode().getMode()) {
 				case 0 -> (int) mc.player.getHealth() + " hp - Holding " + itemName;
 				case 1 -> mc.player.getName() + " - " + (int) mc.player.getHealth() + " hp";
 				case 2 -> "Holding " + itemName;
-				case 3 -> (int) mc.player.getHealth() + " hp - At " + mc.player.getBlockPos().toShortString();
-				case 4 -> "At " + mc.player.getBlockPos().toShortString();
+				case 3 -> (int) mc.player.getHealth() + " hp - At " + mc.player.blockPosition().toShortString();
+				case 4 -> "At " + mc.player.blockPosition().toShortString();
 				default -> customText2;
 			});
 

@@ -40,41 +40,41 @@ public class ArrowJuke extends Module {
 
 	@BleachSubscribe
 	public void onTick(EventTick envent) {
-		for (Entity e : mc.world.getEntities()) {
-			if (e.age > 75 || !(e instanceof Arrow) || ((Arrow) e).getOwner() == mc.player)
+		for (Entity e : mc.level.entitiesForRendering()) {
+			if (e.tickCount > 75 || !(e instanceof Arrow) || ((Arrow) e).getOwner() == mc.player)
 				continue;
 
 			int mode = getSetting(0).asMode().getMode();
 			int steps = getSetting(2).asSlider().getValueInt();
 
-			AABB playerBox = mc.player.getBoundingBox().expand(0.3);
+			AABB playerBox = mc.player.getBoundingBox().inflate(0.3);
 			List<AABB> futureBoxes = new ArrayList<>(steps);
 
 			AABB currentBox = e.getBoundingBox();
-			Vec3 currentVel = e.getVelocity();
+			Vec3 currentVel = e.getDeltaMovement();
 
 			for (int i = 0; i < steps; i++) {
-				currentBox = currentBox.offset(currentVel);
+				currentBox = currentBox.move(currentVel);
 				currentVel = currentVel.multiply(0.99, 0.94, 0.99);
 				futureBoxes.add(currentBox);
 
-				if (!mc.world.getOtherEntities(null, currentBox).isEmpty() || WorldUtils.doesBoxCollide(currentBox)) {
+				if (!mc.level.getEntities(null, currentBox).isEmpty() || WorldUtils.doesBoxCollide(currentBox)) {
 					break;
 				}
 			}
 
 			for (AABB box: futureBoxes) {
 				if (playerBox.intersects(box)) {
-					for (Vec3 vel : getMoveVecs(e.getVelocity())) {
-						AABB newBox = mc.player.getBoundingBox().offset(vel);
+					for (Vec3 vel : getMoveVecs(e.getDeltaMovement())) {
+						AABB newBox = mc.player.getBoundingBox().move(vel);
 
-						if (!WorldUtils.doesBoxCollide(newBox) && futureBoxes.stream().noneMatch(playerBox.offset(vel)::intersects)) {
+						if (!WorldUtils.doesBoxCollide(newBox) && futureBoxes.stream().noneMatch(playerBox.move(vel)::intersects)) {
 							if (mode == 0 && vel.y == 0) {
-								mc.player.setVelocity(vel);
+								mc.player.setDeltaMovement(vel);
 							} else {
-								mc.player.updatePosition(mc.player.getX() + vel.x, mc.player.getY() + vel.y, mc.player.getZ() + vel.z);
-								mc.player.networkHandler.sendPacket(
-										new ServerboundMovePlayerPacket.PositionAndOnGround(mc.player.getX(), mc.player.getY(), mc.player.getZ(), false));
+								mc.player.absSnapTo(mc.player.getX() + vel.x, mc.player.getY() + vel.y, mc.player.getZ() + vel.z);
+								mc.player.connection.send(
+										new ServerboundMovePlayerPacket.Pos(mc.player.getX(), mc.player.getY(), mc.player.getZ(), false, false));
 							}
 
 							return;
@@ -89,8 +89,8 @@ public class ArrowJuke extends Module {
 		double speed = getSetting(1).asSlider().getValue();
 
 		List<Vec3> list = new ArrayList<>(Arrays.asList(
-				arrowVec.subtract(0, arrowVec.y, 0).normalize().multiply(speed).rotateY((float) -Math.toRadians(90f)),
-				arrowVec.subtract(0, arrowVec.y, 0).normalize().multiply(speed).rotateY((float) Math.toRadians(90f))));
+				arrowVec.subtract(0, arrowVec.y, 0).normalize().scale(speed).yRot((float) -Math.toRadians(90f)),
+				arrowVec.subtract(0, arrowVec.y, 0).normalize().scale(speed).yRot((float) Math.toRadians(90f))));
 
 		Collections.shuffle(list);
 

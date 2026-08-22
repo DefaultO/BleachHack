@@ -36,7 +36,7 @@ public class MouseFriend extends Module {
 		int setting = getSetting(0).asMode().getMode();
 		int button = setting == 0 ? GLFW.GLFW_MOUSE_BUTTON_MIDDLE : setting == 1 ? GLFW.GLFW_MOUSE_BUTTON_RIGHT : setting + 2;
 
-		if (GLFW.glfwGetMouseButton(mc.getWindow().getHandle(), button) == GLFW.GLFW_PRESS && !buttonHeld) {
+		if (GLFW.glfwGetMouseButton(mc.getWindow().handle(), button) == GLFW.GLFW_PRESS && !buttonHeld) {
 			buttonHeld = true;
 
 			Optional<Entity> lookingAt = DebugRenderer.getTargetedEntity(mc.player, 200);
@@ -52,7 +52,7 @@ public class MouseFriend extends Module {
 					}
 				}
 			}
-		} else if (GLFW.glfwGetMouseButton(mc.getWindow().getHandle(), button) == GLFW.GLFW_RELEASE) {
+		} else if (GLFW.glfwGetMouseButton(mc.getWindow().handle(), button) == GLFW.GLFW_RELEASE) {
 			buttonHeld = false;
 		}
 	}

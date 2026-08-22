@@ -44,58 +44,58 @@ public class Flight extends Module {
 	public void onTick(EventTick event) {
 		float speed = getSetting(1).asSlider().getValueFloat();
 
-		if (mc.player.age % 20 == 0 && getSetting(2).asMode().getMode() == 3 && !(getSetting(0).asMode().getMode() == 1)) {
-			mc.player.networkHandler.sendPacket(new ServerboundMovePlayerPacket.PositionAndOnGround(mc.player.getX(), mc.player.getY() - 0.069, mc.player.getZ(), false));
-			mc.player.networkHandler.sendPacket(new ServerboundMovePlayerPacket.PositionAndOnGround(mc.player.getX(), mc.player.getZ() + 0.069, mc.player.getZ(), true));
+		if (mc.player.tickCount % 20 == 0 && getSetting(2).asMode().getMode() == 3 && !(getSetting(0).asMode().getMode() == 1)) {
+			mc.player.connection.send(new ServerboundMovePlayerPacket.Pos(mc.player.getX(), mc.player.getY() - 0.069, mc.player.getZ(), false, false));
+			mc.player.connection.send(new ServerboundMovePlayerPacket.Pos(mc.player.getX(), mc.player.getZ() + 0.069, mc.player.getZ(), true, false));
 		}
 
 		if (getSetting(0).asMode().getMode() == 0) {
 			Vec3 antiKickVel = Vec3.ZERO;
 
 			if (getSetting(2).asMode().getMode() == 1
-					&& mc.player.age % 20 == 0
-					&& mc.world.getBlockState(BlockPos.ofFloored(mc.player.getPos().add(0, -0.069, 0))).isReplaceable()) {
+					&& mc.player.tickCount % 20 == 0
+					&& mc.level.getBlockState(BlockPos.containing(mc.player.position().add(0, -0.069, 0))).canBeReplaced()) {
 				antiKickVel = antiKickVel.add(0, -0.069, 0);
 			} else if (getSetting(2).asMode().getMode() == 2) {
-				if (mc.player.age % 40 == 0) {
-					if (mc.world.getBlockState(BlockPos.ofFloored(mc.player.getPos().add(0, 0.15, 0))).isReplaceable()) {
+				if (mc.player.tickCount % 40 == 0) {
+					if (mc.level.getBlockState(BlockPos.containing(mc.player.position().add(0, 0.15, 0))).canBeReplaced()) {
 						antiKickVel = antiKickVel.add(0, 0.15, 0);
 					}
-				} else if (mc.player.age % 20 == 0) {
-					if (mc.world.getBlockState(BlockPos.ofFloored(mc.player.getPos().add(0, -0.15, 0))).isReplaceable()) {
+				} else if (mc.player.tickCount % 20 == 0) {
+					if (mc.level.getBlockState(BlockPos.containing(mc.player.position().add(0, -0.15, 0))).canBeReplaced()) {
 						antiKickVel = antiKickVel.add(0, -0.15, 0);
 					}
 				}
 			}
 
-			mc.player.setVelocity(antiKickVel);
+			mc.player.setDeltaMovement(antiKickVel);
 
-			Vec3 forward = new Vec3(0, 0, speed).rotateY(-(float) Math.toRadians(mc.player.getYaw()));
-			Vec3 strafe = forward.rotateY((float) Math.toRadians(90));
+			Vec3 forward = new Vec3(0, 0, speed).yRot(-(float) Math.toRadians(mc.player.getYRot()));
+			Vec3 strafe = forward.yRot((float) Math.toRadians(90));
 
-			if (mc.options.jumpKey.isPressed())
-				mc.player.setVelocity(mc.player.getVelocity().add(0, speed, 0));
-			if (mc.options.sneakKey.isPressed())
-				mc.player.setVelocity(mc.player.getVelocity().add(0, -speed, 0));
-			if (mc.options.backKey.isPressed())
-				mc.player.setVelocity(mc.player.getVelocity().add(-forward.x, 0, -forward.z));
-			if (mc.options.forwardKey.isPressed())
-				mc.player.setVelocity(mc.player.getVelocity().add(forward.x, 0, forward.z));
-			if (mc.options.leftKey.isPressed())
-				mc.player.setVelocity(mc.player.getVelocity().add(strafe.x, 0, strafe.z));
-			if (mc.options.rightKey.isPressed())
-				mc.player.setVelocity(mc.player.getVelocity().add(-strafe.x, 0, -strafe.z));
+			if (mc.options.keyJump.isDown())
+				mc.player.setDeltaMovement(mc.player.getDeltaMovement().add(0, speed, 0));
+			if (mc.options.keyShift.isDown())
+				mc.player.setDeltaMovement(mc.player.getDeltaMovement().add(0, -speed, 0));
+			if (mc.options.keyDown.isDown())
+				mc.player.setDeltaMovement(mc.player.getDeltaMovement().add(-forward.x, 0, -forward.z));
+			if (mc.options.keyUp.isDown())
+				mc.player.setDeltaMovement(mc.player.getDeltaMovement().add(forward.x, 0, forward.z));
+			if (mc.options.keyLeft.isDown())
+				mc.player.setDeltaMovement(mc.player.getDeltaMovement().add(strafe.x, 0, strafe.z));
+			if (mc.options.keyRight.isDown())
+				mc.player.setDeltaMovement(mc.player.getDeltaMovement().add(-strafe.x, 0, -strafe.z));
 
 		} else if (getSetting(0).asMode().getMode() == 1) {
-			if (!mc.options.jumpKey.isPressed())
+			if (!mc.options.keyJump.isDown())
 				return;
-			mc.player.setVelocity(mc.player.getVelocity().x, speed / 3, mc.player.getVelocity().z);
+			mc.player.setDeltaMovement(mc.player.getDeltaMovement().x, speed / 3, mc.player.getDeltaMovement().z);
 		} else if (getSetting(0).asMode().getMode() == 2) {
-			if (InputConstants.isKeyPressed(mc.getWindow().getHandle(), InputConstants.fromTranslationKey(mc.options.jumpKey.getBoundKeyTranslationKey()).getCode())) {
-				mc.player.jump();
+			if (InputConstants.isKeyDown(mc.getWindow(), InputConstants.getKey(mc.options.keyJump.saveString()).getValue())) {
+				mc.player.jumpFromGround();
 			} else {
-				if (InputConstants.isKeyPressed(mc.getWindow().getHandle(), InputConstants.fromTranslationKey(mc.options.jumpKey.getBoundKeyTranslationKey()).getCode())) {
-					mc.player.updatePosition(mc.player.getX(), mc.player.getY() - speed / 10f, mc.player.getZ());
+				if (InputConstants.isKeyDown(mc.getWindow(), InputConstants.getKey(mc.options.keyJump.saveString()).getValue())) {
+					mc.player.setPos(mc.player.getX(), mc.player.getY() - speed / 10f, mc.player.getZ());
 				}
 			}
 		}
@@ -107,7 +107,17 @@ public class Flight extends Module {
 			if (!flyTick) {
 				boolean onGround = true;// mc.player.fallDistance >= 0.1f;
 				mc.player.setOnGround(onGround);
-				((ServerboundMovePlayerPacket) event.getPacket()).onGround = onGround;
+				// TODO(26.2): onGround is protected final now - rebuild the packet with the spoofed flag instead
+				ServerboundMovePlayerPacket p = (ServerboundMovePlayerPacket) event.getPacket();
+				if (p.hasPosition() && p.hasRotation()) {
+					event.setPacket(new ServerboundMovePlayerPacket.PosRot(p.getX(0), p.getY(0), p.getZ(0), p.getYRot(0), p.getXRot(0), onGround, p.horizontalCollision()));
+				} else if (p.hasPosition()) {
+					event.setPacket(new ServerboundMovePlayerPacket.Pos(p.getX(0), p.getY(0), p.getZ(0), onGround, p.horizontalCollision()));
+				} else if (p.hasRotation()) {
+					event.setPacket(new ServerboundMovePlayerPacket.Rot(p.getYRot(0), p.getXRot(0), onGround, p.horizontalCollision()));
+				} else {
+					event.setPacket(new ServerboundMovePlayerPacket.StatusOnly(onGround, p.horizontalCollision()));
+				}
 
 				flyTick = true;
 			} else {

@@ -10,7 +10,7 @@ package org.bleachhack.module.mods;
 
 import net.minecraft.world.level.block.LadderBlock;
 import net.minecraft.network.protocol.game.ServerboundPlayerCommandPacket;
-import net.minecraft.network.protocol.game.ServerboundPlayerCommandPacket.Mode;
+import net.minecraft.network.protocol.game.ServerboundPlayerCommandPacket.Action;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
@@ -55,34 +55,34 @@ public class AutoParkour extends Module {
 	@BleachSubscribe
 	public void onTick(EventTick event) {
 		if (smartPos != null) {
-			if (mc.player.getY() - 0.5 < smartPos.getY() && mc.player.getVelocity().y < 0) {
+			if (mc.player.getY() - 0.5 < smartPos.getY() && mc.player.getDeltaMovement().y < 0) {
 				smartPos = null;
 			}
 		}
 
-		if (!mc.player.isSneaking() && mc.player.isOnGround()) {
+		if (!mc.player.isShiftKeyDown() && mc.player.onGround()) {
 			smartPos = null;
 
-			AABB box = mc.player.getBoundingBox().offset(0, -0.51, 0);
-			Iterable<VoxelShape> blockCollisions = mc.world.getBlockCollisions(mc.player, box);
+			AABB box = mc.player.getBoundingBox().move(0, -0.51, 0);
+			Iterable<VoxelShape> blockCollisions = mc.level.getBlockCollisions(mc.player, box);
 
 			if (!blockCollisions.iterator().hasNext()) {
 				if (getSetting(0).asToggle().getState() && !mc.player.isSprinting()) {
 					mc.player.setSprinting(true);
-					mc.player.networkHandler.sendPacket(new ServerboundPlayerCommandPacket(mc.player, Mode.START_SPRINTING));
+					mc.player.connection.send(new ServerboundPlayerCommandPacket(mc.player, Action.START_SPRINTING));
 				}
 
 				if (getSetting(1).asToggle().getState()) {
-					Vec3 lookVec = mc.player.getPos().add(new Vec3(0, 0, 3.5).rotateY(-(float) Math.toRadians(mc.player.getYaw())));
+					Vec3 lookVec = mc.player.position().add(new Vec3(0, 0, 3.5).yRot(-(float) Math.toRadians(mc.player.getYRot())));
 
-					BlockPos nearestPos = BlockPos.streamOutwards(mc.player.getBlockPos().down(), 4, 1, 4)
-							.map(BlockPos::toImmutable)
-							.filter(pos -> (mc.world.isTopSolid(pos, mc.player) && !mc.world.getBlockCollisions(mc.player, new AABB(new Vec3(pos.getX(), pos.getY(), pos.getZ()), new Vec3(1, 3, 1))).iterator().hasNext())
-									|| mc.world.getBlockState(pos).getBlock() instanceof LadderBlock
-									|| mc.world.getBlockState(pos.up()).getBlock() instanceof LadderBlock)
-							.filter(pos -> mc.player.getPos().distanceTo(Vec3.of(pos).add(0.5, 1, 0.5)) >= 1)
-							.filter(pos -> mc.player.getPos().distanceTo(Vec3.of(pos).add(0.5, 1, 0.5)) <= 4.5 /* ? */)
-							.sorted(Comparator.comparing(pos -> pos.getSquaredDistance(lookVec)))
+					BlockPos nearestPos = BlockPos.withinManhattanStream(mc.player.blockPosition().below(), 4, 1, 4)
+							.map(BlockPos::immutable)
+							.filter(pos -> (mc.level.loadedAndEntityCanStandOn(pos, mc.player) && !mc.level.getBlockCollisions(mc.player, new AABB(new Vec3(pos.getX(), pos.getY(), pos.getZ()), new Vec3(1, 3, 1))).iterator().hasNext())
+									|| mc.level.getBlockState(pos).getBlock() instanceof LadderBlock
+									|| mc.level.getBlockState(pos.above()).getBlock() instanceof LadderBlock)
+							.filter(pos -> mc.player.position().distanceTo(Vec3.atLowerCornerOf(pos).add(0.5, 1, 0.5)) >= 1)
+							.filter(pos -> mc.player.position().distanceTo(Vec3.atLowerCornerOf(pos).add(0.5, 1, 0.5)) <= 4.5 /* ? */)
+							.sorted(Comparator.comparing(pos -> pos.distToCenterSqr(lookVec)))
 							.findFirst().orElse(null);
 
 					if (nearestPos != null) {
@@ -90,7 +90,7 @@ public class AutoParkour extends Module {
 					}
 				}
 
-				mc.player.jump();
+				mc.player.jumpFromGround();
 			}
 		}
 	}
@@ -125,7 +125,7 @@ public class AutoParkour extends Module {
 
 			float currentYaw = (float) Math.toDegrees(Math.atan2(currentDiffZ, currentDiffX)) - 90F;
 
-			event.setVec(event.getVec().rotateY(-(float) Math.toRadians(targetYaw - currentYaw)));
+			event.setVec(event.getVec().yRot(-(float) Math.toRadians(targetYaw - currentYaw)));
 		}
 	}
 }

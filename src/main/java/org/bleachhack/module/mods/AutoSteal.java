@@ -20,7 +20,7 @@ import net.minecraft.network.protocol.game.ClientboundContainerSetContentPacket;
 import net.minecraft.network.protocol.game.ClientboundContainerSetSlotPacket;
 import net.minecraft.world.inventory.ChestMenu;
 import net.minecraft.world.inventory.AbstractContainerMenu;
-import net.minecraft.world.inventory.ClickType;
+import net.minecraft.world.inventory.ContainerInput;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.phys.BlockHitResult;
@@ -112,13 +112,13 @@ public class AutoSteal extends Module {
 						}
 
 						int fi = i;
-						boolean openSlot = InventoryUtils.getSlot(false, j -> mc.player.getInventory().getStack(j).isEmpty()
-								|| (mc.player.getInventory().getStack(j).isStackable()
-										&& mc.player.getInventory().getStack(j).getCount() < mc.player.getInventory().getStack(j).getMaxCount()
-										&& currentItems.get(fi).equals(mc.player.getInventory().getStack(j)))) != 1;
+						boolean openSlot = InventoryUtils.getSlot(false, j -> mc.player.getInventory().getItem(j).isEmpty()
+								|| (mc.player.getInventory().getItem(j).isStackable()
+										&& mc.player.getInventory().getItem(j).getCount() < mc.player.getInventory().getItem(j).getMaxStackSize()
+										&& currentItems.get(fi).equals(mc.player.getInventory().getItem(j)))) != 1;
 
 						if (openSlot) {
-							mc.interactionManager.clickSlot(currentSyncId, i, 0, ClickType.QUICK_MOVE, mc.player);
+							mc.gameMode.handleContainerInput(currentSyncId, i, 0, ContainerInput.QUICK_MOVE, mc.player);
 							currentItems.set(i, ItemStack.EMPTY);
 
 							lastSteal = currentTime + RandomUtils.nextInt(0, getSetting(2).asSlider().getValueInt() + 1);
@@ -129,24 +129,24 @@ public class AutoSteal extends Module {
 				}
 
 				if (getSetting(0).asMode().getMode() >= 1 || getSetting(3).asToggle().getState()) {
-					mc.setScreen(null);
-					mc.player.networkHandler.sendPacket(new ServerboundContainerClosePacket(currentSyncId));
+					mc.gui.setScreen(null);
+					mc.player.connection.send(new ServerboundContainerClosePacket(currentSyncId));
 				}
 			}
 		} else if (currentItems == null && currentSyncId == -1 && getSetting(3).asToggle().getState()) {
 			for (BlockEntity be: WorldUtils.getBlockEntities()) {
-				if (!opened.containsKey(be.getPos())
+				if (!opened.containsKey(be.getBlockPos())
 						&& be instanceof ChestBlockEntity
-						&& mc.player.getEyePos().distanceTo(Vec3.ofCenter(be.getPos())) <= getSetting(3).asToggle().getChild(0).asSlider().getValue() + 0.25) {
+						&& mc.player.getEyePosition().distanceTo(Vec3.atCenterOf(be.getBlockPos())) <= getSetting(3).asToggle().getChild(0).asSlider().getValue() + 0.25) {
 
-					Vec3 lookVec = Vec3.ofCenter(be.getPos(), 1);
+					Vec3 lookVec = Vec3.upFromBottomCenterOf(be.getBlockPos(), 1);
 					if (getSetting(3).asToggle().getChild(2).asRotate().getState()) {
 						WorldUtils.facePosAuto(lookVec.x, lookVec.y, lookVec.z, getSetting(3).asToggle().getChild(2).asRotate());
 					}
 
-					mc.interactionManager.interactBlock(mc.player, InteractionHand.MAIN_HAND,
-							new BlockHitResult(lookVec, Direction.UP, be.getPos(), false));
-					opened.put(be.getPos(), getSetting(3).asToggle().getChild(1).asSlider().getValueInt() * 20);
+					mc.gameMode.useItemOn(mc.player, InteractionHand.MAIN_HAND,
+							new BlockHitResult(lookVec, Direction.UP, be.getBlockPos(), false));
+					opened.put(be.getBlockPos(), getSetting(3).asToggle().getChild(1).asSlider().getValueInt() * 20);
 					return;
 				}
 			}
@@ -173,7 +173,7 @@ public class AutoSteal extends Module {
 					WorldRenderer.drawGuiItem(startPos.x, startPos.y - i / 9 * 0.4, startPos.z, (4.5 - i % 9) * 0.3, 0, 0.3, renderItems.get(i));
 
 					if (renderItems.get(i).getCount() > 1) {
-						double w = mc.textRenderer.getWidth(renderItems.get(i).getCount() + "") / 220d;
+						double w = mc.font.width(renderItems.get(i).getCount() + "") / 220d;
 						WorldRenderer.drawText(
 								Component.literal(renderItems.get(i).getCount() + ""),
 								startPos.x, startPos.y - i / 9 * 0.4 - 0.04, startPos.z, (4.5 - i % 9) * 0.3 - w, 0, 0.5, false);
@@ -193,10 +193,10 @@ public class AutoSteal extends Module {
 
 		if (mc.player != null) {
 			if (event.getScreen() instanceof AbstractContainerScreen) {
-				AbstractContainerMenu handler = ((AbstractContainerScreen<?>) event.getScreen()).getScreenHandler();
+				AbstractContainerMenu handler = ((AbstractContainerScreen<?>) event.getScreen()).getMenu();
 
 				if (handler instanceof ChestMenu) {
-					currentSyncId = handler.syncId;
+					currentSyncId = handler.containerId;
 					lastOpen = currentTime;
 
 					if (getSetting(0).asMode().getMode() >= 1) {
@@ -204,11 +204,11 @@ public class AutoSteal extends Module {
 					}
 				} else {
 					currentItems = null;
-					mc.player.networkHandler.sendPacket(new ServerboundContainerClosePacket(currentSyncId));
+					mc.player.connection.send(new ServerboundContainerClosePacket(currentSyncId));
 				}
 			} else {
 				currentItems = null;
-				mc.player.networkHandler.sendPacket(new ServerboundContainerClosePacket(currentSyncId));
+				mc.player.connection.send(new ServerboundContainerClosePacket(currentSyncId));
 			}
 		}
 	}
@@ -221,9 +221,9 @@ public class AutoSteal extends Module {
 		}
 
 		if (event.getPacket() instanceof ServerboundUseItemOnPacket) {
-			BlockPos pos = ((ServerboundUseItemOnPacket) event.getPacket()).getBlockHitResult().getBlockPos();
+			BlockPos pos = ((ServerboundUseItemOnPacket) event.getPacket()).getHitResult().getBlockPos();
 
-			if (mc.world.getBlockState(pos).getBlock() instanceof ChestBlock) {
+			if (mc.level.getBlockState(pos).getBlock() instanceof ChestBlock) {
 				currentPos = pos;
 			}
 		}
@@ -234,15 +234,16 @@ public class AutoSteal extends Module {
 		if (event.getPacket() instanceof ClientboundContainerSetContentPacket) {
 			ClientboundContainerSetContentPacket packet = (ClientboundContainerSetContentPacket) event.getPacket();
 
-			if ((lastOpen - currentTime >= 2 || currentItems == null) && packet.getContents().size() == 63 || packet.getContents().size() == 90) {
-				currentItems = packet.getContents().subList(0, packet.getContents().size() - 36);
+			if ((lastOpen - currentTime >= 2 || currentItems == null) && packet.items().size() == 63 || packet.items().size() == 90) {
+				// copy: the packet record's item list may be immutable, and we mutate currentItems
+				currentItems = new ArrayList<>(packet.items().subList(0, packet.items().size() - 36));
 				//currentSyncId = -1;
 			}
 		} else if (currentItems != null && event.getPacket() instanceof ClientboundContainerSetSlotPacket) {
 			ClientboundContainerSetSlotPacket packet = (ClientboundContainerSetSlotPacket) event.getPacket();
 
-			if (packet.getSyncId() == currentSyncId && packet.getSlot() >= 0 && packet.getSlot() < currentItems.size()) {
-				currentItems.set(packet.getSlot(), packet.getStack());
+			if (packet.getContainerId() == currentSyncId && packet.getSlot() >= 0 && packet.getSlot() < currentItems.size()) {
+				currentItems.set(packet.getSlot(), packet.getItem());
 			}
 		}
 	}

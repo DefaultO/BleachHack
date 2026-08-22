@@ -9,9 +9,14 @@ import org.bleachhack.setting.module.SettingSlider;
 import org.bleachhack.setting.module.SettingToggle;
 import org.bleachhack.util.BleachLogger;
 
+import net.minecraft.util.context.ContextMap;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.crafting.display.SlotDisplayContext;
 import net.minecraft.world.inventory.CraftingMenu;
-import net.minecraft.world.inventory.ClickType;
+import net.minecraft.world.inventory.ContainerInput;
+
+import java.util.List;
 
 public class AutoCraft extends Module {
 
@@ -49,26 +54,27 @@ public class AutoCraft extends Module {
 			return;
 		}
 
-		if (!(mc.player.currentScreenHandler instanceof CraftingMenu))
+		if (!(mc.player.containerMenu instanceof CraftingMenu handler))
 			return;
 
 		// quick hack
-		CraftingMenu handler = (CraftingMenu) mc.player.currentScreenHandler;
-		mc.player.getRecipeBook().setGuiOpen(handler.getCategory(), true);
-
-		CraftingMenu currentScreenHandler = (CraftingMenu) mc.player.currentScreenHandler;
-		var recipeResultCollectionList = mc.player.getRecipeBook().getOrderedResults();
+		mc.player.getRecipeBook().setOpen(handler.getRecipeBookType(), true);
 
 		boolean craftAll = getSetting(1).asToggle().getState();
 		boolean drop = getSetting(2).asToggle().getState();
 
-		for (var recipeResultCollection : recipeResultCollectionList) {
-			for (var recipe : recipeResultCollection.getAllRecipes()) {
-				var output = recipe.value().getResult(mc.getNetworkHandler().getRegistryManager()).getItem();
-				if (getSetting(0).asList(Item.class).contains(output)) {
-					mc.interactionManager.clickRecipe(currentScreenHandler.syncId, recipe, craftAll);
-					mc.interactionManager.clickSlot(currentScreenHandler.syncId, 0, 0,
-							drop ? ClickType.THROW : ClickType.QUICK_MOVE, mc.player);
+		ContextMap context = SlotDisplayContext.fromLevel(mc.level);
+
+		for (var recipeCollection : mc.player.getRecipeBook().getCollections()) {
+			for (var recipe : recipeCollection.getRecipes()) {
+				List<ItemStack> results = recipe.resultItems(context);
+				if (results.isEmpty())
+					continue;
+
+				if (getSetting(0).asList(Item.class).contains(results.get(0).getItem())) {
+					mc.gameMode.handlePlaceRecipe(handler.containerId, recipe.id(), craftAll);
+					mc.gameMode.handleContainerInput(handler.containerId, 0, 0,
+							drop ? ContainerInput.THROW : ContainerInput.QUICK_MOVE, mc.player);
 
 					crafted++;
 					return;

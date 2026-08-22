@@ -8,7 +8,6 @@
  */
 package org.bleachhack.module.mods;
 
-import net.minecraft.client.gui.GuiGraphics;
 import org.bleachhack.event.events.EventOpenScreen;
 import org.bleachhack.event.events.EventPacket;
 import org.bleachhack.event.events.EventRenderInGameHud;
@@ -25,7 +24,6 @@ import net.minecraft.network.protocol.game.ClientboundLoginPacket;
 public class DeathExplorer extends Module {
 
 	private boolean dead;
-	GuiGraphics drawContext = new GuiGraphics(mc, mc.getBufferBuilders().getEffectVertexConsumers());
 
 	public DeathExplorer() {
 		super("DeathExplorer", KEY_UNBOUND, ModuleCategory.PLAYER, "Allows you to explore the world after you've died.",
@@ -36,7 +34,7 @@ public class DeathExplorer extends Module {
 	public void onDisable(boolean inWorld) {
 		if (dead && inWorld) {
 			mc.player.setHealth(0f);
-			mc.setScreen(new DeathScreen(null, mc.world.getLevelProperties().isHardcore()));
+			mc.gui.setScreen(new DeathScreen(null, mc.level.getLevelData().isHardcore(), mc.player));
 		}
 
 		dead = false;
@@ -45,10 +43,10 @@ public class DeathExplorer extends Module {
 
 	@BleachSubscribe
 	public void onTick(EventTick event) {
-		if (mc.player.isDead()) {
+		if (mc.player.isDeadOrDying()) {
 			dead = true;
 			mc.player.setHealth(20f);
-			mc.setScreen(null);
+			mc.gui.setScreen(null);
 		}
 	}
 
@@ -56,8 +54,8 @@ public class DeathExplorer extends Module {
 	@BleachSubscribe
 	public void onRenderInGameHud(EventRenderInGameHud event) {
 		if (getSetting(0).asToggle().getState()) {
-			int length = mc.textRenderer.getWidth("You are in dead");
-			drawContext.drawTextWithShadow(mc.textRenderer,"You are dead", mc.getWindow().getScaledWidth() / 2 - length / 2, 10, 0xcc4040);
+			int length = mc.font.width("You are in dead");
+			event.getContext().text(mc.font, "You are dead", mc.getWindow().getGuiScaledWidth() / 2 - length / 2, 10, 0xFFcc4040, true);
 		}
 	}
 

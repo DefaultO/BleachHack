@@ -35,8 +35,8 @@ public class BetterPortal extends Module {
 	public void onClientMove(EventClientMove event) {
 		if (getSetting(1).asToggle().getState()) {
 			if (WorldUtils.doesBoxTouchBlock(mc.player.getBoundingBox(), Blocks.NETHER_PORTAL)) {
-				mc.player.nauseaIntensity = -1f;
-				mc.player.prevNauseaIntensity = -1f;
+				mc.player.portalEffectIntensity = -1f;
+				mc.player.oPortalEffectIntensity = -1f;
 			}
 		}
 	}
@@ -51,7 +51,7 @@ public class BetterPortal extends Module {
 	@BleachSubscribe
 	public void onSoundPlay(EventSoundPlay.Normal event) {
 		if (getSetting(3).asToggle().getState()) {
-			String path = event.getInstance().getId().getPath();
+			String path = event.getInstance().getIdentifier().getPath();
 			if (path.equals("block.portal.trigger") || (getSetting(3).asToggle().getChild(0).asToggle().getState() && path.equals("block.portal.ambient"))) {
 				event.setCancelled(true);
 			}

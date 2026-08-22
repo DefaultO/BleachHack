@@ -65,19 +65,19 @@ public class Tracers extends Module {
 		float width = getSetting(7).asSlider().getValueFloat();
 		int opacity = (int) (getSetting(8).asSlider().getValueFloat() * 255);
 
-		for (Entity e : mc.world.getEntities()) {
+		for (Entity e : mc.level.entitiesForRendering()) {
 			int[] col = getColor(e);
 
 			if (col != null) {
-				Vec3 vec = e.getPos().subtract(Renderer.getInterpolationOffset(e));
+				Vec3 vec = e.position().subtract(Renderer.getInterpolationOffset(e));
 				Vec3 vec2 = new Vec3(0, 0, 75)
-						.rotateX(-(float) Math.toRadians(mc.gameRenderer.getCamera().getPitch()))
-						.rotateY(-(float) Math.toRadians(mc.gameRenderer.getCamera().getYaw()))
-						.add(mc.cameraEntity.getEyePos());
+						.xRot(-(float) Math.toRadians(mc.gameRenderer.mainCamera().xRot()))
+						.yRot(-(float) Math.toRadians(mc.gameRenderer.mainCamera().yRot()))
+						.add(mc.getCameraEntity().getEyePosition());
 
 				LineColor lineColor =  LineColor.single(col[0], col[1], col[2], opacity);
 				Renderer.drawLine(vec2.x, vec2.y, vec2.z, vec.x, vec.y, vec.z, lineColor, width);
-				Renderer.drawLine(vec.x, vec.y, vec.z, vec.x, vec.y + e.getHeight() * 0.9, vec.z, lineColor, width);
+				Renderer.drawLine(vec.x, vec.y, vec.z, vec.x, vec.y + e.getBbHeight() * 0.9, vec.z, lineColor, width);
 			}
 		}
 	}

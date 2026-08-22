@@ -13,7 +13,7 @@ import net.minecraft.world.item.Items;
 
 public enum ModuleCategory {
 	PLAYER(new ItemStack(Items.ARMOR_STAND)),
-	RENDER(new ItemStack(Items.YELLOW_STAINED_GLASS)),
+	RENDER(new ItemStack(Items.STAINED_GLASS.yellow())),
 	COMBAT(new ItemStack(Items.TOTEM_OF_UNDYING)),
 	MOVEMENT(new ItemStack(Items.POTION)),
 	EXPLOITS(new ItemStack(Items.REPEATING_COMMAND_BLOCK)),

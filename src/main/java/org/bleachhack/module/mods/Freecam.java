@@ -24,7 +24,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.Pose;
 import net.minecraft.world.entity.animal.equine.AbstractHorse;
 import net.minecraft.network.protocol.game.ServerboundPlayerCommandPacket;
-import net.minecraft.network.protocol.game.ServerboundPlayerCommandPacket.Mode;
+import net.minecraft.network.protocol.game.ServerboundPlayerCommandPacket.Action;
 import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
 import net.minecraft.world.phys.Vec3;
 
@@ -51,10 +51,10 @@ public class Freecam extends Module {
 
 		super.onEnable(inWorld);
 
-		mc.chunkCullingEnabled = false;
+		mc.smartCull = false;
 
 		playerPos = new double[] { mc.player.getX(), mc.player.getY(), mc.player.getZ() };
-		playerRot = new float[] { mc.player.getYaw(), mc.player.getPitch() };
+		playerRot = new float[] { mc.player.getYRot(), mc.player.getXRot() };
 
 		dummy = new PlayerCopyEntity(mc.player);
 
@@ -62,31 +62,31 @@ public class Freecam extends Module {
 
 		if (mc.player.getVehicle() != null) {
 			riding = mc.player.getVehicle();
-			mc.player.getVehicle().removeAllPassengers();
+			mc.player.getVehicle().ejectPassengers();
 		}
 
 		if (mc.player.isSprinting()) {
-			mc.player.networkHandler.sendPacket(new ServerboundPlayerCommandPacket(mc.player, Mode.STOP_SPRINTING));
+			mc.player.connection.send(new ServerboundPlayerCommandPacket(mc.player, Action.STOP_SPRINTING));
 		}
 
 		prevFlying = mc.player.getAbilities().flying;
-		prevFlySpeed = mc.player.getAbilities().getFlySpeed();
+		prevFlySpeed = mc.player.getAbilities().getFlyingSpeed();
 	}
 
 	@Override
 	public void onDisable(boolean inWorld) {
 		if (inWorld) {
-			mc.chunkCullingEnabled = true;
-	
+			mc.smartCull = true;
+
 			dummy.despawn();
-			mc.player.noClip = false;
+			mc.player.noPhysics = false;
 			mc.player.getAbilities().flying = prevFlying;
-			mc.player.getAbilities().setFlySpeed(prevFlySpeed);
-	
-			mc.player.refreshPositionAndAngles(playerPos[0], playerPos[1], playerPos[2], playerRot[0], playerRot[1]);
-			mc.player.setVelocity(Vec3.ZERO);
-	
-			if (riding != null && mc.world.getEntityById(riding.getId()) != null) {
+			mc.player.getAbilities().setFlyingSpeed(prevFlySpeed);
+
+			mc.player.snapTo(playerPos[0], playerPos[1], playerPos[2], playerRot[0], playerRot[1]);
+			mc.player.setDeltaMovement(Vec3.ZERO);
+
+			if (riding != null && mc.level.getEntity(riding.getId()) != null) {
 				mc.player.startRiding(riding);
 			}
 		}
@@ -105,7 +105,7 @@ public class Freecam extends Module {
 	public void onOpenScreen(EventOpenScreen event) {
 		if (getSetting(1).asToggle().getState() && riding instanceof AbstractHorse) {
 			if (event.getScreen() instanceof InventoryScreen) {
-				mc.player.networkHandler.sendPacket(new ServerboundPlayerCommandPacket(mc.player, ServerboundPlayerCommandPacket.Mode.OPEN_INVENTORY));
+				mc.player.connection.send(new ServerboundPlayerCommandPacket(mc.player, ServerboundPlayerCommandPacket.Action.OPEN_INVENTORY));
 				event.setCancelled(true);
 			}
 		}
@@ -113,13 +113,13 @@ public class Freecam extends Module {
 
 	@BleachSubscribe
 	public void onClientMove(EventClientMove event) {
-		mc.player.noClip = true;
+		mc.player.noPhysics = true;
 	}
 
 	@BleachSubscribe
 	public void onTick(EventTick event) {
 		mc.player.setOnGround(false);
-		mc.player.getAbilities().setFlySpeed((float) (getSetting(0).asSlider().getValue() / 5));
+		mc.player.getAbilities().setFlyingSpeed((float) (getSetting(0).asSlider().getValue() / 5));
 		mc.player.getAbilities().flying = true;
 		mc.player.setPose(Pose.STANDING);
 	}

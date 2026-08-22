@@ -38,38 +38,38 @@ public class RotationSnap extends Module {
 	@BleachSubscribe
 	public void onTick(EventTick event) {
 		/* yes looks like a good way to do it to me */
-		if (getSetting(2).asToggle().getState() && mc.currentScreen == null) {
+		if (getSetting(2).asToggle().getState() && mc.gui.screen() == null) {
 			int yMode = getSetting(0).asToggle().getChild(0).asMode().getMode();
 			int pMode = getSetting(1).asToggle().getChild(0).asMode().getMode();
 			
 			int yAngle = yMode == 0 ? 45 : yMode == 1 ? 30 : yMode == 2 ? 15 : 90;
 			int pAngle = pMode == 0 ? 45 : pMode == 1 ? 30 : pMode == 2 ? 15 : 90;
 
-			if (InputConstants.isKeyPressed(mc.getWindow().getHandle(), GLFW.GLFW_KEY_LEFT) && !lDown) {
-				mc.player.setYaw(mc.player.getYaw() - yAngle);
+			if (InputConstants.isKeyDown(mc.getWindow(), GLFW.GLFW_KEY_LEFT) && !lDown) {
+				mc.player.setYRot(mc.player.getYRot() - yAngle);
 				lDown = true;
-			} else if (!InputConstants.isKeyPressed(mc.getWindow().getHandle(), GLFW.GLFW_KEY_LEFT)) {
+			} else if (!InputConstants.isKeyDown(mc.getWindow(), GLFW.GLFW_KEY_LEFT)) {
 				lDown = false;
 			}
 
-			if (InputConstants.isKeyPressed(mc.getWindow().getHandle(), GLFW.GLFW_KEY_RIGHT) && !rDown) {
-				mc.player.setYaw(mc.player.getYaw() + yAngle);
+			if (InputConstants.isKeyDown(mc.getWindow(), GLFW.GLFW_KEY_RIGHT) && !rDown) {
+				mc.player.setYRot(mc.player.getYRot() + yAngle);
 				rDown = true;
-			} else if (!InputConstants.isKeyPressed(mc.getWindow().getHandle(), GLFW.GLFW_KEY_RIGHT)) {
+			} else if (!InputConstants.isKeyDown(mc.getWindow(), GLFW.GLFW_KEY_RIGHT)) {
 				rDown = false;
 			}
 
-			if (InputConstants.isKeyPressed(mc.getWindow().getHandle(), GLFW.GLFW_KEY_UP) && !uDown) {
-				mc.player.setPitch(Mth.clamp(mc.player.getPitch() - pAngle, -90, 90));
+			if (InputConstants.isKeyDown(mc.getWindow(), GLFW.GLFW_KEY_UP) && !uDown) {
+				mc.player.setXRot(Mth.clamp(mc.player.getXRot() - pAngle, -90, 90));
 				uDown = true;
-			} else if (!InputConstants.isKeyPressed(mc.getWindow().getHandle(), GLFW.GLFW_KEY_UP)) {
+			} else if (!InputConstants.isKeyDown(mc.getWindow(), GLFW.GLFW_KEY_UP)) {
 				uDown = false;
 			}
 
-			if (InputConstants.isKeyPressed(mc.getWindow().getHandle(), GLFW.GLFW_KEY_DOWN) && !dDown) {
-				mc.player.setPitch(Mth.clamp(mc.player.getPitch() + pAngle, -90, 90));
+			if (InputConstants.isKeyDown(mc.getWindow(), GLFW.GLFW_KEY_DOWN) && !dDown) {
+				mc.player.setXRot(Mth.clamp(mc.player.getXRot() + pAngle, -90, 90));
 				dDown = true;
-			} else if (!InputConstants.isKeyPressed(mc.getWindow().getHandle(), GLFW.GLFW_KEY_DOWN)) {
+			} else if (!InputConstants.isKeyDown(mc.getWindow(), GLFW.GLFW_KEY_DOWN)) {
 				dDown = false;
 			}
 		}
@@ -82,19 +82,19 @@ public class RotationSnap extends Module {
 		if (getSetting(0).asToggle().getState()) {
 			int mode = getSetting(0).asToggle().getChild(0).asMode().getMode();
 			int interval = mode == 0 ? 45 : mode == 1 ? 30 : mode == 2 ? 15 : 90;
-			int rot = (int) mc.player.getYaw() + (Math.floorMod((int) mc.player.getYaw(), interval) < interval / 2 ?
-					-Math.floorMod((int) mc.player.getYaw(), interval) : interval - Math.floorMod((int) mc.player.getYaw(), interval));
+			int rot = (int) mc.player.getYRot() + (Math.floorMod((int) mc.player.getYRot(), interval) < interval / 2 ?
+					-Math.floorMod((int) mc.player.getYRot(), interval) : interval - Math.floorMod((int) mc.player.getYRot(), interval));
 
-			mc.player.setYaw(rot);
+			mc.player.setYRot(rot);
 		}
 
 		if (getSetting(1).asToggle().getState()) {
 			int mode = getSetting(1).asToggle().getChild(0).asMode().getMode();
 			int interval = mode == 0 ? 45 : mode == 1 ? 30 : mode == 2 ? 15 : 90;
-			int rot = Mth.clamp(((int) mc.player.getPitch() + (Math.floorMod((int) mc.player.getPitch(), interval) < interval / 2 ?
-					-Math.floorMod((int) mc.player.getPitch(), interval) : interval - Math.floorMod((int) mc.player.getPitch(), interval))), -90, 90);
+			int rot = Mth.clamp(((int) mc.player.getXRot() + (Math.floorMod((int) mc.player.getXRot(), interval) < interval / 2 ?
+					-Math.floorMod((int) mc.player.getXRot(), interval) : interval - Math.floorMod((int) mc.player.getXRot(), interval))), -90, 90);
 
-			mc.player.setPitch(rot);
+			mc.player.setXRot(rot);
 		}
 	}
 }

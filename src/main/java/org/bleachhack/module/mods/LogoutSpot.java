@@ -70,7 +70,7 @@ public class LogoutSpot extends Module {
 
 	@BleachSubscribe
 	public void onReadPacket(EventPacket.Read event) {
-		if (!(event.getPacket() instanceof ClientboundPlayerInfoUpdatePacket) || mc.world == null) {
+		if (!(event.getPacket() instanceof ClientboundPlayerInfoUpdatePacket) || mc.level == null) {
 			return;
 		}
 
@@ -137,12 +137,13 @@ public class LogoutSpot extends Module {
 			if (getSetting(1).asToggle().getState()) {
 				PlayerCopyEntity player = playerPair.getLeft();
 
-				Vec3 rVec = new Vec3(player.lastRenderX + (player.getX() - player.lastRenderX) * mc.getTickDelta(),
-						player.lastRenderY + (player.getY() - player.lastRenderY) * mc.getTickDelta() + player.getHeight(),
-						player.lastRenderZ + (player.getZ() - player.lastRenderZ) * mc.getTickDelta());
+				float tickDelta = mc.getDeltaTracker().getGameTimeDeltaPartialTick(true);
+				Vec3 rVec = new Vec3(player.xOld + (player.getX() - player.xOld) * tickDelta,
+						player.yOld + (player.getY() - player.yOld) * tickDelta + player.getBbHeight(),
+						player.zOld + (player.getZ() - player.zOld) * tickDelta);
 
-				Vec3 offset = new Vec3(0, 0, 0.45 + mc.textRenderer.getWidth(player.getDisplayName().getString()) / 90d)
-						.rotateY((float) -Math.toRadians(mc.player.getYaw() + 90));
+				Vec3 offset = new Vec3(0, 0, 0.45 + mc.font.width(player.getDisplayName().getString()) / 90d)
+						.yRot((float) -Math.toRadians(mc.player.getYRot() + 90));
 
 				List<String> lines = new ArrayList<>();
 				lines.add("§4Logout:");

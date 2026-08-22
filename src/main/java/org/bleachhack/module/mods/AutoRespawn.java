@@ -34,9 +34,9 @@ public class AutoRespawn extends Module {
 					BleachQueue.add("autorespawn", () -> {});
 				}
 
-				BleachQueue.add("autorespawn", () -> mc.player.requestRespawn());
+				BleachQueue.add("autorespawn", () -> mc.player.respawn());
 			} else {
-				mc.player.requestRespawn();
+				mc.player.respawn();
 			}
 		}
 	}

@@ -7,7 +7,8 @@ import org.bleachhack.module.Module;
 import org.bleachhack.module.ModuleCategory;
 import org.bleachhack.setting.module.SettingMode;
 
-import net.minecraft.network.protocol.game.ServerboundPlayerCommandPacket;
+import net.minecraft.network.protocol.game.ServerboundPlayerInputPacket;
+import net.minecraft.world.entity.player.Input;
 
 public class Sneak extends Module {
 
@@ -21,11 +22,12 @@ public class Sneak extends Module {
 	@Override
 	public void onDisable(boolean inWorld) {
 		packetSent = false;
-		mc.options.sneakKey.setPressed(false);
+		mc.options.keyShift.setDown(false);
 
+		// TODO(26.2): PRESS/RELEASE_SHIFT_KEY command packets were removed; sneak state is now sent via ServerboundPlayerInputPacket.
 		if (inWorld)
-			mc.player.networkHandler.sendPacket(new ServerboundPlayerCommandPacket(mc.player, ServerboundPlayerCommandPacket.Mode.RELEASE_SHIFT_KEY));
-	
+			mc.player.connection.send(new ServerboundPlayerInputPacket(mc.player.input.keyPresses));
+
 		super.onDisable(inWorld);
 	}
 
@@ -35,7 +37,7 @@ public class Sneak extends Module {
 
 		if (getSetting(0).asMode().getMode() == 1) {
 			if (inWorld)
-				mc.player.networkHandler.sendPacket(new ServerboundPlayerCommandPacket(mc.player, ServerboundPlayerCommandPacket.Mode.PRESS_SHIFT_KEY));
+				mc.player.connection.send(new ServerboundPlayerInputPacket(withShift(mc.player.input.keyPresses)));
 
 			packetSent = true;
 		}
@@ -44,19 +46,21 @@ public class Sneak extends Module {
 	@BleachSubscribe
 	public void onTick(EventTick event) {
 		if (getSetting(0).asMode().getMode() == 0) {
-			mc.options.sneakKey.setPressed(true);
+			mc.options.keyShift.setDown(true);
 		} else if (getSetting(0).asMode().getMode() == 1 && !packetSent) {
-			mc.player.networkHandler.sendPacket(new ServerboundPlayerCommandPacket(mc.player, ServerboundPlayerCommandPacket.Mode.PRESS_SHIFT_KEY));
+			mc.player.connection.send(new ServerboundPlayerInputPacket(withShift(mc.player.input.keyPresses)));
 			packetSent = true;
 		}
 	}
 
 	@BleachSubscribe
 	public void onSendPacket(EventPacket.Send event) {
-		if (event.getPacket() instanceof ServerboundPlayerCommandPacket) {
-			ServerboundPlayerCommandPacket p = (ServerboundPlayerCommandPacket) event.getPacket();
-			if (p.getMode() == ServerboundPlayerCommandPacket.Mode.RELEASE_SHIFT_KEY)
-				event.setCancelled(true);
-		}
+		// Was: cancel RELEASE_SHIFT_KEY packets. Now: force the shift flag on outgoing input packets.
+		if (event.getPacket() instanceof ServerboundPlayerInputPacket p && !p.input().shift())
+			event.setPacket(new ServerboundPlayerInputPacket(withShift(p.input())));
+	}
+
+	private static Input withShift(Input in) {
+		return new Input(in.forward(), in.backward(), in.left(), in.right(), in.jump(), true, in.sprint());
 	}
 }

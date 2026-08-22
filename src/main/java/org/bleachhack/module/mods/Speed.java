@@ -36,52 +36,52 @@ public class Speed extends Module {
 
 	@BleachSubscribe
 	public void onTick(EventTick event) {
-		//System.out.println(mc.player.forwardSpeed + " | " + mc.player.sidewaysSpeed);
-		if (mc.options.sneakKey.isPressed())
+		//System.out.println(mc.player.zza + " | " + mc.player.xxa);
+		if (mc.options.keyShift.isDown())
 			return;
 
 			/* Strafe */
 		if (getSetting(0).asMode().getMode() <= 1) {
-			if ((mc.player.forwardSpeed != 0 || mc.player.sidewaysSpeed != 0) /*&& mc.player.isOnGround()*/) {
+			if ((mc.player.zza != 0 || mc.player.xxa != 0) /*&& mc.player.onGround()*/) {
 				if (!mc.player.isSprinting()) {
-					mc.player.networkHandler.sendPacket(new ServerboundPlayerCommandPacket(mc.player, ServerboundPlayerCommandPacket.Mode.START_SPRINTING));
+					mc.player.connection.send(new ServerboundPlayerCommandPacket(mc.player, ServerboundPlayerCommandPacket.Action.START_SPRINTING));
 				}
 
-				mc.player.setVelocity(new Vec3(0, mc.player.getVelocity().y, 0));
-				mc.player.updateVelocity(getSetting(1).asSlider().getValueFloat(),
-						new Vec3(mc.player.sidewaysSpeed, 0, mc.player.forwardSpeed));
+				mc.player.setDeltaMovement(new Vec3(0, mc.player.getDeltaMovement().y, 0));
+				mc.player.moveRelative(getSetting(1).asSlider().getValueFloat(),
+						new Vec3(mc.player.xxa, 0, mc.player.zza));
 				
-				double vel = Math.abs(mc.player.getVelocity().getX()) + Math.abs(mc.player.getVelocity().getZ());
+				double vel = Math.abs(mc.player.getDeltaMovement().x) + Math.abs(mc.player.getDeltaMovement().z);
 				
-				if (getSetting(0).asMode().getMode() == 0 && vel >= 0.12 && mc.player.isOnGround()) {
-					mc.player.updateVelocity(vel >= 0.3 ? 0.0f : 0.15f, new Vec3(mc.player.sidewaysSpeed, 0, mc.player.forwardSpeed));
-					mc.player.jump();
+				if (getSetting(0).asMode().getMode() == 0 && vel >= 0.12 && mc.player.onGround()) {
+					mc.player.moveRelative(vel >= 0.3 ? 0.0f : 0.15f, new Vec3(mc.player.xxa, 0, mc.player.zza));
+					mc.player.jumpFromGround();
 				}
 			}
 			
 			/* OnGround */
 		} else if (getSetting(0).asMode().getMode() == 2) {
-			if (mc.options.jumpKey.isPressed() || mc.player.fallDistance > 0.25)
+			if (mc.options.keyJump.isDown() || mc.player.fallDistance > 0.25)
 				return;
 			
 			double speeds = 0.85 + getSetting(2).asSlider().getValue() / 30;
 
-			if (jumping && mc.player.getY() >= mc.player.prevY + 0.399994D) {
-				mc.player.setVelocity(mc.player.getVelocity().x, -0.9, mc.player.getVelocity().z);
-				mc.player.setPos(mc.player.getX(), mc.player.prevY, mc.player.getZ());
+			if (jumping && mc.player.getY() >= mc.player.yo + 0.399994D) {
+				mc.player.setDeltaMovement(mc.player.getDeltaMovement().x, -0.9, mc.player.getDeltaMovement().z);
+				mc.player.setPos(mc.player.getX(), mc.player.yo, mc.player.getZ());
 				jumping = false;
 			}
 
-			if (mc.player.forwardSpeed != 0.0F && !mc.player.horizontalCollision) {
+			if (mc.player.zza != 0.0F && !mc.player.horizontalCollision) {
 				if (mc.player.verticalCollision) {
-					mc.player.setVelocity(mc.player.getVelocity().x * speeds, mc.player.getVelocity().y, mc.player.getVelocity().z * speeds);
+					mc.player.setDeltaMovement(mc.player.getDeltaMovement().x * speeds, mc.player.getDeltaMovement().y, mc.player.getDeltaMovement().z * speeds);
 					jumping = true;
-					mc.player.jump();
+					mc.player.jumpFromGround();
 					// 1.0379
 				}
 
-				if (jumping && mc.player.getY() >= mc.player.prevY + 0.399994D) {
-					mc.player.setVelocity(mc.player.getVelocity().x, -100, mc.player.getVelocity().z);
+				if (jumping && mc.player.getY() >= mc.player.yo + 0.399994D) {
+					mc.player.setDeltaMovement(mc.player.getDeltaMovement().x, -100, mc.player.getDeltaMovement().z);
 					jumping = false;
 				}
 
@@ -89,27 +89,27 @@ public class Speed extends Module {
 
 			/* MiniHop */
 		} else if (getSetting(0).asMode().getMode() == 3) {
-			if (mc.player.horizontalCollision || mc.options.jumpKey.isPressed() || mc.player.forwardSpeed == 0)
+			if (mc.player.horizontalCollision || mc.options.keyJump.isDown() || mc.player.zza == 0)
 				return;
 			
 			double speeds = 0.9 + getSetting(3).asSlider().getValue() / 30;
 			
-			if (mc.player.isOnGround()) {
-				mc.player.jump();
-			} else if (mc.player.getVelocity().y > 0) {
-				mc.player.setVelocity(mc.player.getVelocity().x * speeds, -1, mc.player.getVelocity().z * speeds);
-				mc.player.input.movementSideways += 1.5F;
+			if (mc.player.onGround()) {
+				mc.player.jumpFromGround();
+			} else if (mc.player.getDeltaMovement().y > 0) {
+				mc.player.setDeltaMovement(mc.player.getDeltaMovement().x * speeds, -1, mc.player.getDeltaMovement().z * speeds);
+				mc.player.xxa += 1.5F; // TODO(26.2): ClientInput no longer exposes movementSideways; bumping xxa directly instead
 			}
 
 			/* Bhop */
 		} else if (getSetting(0).asMode().getMode() == 4) {
-			if (mc.player.forwardSpeed > 0 && mc.player.isOnGround()) {
+			if (mc.player.zza > 0 && mc.player.onGround()) {
 				double speeds = 0.65 + getSetting(4).asSlider().getValue() / 30;
 				
-				mc.player.jump();
-				mc.player.setVelocity(mc.player.getVelocity().x * speeds, 0.255556, mc.player.getVelocity().z * speeds);
-				mc.player.sidewaysSpeed += 3.0F;
-				mc.player.jump();
+				mc.player.jumpFromGround();
+				mc.player.setDeltaMovement(mc.player.getDeltaMovement().x * speeds, 0.255556, mc.player.getDeltaMovement().z * speeds);
+				mc.player.xxa += 3.0F;
+				mc.player.jumpFromGround();
 				mc.player.setSprinting(true);
 			}
 		}
@@ -117,7 +117,7 @@ public class Speed extends Module {
 
 	@BleachSubscribe
 	public void onMove(EventClientMove event) {
-		if (mc.player.forwardSpeed == 0 && mc.player.sidewaysSpeed == 0 && getSetting(5).asToggle().getState()) {
+		if (mc.player.zza == 0 && mc.player.xxa == 0 && getSetting(5).asToggle().getState()) {
 			event.setVec(new Vec3(0, event.getVec().y, 0));
 		}
 	}

@@ -45,12 +45,12 @@ public class Solidify extends Module {
 	public void onBlockShape(EventBlockShape event) {
 		if ((getSetting(0).asToggle().getState() && event.getState().getBlock() instanceof CactusBlock)
 				|| (getSetting(1).asToggle().getState() && event.getState().getBlock() instanceof FireBlock)
-				|| (getSetting(2).asToggle().getState() && event.getState().getFluidState().getFluid() instanceof LavaFluid)
+				|| (getSetting(2).asToggle().getState() && event.getState().getFluidState().getType() instanceof LavaFluid)
 				|| (getSetting(3).asToggle().getState() && event.getState().getBlock() instanceof WebBlock)
 				|| (getSetting(4).asToggle().getState() && event.getState().getBlock() instanceof SweetBerryBushBlock)
 				|| (getSetting(5).asToggle().getState() && event.getState().getBlock() instanceof HoneyBlock)
 				|| (getSetting(6).asToggle().getState() && event.getState().getBlock() instanceof PowderSnowBlock)) {
-			event.setShape(Shapes.fullCube());
+			event.setShape(Shapes.block());
 		}
 	}
 
@@ -58,7 +58,7 @@ public class Solidify extends Module {
 	public void onClientMove(EventClientMove event) {
 		int x = (int) (mc.player.getX() + event.getVec().x) >> 4;
 		int z = (int) (mc.player.getZ() + event.getVec().z) >> 4;
-		if (getSetting(7).asToggle().getState() && !mc.world.getChunkManager().isChunkLoaded(x, z)) {
+		if (getSetting(7).asToggle().getState() && !mc.level.getChunkSource().hasChunk(x, z)) {
 			event.setCancelled(true);
 		}
 	}
@@ -68,13 +68,13 @@ public class Solidify extends Module {
 		if (getSetting(7).asToggle().getState()) {
 			if (event.getPacket() instanceof ServerboundMoveVehiclePacket) {
 				ServerboundMoveVehiclePacket packet = (ServerboundMoveVehiclePacket) event.getPacket();
-				if (!mc.world.getChunkManager().isChunkLoaded((int) packet.getX() >> 4, (int) packet.getZ() >> 4)) {
-					mc.player.getVehicle().updatePosition(mc.player.getVehicle().prevX, mc.player.getVehicle().prevY, mc.player.getVehicle().prevZ);
+				if (!mc.level.getChunkSource().hasChunk((int) packet.position().x >> 4, (int) packet.position().z >> 4)) {
+					mc.player.getVehicle().snapTo(mc.player.getVehicle().xo, mc.player.getVehicle().yo, mc.player.getVehicle().zo);
 					event.setCancelled(true);
 				}
 			} else if (event.getPacket() instanceof ServerboundMovePlayerPacket) {
 				ServerboundMovePlayerPacket packet = (ServerboundMovePlayerPacket) event.getPacket();
-				if (!mc.world.getChunkManager().isChunkLoaded((int) packet.getX(mc.player.getX()) >> 4, (int) packet.getZ(mc.player.getZ()) >> 4)) {
+				if (!mc.level.getChunkSource().hasChunk((int) packet.getX(mc.player.getX()) >> 4, (int) packet.getZ(mc.player.getZ()) >> 4)) {
 					event.setCancelled(true);
 				}
 			}

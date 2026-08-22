@@ -65,33 +65,33 @@ public class ClickTp extends Module {
 
 	@BleachSubscribe
 	public void onTick(EventTick event) {
-		if (InputConstants.isKeyPressed(mc.getWindow().getHandle(), GLFW.GLFW_KEY_LEFT_SHIFT)) {
+		if (InputConstants.isKeyDown(mc.getWindow(), GLFW.GLFW_KEY_LEFT_SHIFT)) {
 			pos = null;
 			dir = null;
 			return;
 		}
 
-		BlockHitResult hit = (BlockHitResult) mc.player.raycast(100, mc.getTickDelta(), getSetting(1).asToggle().getState());
+		BlockHitResult hit = (BlockHitResult) mc.player.pick(100, mc.getDeltaTracker().getGameTimeDeltaPartialTick(true), getSetting(1).asToggle().getState());
 
 		boolean miss = hit.getType() == Type.MISS && !getSetting(0).asToggle().getState();
 
 		pos = miss ? null : hit.getBlockPos();
-		dir = miss ? null : getSetting(3).asToggle().getState() ? Direction.UP : hit.getSide();
+		dir = miss ? null : getSetting(3).asToggle().getState() ? Direction.UP : hit.getDirection();
 
 		if (pos != null && dir != null) {
-			if (GLFW.glfwGetMouseButton(mc.getWindow().getHandle(), GLFW.GLFW_MOUSE_BUTTON_RIGHT) == 1 && mc.currentScreen == null && !antiSpamClick) {
+			if (GLFW.glfwGetMouseButton(mc.getWindow().handle(), GLFW.GLFW_MOUSE_BUTTON_RIGHT) == 1 && mc.gui.screen() == null && !antiSpamClick) {
 				antiSpamClick = true;
 
-				Vec3 tpPos = Vec3.ofBottomCenter(pos.offset(dir, dir == Direction.DOWN ? 2 : 1));
+				Vec3 tpPos = Vec3.atBottomCenterOf(pos.relative(dir, dir == Direction.DOWN ? 2 : 1));
 
 				if (getSetting(2).asToggle().getState()) {
-					mc.player.updatePosition(mc.player.getX(), tpPos.y, mc.player.getZ());
-					mc.player.networkHandler.sendPacket(new ServerboundMovePlayerPacket.PositionAndOnGround(mc.player.getX(), tpPos.y, mc.player.getZ(), false));
+					mc.player.setPos(mc.player.getX(), tpPos.y, mc.player.getZ());
+					mc.player.connection.send(new ServerboundMovePlayerPacket.Pos(mc.player.getX(), tpPos.y, mc.player.getZ(), false, false));
 				}
 
-				mc.player.updatePosition(tpPos.x, tpPos.y, tpPos.z);
-				mc.player.networkHandler.sendPacket(new ServerboundMovePlayerPacket.PositionAndOnGround(tpPos.x, tpPos.y, tpPos.z, false));
-			} else if (GLFW.glfwGetMouseButton(mc.getWindow().getHandle(), GLFW.GLFW_MOUSE_BUTTON_RIGHT) == 0) {
+				mc.player.setPos(tpPos.x, tpPos.y, tpPos.z);
+				mc.player.connection.send(new ServerboundMovePlayerPacket.Pos(tpPos.x, tpPos.y, tpPos.z, false, false));
+			} else if (GLFW.glfwGetMouseButton(mc.getWindow().handle(), GLFW.GLFW_MOUSE_BUTTON_RIGHT) == 0) {
 				antiSpamClick = false;
 			}
 		}

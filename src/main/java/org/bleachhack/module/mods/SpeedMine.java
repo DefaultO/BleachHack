@@ -35,7 +35,7 @@ public class SpeedMine extends Module {
 	@Override
 	public void onDisable(boolean inWorld) {
 		if (inWorld)
-			mc.player.removeStatusEffect(MobEffects.HASTE);
+			mc.player.removeEffect(MobEffects.HASTE);
 
 		super.onDisable(inWorld);
 	}
@@ -43,7 +43,7 @@ public class SpeedMine extends Module {
 	@BleachSubscribe
 	public void onTick(EventTick event) {
 		if (this.getSetting(0).asMode().getMode() == 0) {
-			mc.player.addStatusEffect(new MobEffectInstance(MobEffects.HASTE, 1, getSetting(1).asSlider().getValueInt() - 1));
+			mc.player.addEffect(new MobEffectInstance(MobEffects.HASTE, 1, getSetting(1).asSlider().getValueInt() - 1));
 		}
 	}
 

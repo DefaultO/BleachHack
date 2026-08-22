@@ -51,79 +51,79 @@ public class AutoBedrockBreak extends Module {
 		if (pos != null) {
 			switch (step) {
 				case 0:
-					if (!mc.world.isSpaceEmpty(new AABB(pos.up().toCenterPos(), pos.add(1, 8, 1).toCenterPos()))) {
+					if (!mc.level.noCollision(new AABB(Vec3.atCenterOf(pos.above()), Vec3.atCenterOf(pos.offset(1, 8, 1))))) {
 						reset();
 						BleachLogger.info("Not enough empty space to break this block!");
-					} else if (InventoryUtils.getSlot(true, i -> mc.player.getInventory().getStack(i).getItem() == Items.PISTON) == -1) {
+					} else if (InventoryUtils.getSlot(true, i -> mc.player.getInventory().getItem(i).getItem() == Items.PISTON) == -1) {
 						reset();
 						BleachLogger.info("Missing pistons!");
-					} else if (InventoryUtils.getSlot(true, i -> mc.player.getInventory().getStack(i).getItem() == Items.REDSTONE_BLOCK) == -1) {
+					} else if (InventoryUtils.getSlot(true, i -> mc.player.getInventory().getItem(i).getItem() == Items.REDSTONE_BLOCK) == -1) {
 						reset();
 						BleachLogger.info("Missing a redstone block!");
-					} else if (InventoryUtils.getSlot(true, i -> mc.player.getInventory().getStack(i).getItem() == Items.TNT) == -1) {
+					} else if (InventoryUtils.getSlot(true, i -> mc.player.getInventory().getItem(i).getItem() == Items.TNT) == -1) {
 						reset();
 						BleachLogger.info("Missing TNT!");
-					} else if (InventoryUtils.getSlot(true, i -> mc.player.getInventory().getStack(i).getItem() == Items.LEVER) == -1) {
+					} else if (InventoryUtils.getSlot(true, i -> mc.player.getInventory().getItem(i).getItem() == Items.LEVER) == -1) {
 						reset();
 						BleachLogger.info("Missing a lever!");
-					} else if (dirtyPlace(pos.up(3), InventoryUtils.getSlot(true, i -> mc.player.getInventory().getStack(i).getItem() == Items.REDSTONE_BLOCK), Direction.DOWN)) {
+					} else if (dirtyPlace(pos.above(3), InventoryUtils.getSlot(true, i -> mc.player.getInventory().getItem(i).getItem() == Items.REDSTONE_BLOCK), Direction.DOWN)) {
 						step++;
 					}
 
 					break;
 				case 1:
-					mc.player.networkHandler.sendPacket(new ServerboundMovePlayerPacket.Full(mc.player.getX(), mc.player.getY(), mc.player.getZ(), mc.player.getYaw(), 90, mc.player.isOnGround()));
+					mc.player.connection.send(new ServerboundMovePlayerPacket.PosRot(mc.player.getX(), mc.player.getY(), mc.player.getZ(), mc.player.getYRot(), 90, mc.player.onGround(), mc.player.horizontalCollision));
 					// mc.player.setPitch(90) "its jank either way"
 					step++;
 
 					break;
 				case 2:
-					if (dirtyPlace(pos.up(), InventoryUtils.getSlot(true, i -> mc.player.getInventory().getStack(i).getItem() == Items.PISTON), Direction.DOWN))
+					if (dirtyPlace(pos.above(), InventoryUtils.getSlot(true, i -> mc.player.getInventory().getItem(i).getItem() == Items.PISTON), Direction.DOWN))
 						step++;
 
 					break;
 				case 3:
-					if (dirtyPlace(pos.up(7), InventoryUtils.getSlot(true, i -> mc.player.getInventory().getStack(i).getItem() == Items.TNT), Direction.DOWN))
+					if (dirtyPlace(pos.above(7), InventoryUtils.getSlot(true, i -> mc.player.getInventory().getItem(i).getItem() == Items.TNT), Direction.DOWN))
 						step++;
 
 					break;
 				case 4:
-					if (dirtyPlace(pos.up(6), InventoryUtils.getSlot(true, i -> mc.player.getInventory().getStack(i).getItem() == Items.LEVER), Direction.UP))
+					if (dirtyPlace(pos.above(6), InventoryUtils.getSlot(true, i -> mc.player.getInventory().getItem(i).getItem() == Items.LEVER), Direction.UP))
 						step++;
 
 					break;
 				case 5:
-					if (dirtyPlace(pos.up(5), InventoryUtils.getSlot(true, i -> mc.player.getInventory().getStack(i).getItem() == Items.TNT), Direction.DOWN))
+					if (dirtyPlace(pos.above(5), InventoryUtils.getSlot(true, i -> mc.player.getInventory().getItem(i).getItem() == Items.TNT), Direction.DOWN))
 						step++;
 
 					break;
 				case 6:
-					Vec3 leverCenter = Vec3.ofCenter(pos.up(6));
-					if (mc.player.getEyePos().distanceTo(leverCenter) <= 4.75) {
-						mc.interactionManager.interactBlock(mc.player, InteractionHand.MAIN_HAND, new BlockHitResult(leverCenter, Direction.DOWN, pos.up(6), false));
+					Vec3 leverCenter = Vec3.atCenterOf(pos.above(6));
+					if (mc.player.getEyePosition().distanceTo(leverCenter) <= 4.75) {
+						mc.gameMode.useItemOn(mc.player, InteractionHand.MAIN_HAND, new BlockHitResult(leverCenter, Direction.DOWN, pos.above(6), false));
 						step++;
 					}
 
 					break;
 				default:
-					if (mc.world.getBlockState(pos).isAir()
-							|| mc.world.getBlockState(pos).getBlock() instanceof PistonBaseBlock
-							|| (mc.world.getBlockState(pos.up()).getBlock() instanceof PistonBaseBlock
-									&&  mc.world.getBlockState(pos.up()).get(PistonBaseBlock.FACING) != Direction.UP)) {
+					if (mc.level.getBlockState(pos).isAir()
+							|| mc.level.getBlockState(pos).getBlock() instanceof PistonBaseBlock
+							|| (mc.level.getBlockState(pos.above()).getBlock() instanceof PistonBaseBlock
+									&&  mc.level.getBlockState(pos.above()).getValue(PistonBaseBlock.FACING) != Direction.UP)) {
 						setEnabled(false);
 						return;
 					}
 
 					if (step >= 82) {
-						mc.player.networkHandler.sendPacket(new ServerboundMovePlayerPacket.Full(mc.player.getX(), mc.player.getY(), mc.player.getZ(), mc.player.getYaw(), -90, mc.player.isOnGround()));
+						mc.player.connection.send(new ServerboundMovePlayerPacket.PosRot(mc.player.getX(), mc.player.getY(), mc.player.getZ(), mc.player.getYRot(), -90, mc.player.onGround(), mc.player.horizontalCollision));
 						// mc.player.setPitch(-90) "its jank either way"
 					}
 
 					if (step > 84) {
-						InteractionHand hand = InventoryUtils.selectSlot(true, i -> mc.player.getInventory().getStack(i).getItem() == Items.PISTON);
+						InteractionHand hand = InventoryUtils.selectSlot(true, i -> mc.player.getInventory().getItem(i).getItem() == Items.PISTON);
 						if (hand != null) {
-							mc.player.networkHandler.sendPacket(new ServerboundUseItemOnPacket(hand,
-									new BlockHitResult(Vec3.ofBottomCenter(pos.up()), Direction.DOWN, pos.up(), false), 0));
+							mc.player.connection.send(new ServerboundUseItemOnPacket(hand,
+									new BlockHitResult(Vec3.atBottomCenterOf(pos.above()), Direction.DOWN, pos.above(), false), 0));
 						}
 					}
 
@@ -136,9 +136,9 @@ public class AutoBedrockBreak extends Module {
 	@BleachSubscribe
 	public void onWorldRender(EventWorldRender.Post event) {
 		if (pos == null) {
-			if (mc.crosshairTarget instanceof BlockHitResult
-					&& !mc.world.isAir(((BlockHitResult) mc.crosshairTarget).getBlockPos())) {
-				Renderer.drawBoxOutline(((BlockHitResult) mc.crosshairTarget).getBlockPos(), QuadColor.single(0xffc040c0), 2f);
+			if (mc.hitResult instanceof BlockHitResult
+					&& !mc.level.isEmptyBlock(((BlockHitResult) mc.hitResult).getBlockPos())) {
+				Renderer.drawBoxOutline(((BlockHitResult) mc.hitResult).getBlockPos(), QuadColor.single(0xffc040c0), 2f);
 			}
 		} else {
 			Renderer.drawBoxOutline(pos, QuadColor.single(0xffc080c0), 2f);
@@ -147,21 +147,21 @@ public class AutoBedrockBreak extends Module {
 
 	@BleachSubscribe
 	public void onInteract(EventInteract.InteractBlock event) {
-		if (pos == null && !mc.world.isAir(event.getHitResult().getBlockPos())) {
+		if (pos == null && !mc.level.isEmptyBlock(event.getHitResult().getBlockPos())) {
 			pos = event.getHitResult().getBlockPos();
 			event.setCancelled(true);
 		}
 	}
 
 	private boolean dirtyPlace(BlockPos pos, int slot, Direction dir) {
-		Vec3 hitPos = Vec3.ofCenter(pos).add(dir.getOffsetX() * 0.5, dir.getOffsetY() * 0.5, dir.getOffsetZ() * 0.5);
-		if (mc.player.getEyePos().distanceTo(hitPos) >= 4.75 || !mc.world.getOtherEntities(null, new AABB(pos)).isEmpty()) {
+		Vec3 hitPos = Vec3.atCenterOf(pos).add(dir.getStepX() * 0.5, dir.getStepY() * 0.5, dir.getStepZ() * 0.5);
+		if (mc.player.getEyePosition().distanceTo(hitPos) >= 4.75 || !mc.level.getEntities(null, new AABB(pos)).isEmpty()) {
 			return false;
 		}
 
 		InteractionHand hand = InventoryUtils.selectSlot(slot);
 		if (hand != null) {
-			mc.interactionManager.interactBlock(mc.player, hand, new BlockHitResult(hitPos, dir, pos, false));
+			mc.gameMode.useItemOn(mc.player, hand, new BlockHitResult(hitPos, dir, pos, false));
 			return true;
 		}
 

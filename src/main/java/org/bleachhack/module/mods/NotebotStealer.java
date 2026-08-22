@@ -65,7 +65,7 @@ public class NotebotStealer extends Module {
 
 	@BleachSubscribe
 	public void onSoundPlay(EventSoundPlay.Normal event) {
-		if (event.getInstance().getId().getPath().contains("note_block")) {
+		if (event.getInstance().getIdentifier().getPath().contains("note_block")) {
 			int type = 0;
 			int note = 0;
 
@@ -77,35 +77,35 @@ public class NotebotStealer extends Module {
 				}
 			}
 
-			if (event.getInstance().getId().getPath().contains("basedrum"))
+			if (event.getInstance().getIdentifier().getPath().contains("basedrum"))
 				type = 1;
-			else if (event.getInstance().getId().getPath().contains("snare"))
+			else if (event.getInstance().getIdentifier().getPath().contains("snare"))
 				type = 2;
-			else if (event.getInstance().getId().getPath().contains("hat"))
+			else if (event.getInstance().getIdentifier().getPath().contains("hat"))
 				type = 3;
-			else if (event.getInstance().getId().getPath().contains("bass"))
+			else if (event.getInstance().getIdentifier().getPath().contains("bass"))
 				type = 4;
-			else if (event.getInstance().getId().getPath().contains("flute"))
+			else if (event.getInstance().getIdentifier().getPath().contains("flute"))
 				type = 5;
-			else if (event.getInstance().getId().getPath().contains("bell"))
+			else if (event.getInstance().getIdentifier().getPath().contains("bell"))
 				type = 6;
-			else if (event.getInstance().getId().getPath().contains("guitar"))
+			else if (event.getInstance().getIdentifier().getPath().contains("guitar"))
 				type = 7;
-			else if (event.getInstance().getId().getPath().contains("chime"))
+			else if (event.getInstance().getIdentifier().getPath().contains("chime"))
 				type = 8;
-			else if (event.getInstance().getId().getPath().contains("xylophone"))
+			else if (event.getInstance().getIdentifier().getPath().contains("xylophone"))
 				type = 9;
-			else if (event.getInstance().getId().getPath().contains("iron_xylophone"))
+			else if (event.getInstance().getIdentifier().getPath().contains("iron_xylophone"))
 				type = 10;
-			else if (event.getInstance().getId().getPath().contains("cow_bell"))
+			else if (event.getInstance().getIdentifier().getPath().contains("cow_bell"))
 				type = 11;
-			else if (event.getInstance().getId().getPath().contains("didgeridoo"))
+			else if (event.getInstance().getIdentifier().getPath().contains("didgeridoo"))
 				type = 12;
-			else if (event.getInstance().getId().getPath().contains("bit"))
+			else if (event.getInstance().getIdentifier().getPath().contains("bit"))
 				type = 13;
-			else if (event.getInstance().getId().getPath().contains("banjo"))
+			else if (event.getInstance().getIdentifier().getPath().contains("banjo"))
 				type = 14;
-			else if (event.getInstance().getId().getPath().contains("pling"))
+			else if (event.getInstance().getIdentifier().getPath().contains("pling"))
 				type = 15;
 			notes.put(ticks, new Note(note, type));
 		}

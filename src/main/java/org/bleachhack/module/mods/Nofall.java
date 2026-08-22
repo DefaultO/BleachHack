@@ -29,15 +29,15 @@ public class Nofall extends Module {
 		if (mc.player.fallDistance > 2.5f && getSetting(0).asMode().getMode() == 0) {
 			if (mc.player.isFallFlying())
 				return;
-			mc.player.networkHandler.sendPacket(new ServerboundMovePlayerPacket.OnGroundOnly(true));
+			mc.player.connection.send(new ServerboundMovePlayerPacket.StatusOnly(true, mc.player.horizontalCollision));
 		}
 
 		if (mc.player.fallDistance > 2.5f && getSetting(0).asMode().getMode() == 1 &&
-				mc.world.getBlockState(mc.player.getBlockPos().add(
-						0, (int) (-1.5 + (mc.player.getVelocity().y * 0.1)), 0)).getBlock() != Blocks.AIR) {
-			mc.player.networkHandler.sendPacket(new ServerboundMovePlayerPacket.OnGroundOnly(false));
-			mc.player.networkHandler.sendPacket(new ServerboundMovePlayerPacket.PositionAndOnGround(
-					mc.player.getX(), mc.player.getY() - 420.69, mc.player.getZ(), true));
+				mc.level.getBlockState(mc.player.blockPosition().offset(
+						0, (int) (-1.5 + (mc.player.getDeltaMovement().y * 0.1)), 0)).getBlock() != Blocks.AIR) {
+			mc.player.connection.send(new ServerboundMovePlayerPacket.StatusOnly(false, mc.player.horizontalCollision));
+			mc.player.connection.send(new ServerboundMovePlayerPacket.Pos(
+					mc.player.getX(), mc.player.getY() - 420.69, mc.player.getZ(), true, mc.player.horizontalCollision));
 			mc.player.fallDistance = 0;
 		}
 	}

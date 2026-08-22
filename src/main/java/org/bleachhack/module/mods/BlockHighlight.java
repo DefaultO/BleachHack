@@ -1,7 +1,5 @@
 package org.bleachhack.module.mods;
 
-import java.io.IOException;
-
 import org.bleachhack.event.events.EventRenderBlockOutline;
 import org.bleachhack.event.events.EventWorldRender;
 import org.bleachhack.eventbus.BleachSubscribe;
@@ -10,29 +8,18 @@ import org.bleachhack.module.ModuleCategory;
 import org.bleachhack.setting.module.SettingColor;
 import org.bleachhack.setting.module.SettingMode;
 import org.bleachhack.setting.module.SettingSlider;
-import org.bleachhack.util.BleachLogger;
 import org.bleachhack.util.render.Renderer;
 import org.bleachhack.util.render.color.QuadColor;
 import org.bleachhack.util.shader.BleachCoreShaders;
 import org.bleachhack.util.shader.ColorVertexConsumerProvider;
 import org.bleachhack.util.shader.ShaderEffectWrapper;
-
-import com.google.gson.JsonSyntaxException;
+import org.bleachhack.util.shader.ShaderLoader;
 
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.block.entity.BlockEntity;
-import net.minecraft.client.renderer.LightTexture;
-import net.minecraft.client.renderer.texture.OverlayTexture;
-import net.minecraft.client.renderer.rendertype.RenderTypes;
-import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
-import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.phys.AABB;
-import net.minecraft.world.phys.Vec3;
-import net.minecraft.util.RandomSource;
-import org.bleachhack.util.shader.ShaderLoader;
 
 public class BlockHighlight extends Module {
 
@@ -54,10 +41,10 @@ public class BlockHighlight extends Module {
 
 		try {
 			shader = new ShaderEffectWrapper(
-					ShaderLoader.loadEffect(mc.getFramebuffer(), new Identifier("bleachhack", "shaders/post/entity_outline.json")));
+					ShaderLoader.loadEffect(mc.gameRenderer.mainRenderTarget(), Identifier.fromNamespaceAndPath("bleachhack", "shaders/post/entity_outline.json")));
 
 			colorVertexer = new ColorVertexConsumerProvider(shader.getFramebuffer("main"), BleachCoreShaders::getColorOverlayShader);
-		} catch (JsonSyntaxException | IOException e) {
+		} catch (Exception e) {
 			e.printStackTrace();
 			setEnabled(false);
 		}
@@ -72,48 +59,29 @@ public class BlockHighlight extends Module {
 	public void onWorldRender(EventWorldRender.Post event) {
 		int mode = getSetting(0).asMode().getMode();
 
-		if (!(mc.crosshairTarget instanceof BlockHitResult))
+		if (!(mc.hitResult instanceof BlockHitResult))
 			return;
 
-		BlockPos pos = ((BlockHitResult) mc.crosshairTarget).getBlockPos();
-		BlockState state = mc.world.getBlockState(pos);
-		if (!state.isSolidBlock(mc.world, pos) || !mc.world.getWorldBorder().contains(pos)) {
+		BlockPos pos = ((BlockHitResult) mc.hitResult).getBlockPos();
+		BlockState state = mc.level.getBlockState(pos);
+		if (!state.isRedstoneConductor(mc.level, pos) || !mc.level.getWorldBorder().isWithinBounds(pos)) {
 			return;
 		}
 
 		int[] color = this.getSetting(4).asColor().getRGBArray();
 		if (mode == 0) {
+			// TODO(26.2): shader mode is inert — the immediate BlockEntityRenderer.render(...)
+			// and BlockModelRenderer.renderFlat(...) calls that drew the tinted block into the
+			// shader framebuffer are gone (block/BE rendering is extract/submit based now) and
+			// the shader pipeline itself is stubbed. Frame flow kept so the feature can be
+			// rebuilt on the submit pipeline.
 			shader.prepare();
 			shader.clearFramebuffer("main");
-
-			Vec3 offset = state.getModelOffset(mc.world, pos);
-			PoseStack matrices = Renderer.matrixFrom(pos.getX() + offset.x, pos.getY() + offset.y, pos.getZ() + offset.z);
-
-			BlockEntity be = mc.world.getBlockEntity(pos);
-			BlockEntityRenderer<BlockEntity> renderer = be != null ? mc.getBlockEntityRenderDispatcher().get(be) : null;
-			try {
-				if (renderer != null) {
-					renderer.render(be, mc.getTickDelta(), matrices,
-							colorVertexer.createSingleProvider(mc.getBufferBuilders().getEntityVertexConsumers(), color[0], color[1], color[2], getSetting(1).asSlider().getValueInt()),
-							LightTexture.MAX_LIGHT_COORDINATE, OverlayTexture.DEFAULT_UV);
-				} else {
-					mc.getBlockRenderManager().getModelRenderer().renderFlat(
-							mc.world, mc.getBlockRenderManager().getModel(state), state, pos, matrices,
-							colorVertexer.createSingleProvider(mc.getBufferBuilders().getEntityVertexConsumers(), color[0], color[1], color[2], getSetting(1).asSlider().getValueInt()).getBuffer(RenderTypes.getMovingBlockLayer(state)),
-							false, RandomSource.create(0), 0L, OverlayTexture.DEFAULT_UV);
-				}
-			} catch (Exception e) {
-				BleachLogger.error("Disabling BlockHighlight, another mod conflicting with shader mode?");
-				e.printStackTrace();
-				setEnabled(false);
-				return;
-			}
-
 			colorVertexer.draw();
 			shader.render();
 			shader.drawFramebufferToMain("main");
 		} else {
-			AABB box = state.getOutlineShape(mc.world, pos).getBoundingBox().offset(pos);
+			AABB box = state.getShape(mc.level, pos).bounds().move(pos);
 			float width = getSetting(2).asSlider().getValueFloat();
 			int fill = getSetting(3).asSlider().getValueInt();
 

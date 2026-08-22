@@ -19,7 +19,12 @@ import org.bleachhack.setting.module.SettingMode;
 import org.bleachhack.setting.module.SettingSlider;
 import org.bleachhack.setting.module.SettingToggle;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.PositionMoveRotation;
+import net.minecraft.world.entity.Relative;
 import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
 import net.minecraft.network.protocol.game.ServerboundMoveVehiclePacket;
 import net.minecraft.network.protocol.game.ClientboundPlayerPositionPacket;
@@ -46,12 +51,12 @@ public class PacketFly extends Module {
 
 		super.onEnable(inWorld);
 
-		cachedPos = mc.player.getRootVehicle().getPos();
+		cachedPos = mc.player.getRootVehicle().position();
 	}
 
 	@BleachSubscribe
 	public void onMovementPackets(EventSendMovementPackets event) {
-		mc.player.setVelocity(Vec3.ZERO);
+		mc.player.setDeltaMovement(Vec3.ZERO);
 		event.setCancelled(true);
 	}
 
@@ -65,8 +70,14 @@ public class PacketFly extends Module {
 		if (event.getPacket() instanceof ClientboundPlayerPositionPacket) {
 			ClientboundPlayerPositionPacket p = (ClientboundPlayerPositionPacket) event.getPacket();
 
-			p.yaw = mc.player.getYaw();
-			p.pitch = mc.player.getPitch();
+			// TODO(26.2): the packet is an immutable record now, so replace it instead of mutating yaw/pitch.
+			// NOTE: this only takes effect once MixinClientConnection processes event.getPacket() after posting
+			// the event (it currently only honors isCancelled()).
+			PositionMoveRotation change = p.change();
+			Set<Relative> relatives = new HashSet<>(p.relatives());
+			relatives.removeAll(Relative.ROTATION);
+			event.setPacket(new ClientboundPlayerPositionPacket(p.id(),
+					new PositionMoveRotation(change.position(), change.deltaMovement(), mc.player.getYRot(), mc.player.getXRot()), relatives));
 
 			if (getSetting(4).asToggle().getState()) {
 				event.setCancelled(true);
@@ -77,15 +88,15 @@ public class PacketFly extends Module {
 
 	@BleachSubscribe
 	public void onSendPacket(EventPacket.Send event) {
-		if (event.getPacket() instanceof ServerboundMovePlayerPacket.LookAndOnGround) {
+		if (event.getPacket() instanceof ServerboundMovePlayerPacket.Rot) {
 			event.setCancelled(true);
 			return;
 		}
 
-		if (event.getPacket() instanceof ServerboundMovePlayerPacket.Full) {
+		if (event.getPacket() instanceof ServerboundMovePlayerPacket.PosRot) {
 			event.setCancelled(true);
 			ServerboundMovePlayerPacket p = (ServerboundMovePlayerPacket) event.getPacket();
-			mc.player.networkHandler.sendPacket(new ServerboundMovePlayerPacket.PositionAndOnGround(p.getX(0), p.getY(0), p.getZ(0), p.isOnGround()));
+			mc.player.connection.send(new ServerboundMovePlayerPacket.Pos(p.getX(0), p.getY(0), p.getZ(0), p.isOnGround(), p.horizontalCollision()));
 		}
 	}
 
@@ -98,26 +109,26 @@ public class PacketFly extends Module {
 		double vspeed = getSetting(2).asSlider().getValue();
 		timer++;
 
-		Vec3 forward = new Vec3(0, 0, hspeed).rotateY(-(float) Math.toRadians(mc.player.getYaw()));
+		Vec3 forward = new Vec3(0, 0, hspeed).yRot(-(float) Math.toRadians(mc.player.getYRot()));
 		Vec3 moveVec = Vec3.ZERO;
 
-		if (mc.player.input.pressingForward) {
+		if (mc.player.input.keyPresses.forward()) {
 			moveVec = moveVec.add(forward);
 		}
-		if (mc.player.input.pressingBack) {
-			moveVec = moveVec.add(forward.negate());
+		if (mc.player.input.keyPresses.backward()) {
+			moveVec = moveVec.add(forward.reverse());
 		}
-		if (mc.player.input.jumping) {
+		if (mc.player.input.keyPresses.jump()) {
 			moveVec = moveVec.add(0, vspeed, 0);
 		}
-		if (mc.player.input.sneaking) {
+		if (mc.player.input.keyPresses.shift()) {
 			moveVec = moveVec.add(0, -vspeed, 0);
 		}
-		if (mc.player.input.pressingLeft) {
-			moveVec = moveVec.add(forward.rotateY((float) Math.toRadians(90)));
+		if (mc.player.input.keyPresses.left()) {
+			moveVec = moveVec.add(forward.yRot((float) Math.toRadians(90)));
 		}
-		if (mc.player.input.pressingRight) {
-			moveVec = moveVec.add(forward.rotateY((float) -Math.toRadians(90)));
+		if (mc.player.input.keyPresses.right()) {
+			moveVec = moveVec.add(forward.yRot((float) -Math.toRadians(90)));
 		}
 
 		Entity target = mc.player.getRootVehicle();
@@ -130,12 +141,12 @@ public class PacketFly extends Module {
 			cachedPos = cachedPos.add(moveVec);
 
 			//target.noClip = true;
-			target.updatePositionAndAngles(cachedPos.x, cachedPos.y, cachedPos.z, mc.player.getYaw(), mc.player.getPitch());
+			target.snapTo(cachedPos.x, cachedPos.y, cachedPos.z, mc.player.getYRot(), mc.player.getXRot());
 			if (target != mc.player) {
-				mc.player.networkHandler.sendPacket(new ServerboundMoveVehiclePacket(target));
+				mc.player.connection.send(ServerboundMoveVehiclePacket.fromEntity(target));
 			} else {
-				mc.player.networkHandler.sendPacket(new ServerboundMovePlayerPacket.PositionAndOnGround(cachedPos.x, cachedPos.y, cachedPos.z, false));
-				mc.player.networkHandler.sendPacket(new ServerboundMovePlayerPacket.PositionAndOnGround(cachedPos.x, cachedPos.y - 0.01, cachedPos.z, true));
+				mc.player.connection.send(new ServerboundMovePlayerPacket.Pos(cachedPos.x, cachedPos.y, cachedPos.z, false, false));
+				mc.player.connection.send(new ServerboundMovePlayerPacket.Pos(cachedPos.x, cachedPos.y - 0.01, cachedPos.z, true, false));
 			}
 		} else if (getSetting(0).asMode().getMode() == 1) {
 			//moveVec = Vec3.ZERO;
@@ -155,11 +166,11 @@ public class PacketFly extends Module {
 				timer = 0;
 			}
 
-			mc.player.networkHandler.sendPacket(new ServerboundMovePlayerPacket.PositionAndOnGround(
-					mc.player.getX() + moveVec.x, mc.player.getY() + moveVec.y, mc.player.getZ() + moveVec.z, false));
+			mc.player.connection.send(new ServerboundMovePlayerPacket.Pos(
+					mc.player.getX() + moveVec.x, mc.player.getY() + moveVec.y, mc.player.getZ() + moveVec.z, false, false));
 
-			mc.player.networkHandler.sendPacket(new ServerboundMovePlayerPacket.PositionAndOnGround(
-					mc.player.getX() + moveVec.x, mc.player.getY() - 420.69, mc.player.getZ() + moveVec.z, true));
+			mc.player.connection.send(new ServerboundMovePlayerPacket.Pos(
+					mc.player.getX() + moveVec.x, mc.player.getY() - 420.69, mc.player.getZ() + moveVec.z, true, false));
 		}
 	}
 

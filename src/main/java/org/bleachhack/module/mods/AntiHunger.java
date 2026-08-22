@@ -27,18 +27,34 @@ public class AntiHunger extends Module {
 
 	@BleachSubscribe
 	public void onSendPacket(EventPacket.Send event) {
-		if (event.getPacket() instanceof ServerboundMovePlayerPacket) {
-			if (mc.player.getVelocity().y != 0 && !mc.options.jumpKey.isPressed() && (!bool || !getSetting(0).asToggle().getState())) {
+		if (event.getPacket() instanceof ServerboundMovePlayerPacket packet) {
+			if (mc.player.getDeltaMovement().y != 0 && !mc.options.keyJump.isDown() && (!bool || !getSetting(0).asToggle().getState())) {
 				// if (((ServerboundMovePlayerPacket) event.getPacket()).isOnGround())
 				// event.setCancelled(true);
 				boolean onGround = mc.player.fallDistance >= 0.1f;
 				mc.player.setOnGround(onGround);
-				((ServerboundMovePlayerPacket) event.getPacket()).onGround = onGround;
+
+				// 26.2: packet fields are final now - cancel and resend a rebuilt packet instead of mutating.
+				// The resent packet re-fires this handler but already matches, so it passes through untouched.
+				if (packet.isOnGround() != onGround) {
+					event.setCancelled(true);
+					mc.player.connection.send(withOnGround(packet, onGround));
+				}
 				bool = true;
 			} else {
 				bool = false;
 			}
 		}
+	}
+
+	private static ServerboundMovePlayerPacket withOnGround(ServerboundMovePlayerPacket p, boolean onGround) {
+		if (p.hasPosition() && p.hasRotation())
+			return new ServerboundMovePlayerPacket.PosRot(p.getX(0), p.getY(0), p.getZ(0), p.getYRot(0), p.getXRot(0), onGround, p.horizontalCollision());
+		if (p.hasPosition())
+			return new ServerboundMovePlayerPacket.Pos(p.getX(0), p.getY(0), p.getZ(0), onGround, p.horizontalCollision());
+		if (p.hasRotation())
+			return new ServerboundMovePlayerPacket.Rot(p.getYRot(0), p.getXRot(0), onGround, p.horizontalCollision());
+		return new ServerboundMovePlayerPacket.StatusOnly(onGround, p.horizontalCollision());
 	}
 
 }

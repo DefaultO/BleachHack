@@ -28,11 +28,11 @@ public class HandProgress extends Module {
 
 	@BleachSubscribe
 	public void onTick(EventTick event) {
-		AccessorHeldItemRenderer accessor = (AccessorHeldItemRenderer) mc.gameRenderer.firstPersonRenderer;
+		AccessorHeldItemRenderer accessor = (AccessorHeldItemRenderer) mc.gameRenderer.itemInHandRenderer;
 
 		// Refresh the item held in hand every tick
-		accessor.setMainHand(mc.player.getMainHandStack());
-		accessor.setOffHand(mc.player.getOffHandStack());
+		accessor.setMainHand(mc.player.getMainHandItem());
+		accessor.setOffHand(mc.player.getOffhandItem());
 
 		// Set the item render height
 		float mainHand = getSetting(2).asToggle().getState() 

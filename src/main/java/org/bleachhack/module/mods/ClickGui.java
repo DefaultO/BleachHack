@@ -30,13 +30,13 @@ public class ClickGui extends Module {
 	public void onEnable(boolean inWorld) {
 		super.onEnable(inWorld);
 
-		mc.setScreen(ModuleClickGuiScreen.INSTANCE);
+		mc.gui.setScreen(ModuleClickGuiScreen.INSTANCE);
 	}
 
 	@Override
 	public void onDisable(boolean inWorld) {
-		if (mc.currentScreen instanceof ModuleClickGuiScreen)
-			mc.setScreen(null);
+		if (mc.gui.screen() instanceof ModuleClickGuiScreen)
+			mc.gui.setScreen(null);
 
 		super.onDisable(inWorld);
 	}

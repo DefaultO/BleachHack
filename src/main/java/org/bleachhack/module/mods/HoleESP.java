@@ -67,18 +67,18 @@ public class HoleESP extends Module {
 
 	@BleachSubscribe
 	public void onTick(EventTick event) {
-		if (mc.player.age % 14 == 0) {
+		if (mc.player.tickCount % 14 == 0) {
 			holes.clear();
 
 			int dist = getSetting(0).asSlider().getValueInt();
 
-			for (BlockPos pos : BlockPos.iterateOutwards(mc.player.getBlockPos(), dist, dist, dist)) {
-				if (!mc.world.isInBuildLimit(pos.down())
-						|| (mc.world.getBlockState(pos.down()).getBlock() != Blocks.BEDROCK
-						&& mc.world.getBlockState(pos.down()).getBlock() != Blocks.OBSIDIAN)
-						|| !mc.world.getBlockState(pos).getCollisionShape(mc.world, pos).isEmpty()
-						|| !mc.world.getBlockState(pos.up(1)).getCollisionShape(mc.world, pos.up(1)).isEmpty()
-						|| !mc.world.getBlockState(pos.up(2)).getCollisionShape(mc.world, pos.up(2)).isEmpty()) {
+			for (BlockPos pos : BlockPos.withinManhattan(mc.player.blockPosition(), dist, dist, dist)) {
+				if (!mc.level.isInWorldBounds(pos.below())
+						|| (mc.level.getBlockState(pos.below()).getBlock() != Blocks.BEDROCK
+						&& mc.level.getBlockState(pos.below()).getBlock() != Blocks.OBSIDIAN)
+						|| !mc.level.getBlockState(pos).getCollisionShape(mc.level, pos).isEmpty()
+						|| !mc.level.getBlockState(pos.above(1)).getCollisionShape(mc.level, pos.above(1)).isEmpty()
+						|| !mc.level.getBlockState(pos.above(2)).getCollisionShape(mc.level, pos.above(2)).isEmpty()) {
 					continue;
 				}
 
@@ -93,9 +93,9 @@ public class HoleESP extends Module {
 				int bedrockCounter = 0;
 				int obsidianCounter = 0;
 				for (BlockPos pos1 : neighbours(pos)) {
-					if (mc.world.getBlockState(pos1).getBlock() == Blocks.BEDROCK) {
+					if (mc.level.getBlockState(pos1).getBlock() == Blocks.BEDROCK) {
 						bedrockCounter++;
-					} else if (mc.world.getBlockState(pos1).getBlock() == Blocks.OBSIDIAN) {
+					} else if (mc.level.getBlockState(pos1).getBlock() == Blocks.OBSIDIAN) {
 						obsidianCounter++;
 					} else {
 						break;
@@ -103,12 +103,12 @@ public class HoleESP extends Module {
 				}
 
 				if (bedrockCounter == 5 && getSetting(3).asToggle().getState()) {
-					holes.put(pos.toImmutable(), getSetting(3).asToggle().getChild(0).asColor().getRGBArray());
+					holes.put(pos.immutable(), getSetting(3).asToggle().getChild(0).asColor().getRGBArray());
 				} else if (obsidianCounter == 5 && getSetting(5).asToggle().getState()) {
-					holes.put(pos.toImmutable(), getSetting(5).asToggle().getChild(0).asColor().getRGBArray());
+					holes.put(pos.immutable(), getSetting(5).asToggle().getChild(0).asColor().getRGBArray());
 				} else if (bedrockCounter >= 1 && obsidianCounter >= 1
 						&& bedrockCounter + obsidianCounter == 5 && getSetting(4).asToggle().getState()) {
-					holes.put(pos.toImmutable(), getSetting(4).asToggle().getChild(0).asColor().getRGBArray());
+					holes.put(pos.immutable(), getSetting(4).asToggle().getChild(0).asColor().getRGBArray());
 				}
 			}
 		}
@@ -142,20 +142,20 @@ public class HoleESP extends Module {
 				CardinalDirection gradientDir = sideMode == 0 ? CardinalDirection.NORTH : CardinalDirection.SOUTH;
 
 				holes.forEach((pos, color) ->
-						Renderer.drawBoxFill(new AABB(new Vec3(pos.getX(), pos.getY(), pos.getZ()), new Vec3(pos.getX() + 1, pos.getY(), pos.getZ() + 1)).stretch(0, height, 0),
+						Renderer.drawBoxFill(new AABB(new Vec3(pos.getX(), pos.getY(), pos.getZ()), new Vec3(pos.getX() + 1, pos.getY(), pos.getZ() + 1)).expandTowards(0, height, 0),
 								QuadColor.gradient(
 										color[0], color[1], color[2], alpha,
 										color[0], color[1], color[2], 0, gradientDir), excludeDirs));
 			} else {
 				if (sideMode == 2 || sideMode == 4) {
 					holes.forEach((pos, color) ->
-							Renderer.drawBoxFill(new AABB(new Vec3(pos.getX(), pos.getY(), pos.getZ()), new Vec3(pos.getX() + 1, pos.getY(), pos.getZ() + 1)).stretch(0, height, 0),
+							Renderer.drawBoxFill(new AABB(new Vec3(pos.getX(), pos.getY(), pos.getZ()), new Vec3(pos.getX() + 1, pos.getY(), pos.getZ() + 1)).expandTowards(0, height, 0),
 									QuadColor.single(color[0], color[1], color[2], alpha), excludeDirs));
 				}
 
 				if (sideMode == 2 || sideMode == 3) {
 					holes.forEach((pos, color) ->
-							Renderer.drawBoxOutline(new AABB(new Vec3(pos.getX(), pos.getY(), pos.getZ()), new Vec3(pos.getX() + 1, pos.getY(), pos.getZ() + 1)).stretch(0, height, 0),
+							Renderer.drawBoxOutline(new AABB(new Vec3(pos.getX(), pos.getY(), pos.getZ()), new Vec3(pos.getX() + 1, pos.getY(), pos.getZ() + 1)).expandTowards(0, height, 0),
 									QuadColor.single(color[0], color[1], color[2], 255), getSetting(2).asToggle().getChild(1).asSlider().getValueFloat(), excludeDirs));
 				}
 			}
@@ -164,7 +164,7 @@ public class HoleESP extends Module {
 
 	private BlockPos[] neighbours(BlockPos pos) {
 		return new BlockPos[] {
-				pos.west(), pos.east(), pos.south(), pos.north(), pos.down()
+				pos.west(), pos.east(), pos.south(), pos.north(), pos.below()
 		};
 	}
 }
