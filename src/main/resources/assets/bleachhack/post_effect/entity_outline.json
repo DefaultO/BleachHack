@@ -1,35 +1,47 @@
 {
 	"targets": {
-		"swap": {}
+		"bleach_dilate": {},
+		"bleach_result": {}
 	},
 	"passes": [
 		{
 			"vertex_shader": "minecraft:core/screenquad",
-			"fragment_shader": "bleachhack:post/entity_outline",
+			"fragment_shader": "bleachhack:post/outline_dilate_h",
 			"inputs": [
-				{
-					"sampler_name": "In",
-					"target": "minecraft:entity_outline"
-				}
+				{ "sampler_name": "In", "target": "minecraft:entity_outline" }
 			],
-			"output": "swap"
+			"uniforms": {
+				"BleachOutline": [
+					{ "name": "Fill", "type": "float", "value": ${FILL} },
+					{ "name": "Radius", "type": "float", "value": ${RADIUS} }
+				]
+			},
+			"output": "bleach_dilate"
+		},
+		{
+			"vertex_shader": "minecraft:core/screenquad",
+			"fragment_shader": "bleachhack:post/outline_combine",
+			"inputs": [
+				{ "sampler_name": "In", "target": "bleach_dilate" },
+				{ "sampler_name": "Orig", "target": "minecraft:entity_outline" }
+			],
+			"uniforms": {
+				"BleachOutline": [
+					{ "name": "Fill", "type": "float", "value": ${FILL} },
+					{ "name": "Radius", "type": "float", "value": ${RADIUS} }
+				]
+			},
+			"output": "bleach_result"
 		},
 		{
 			"vertex_shader": "minecraft:core/screenquad",
 			"fragment_shader": "minecraft:post/blit",
 			"inputs": [
-				{
-					"sampler_name": "In",
-					"target": "swap"
-				}
+				{ "sampler_name": "In", "target": "bleach_result" }
 			],
 			"uniforms": {
 				"BlitConfig": [
-					{
-						"name": "ColorModulate",
-						"type": "vec4",
-						"value": [ 1.0, 1.0, 1.0, 1.0 ]
-					}
+					{ "name": "ColorModulate", "type": "vec4", "value": [ 1.0, 1.0, 1.0, 1.0 ] }
 				]
 			},
 			"output": "minecraft:entity_outline"

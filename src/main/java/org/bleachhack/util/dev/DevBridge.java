@@ -61,6 +61,10 @@ public class DevBridge {
 
 		started = true;
 
+		// Screenshot-driven testing needs the game to keep rendering the world while the
+		// window is in the background, instead of throwing up the pause menu.
+		Minecraft.getInstance().options.pauseOnLostFocus = false;
+
 		Thread thread = new Thread(DevBridge::listen, "BleachHack-DevBridge");
 		thread.setDaemon(true);
 		thread.start();
@@ -249,6 +253,11 @@ public class DevBridge {
 				return "OK";
 			}
 
+			case "clearchat": {
+				mc.gui.hud.getChat().clearMessages(true);
+				return "OK";
+			}
+
 			case "screenshot": {
 				String name = rest.isEmpty() ? "devbridge" : rest;
 				return DevScreenshot.grab(name);
@@ -256,7 +265,7 @@ public class DevBridge {
 
 			default:
 				return "ERR unknown command '" + command + "'. Try: ping, state, modules, enable, disable, toggle, "
-						+ "settings, set, cmd, chat, look, connect, disconnect, screenshot";
+						+ "settings, set, cmd, chat, look, connect, disconnect, clearchat, hidegui, screenshot";
 		}
 	}
 

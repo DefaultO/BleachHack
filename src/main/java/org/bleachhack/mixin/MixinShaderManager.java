@@ -58,19 +58,35 @@ public class MixinShaderManager {
 		Map<ShaderManager.ShaderSourceKey, String> sources = new HashMap<>(configs.shaderSources());
 		Map<Identifier, PostChainConfig> chains = new HashMap<>(configs.postChains());
 
-		String fragment = bleachhack$read("/assets/bleachhack/shaders/post/entity_outline.fsh");
-		if (fragment != null) {
-			sources.put(new ShaderManager.ShaderSourceKey(BleachShaders.ENTITY_OUTLINE_FRAGMENT, ShaderType.FRAGMENT), fragment);
+		int shaders = 0;
+		shaders += addShader(sources, BleachShaders.ENTITY_OUTLINE_DILATE, "/assets/bleachhack/shaders/post/outline_dilate_h.fsh");
+		shaders += addShader(sources, BleachShaders.ENTITY_OUTLINE_COMBINE, "/assets/bleachhack/shaders/post/outline_combine.fsh");
+
+		// One template, baked into a grid of variants: PostPass uniforms are fixed once
+		// the pass is built, so each fill/thickness combination needs its own config.
+		int variants = 0;
+		String template = bleachhack$read("/assets/bleachhack/post_effect/entity_outline.json");
+
+		if (template != null) {
+			for (int fill = 0; fill <= BleachShaders.FILL_STEPS; fill++) {
+				for (int radius = BleachShaders.MIN_RADIUS; radius <= BleachShaders.MAX_RADIUS; radius++) {
+					String json = template
+							.replace("${FILL}", String.valueOf((float) fill / BleachShaders.FILL_STEPS))
+							.replace("${RADIUS}", String.valueOf((float) radius));
+
+					PostChainConfig config = bleachhack$parseChain(json);
+
+					if (config != null) {
+						Identifier id = BleachShaders.variant(fill, radius);
+						chains.put(id, config);
+						BleachShaders.markRegistered(id);
+						variants++;
+					}
+				}
+			}
 		}
 
-		PostChainConfig chain = bleachhack$readChain("/assets/bleachhack/post_effect/entity_outline.json");
-		if (chain != null) {
-			chains.put(BleachShaders.ENTITY_OUTLINE, chain);
-			BleachShaders.markRegistered(BleachShaders.ENTITY_OUTLINE);
-		}
-
-		BleachLogger.logger.log(Level.INFO, "Registered BleachHack shaders (fragment: %s, chain: %s)",
-				fragment != null, chain != null);
+		BleachLogger.logger.log(Level.INFO, "Registered BleachHack shaders (%d sources, %d post-effect variants)", shaders, variants);
 
 		callback.setReturnValue(new ShaderManager.Configs(Map.copyOf(sources), Map.copyOf(chains)));
 	}
@@ -91,16 +107,22 @@ public class MixinShaderManager {
 	}
 
 	@Unique
-	private static @Nullable PostChainConfig bleachhack$readChain(String path) {
-		String json = bleachhack$read(path);
+	private static int addShader(Map<ShaderManager.ShaderSourceKey, String> sources, Identifier id, String path) {
+		String source = bleachhack$read(path);
 
-		if (json == null) {
-			return null;
+		if (source == null) {
+			return 0;
 		}
 
+		sources.put(new ShaderManager.ShaderSourceKey(id, ShaderType.FRAGMENT), source);
+		return 1;
+	}
+
+	@Unique
+	private static @Nullable PostChainConfig bleachhack$parseChain(String json) {
 		return PostChainConfig.CODEC
 				.parse(JsonOps.INSTANCE, JsonParser.parseString(json))
-				.resultOrPartial(error -> BleachLogger.logger.log(Level.WARN, "Failed parsing %s: %s", path, error))
+				.resultOrPartial(error -> BleachLogger.logger.log(Level.WARN, "Failed parsing BleachHack post effect: %s", error))
 				.orElse(null);
 	}
 }
