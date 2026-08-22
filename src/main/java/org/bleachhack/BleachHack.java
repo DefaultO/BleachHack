@@ -111,6 +111,9 @@ public class BleachHack implements ModInitializer {
 
 		BleachFileHelper.startSavingExecutor();
 
+		// dev-only loopback control socket for automated feature testing
+		org.bleachhack.util.dev.DevBridge.start();
+
 		BleachLogger.logger.log(Level.INFO, "Loaded BleachHack (Phase 2) in %d ms.", System.currentTimeMillis() - initStartTime);
 	}
 

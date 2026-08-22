@@ -92,6 +92,10 @@ public class SettingColor extends ModuleSetting<float[]> {
 		return len - len / 4 - 1;
 	}
 	
+	public void setRGB(int r, int g, int b) {
+		setValue(rgbToHsv(r, g, b));
+	}
+
 	public int[] getRGBArray() {
 		float[] hsv = getValue();
 		return hsvToRgb(hsv[0], hsv[1], hsv[2]);

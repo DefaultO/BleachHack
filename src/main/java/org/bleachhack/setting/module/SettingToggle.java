@@ -95,6 +95,10 @@ public class SettingToggle extends ModuleSetting<Boolean> {
 		return h;
 	}
 
+	public List<ModuleSetting<?>> getChildren() {
+		return children;
+	}
+
 	public ModuleSetting<?> getChild(int c) {
 		return children.get(c);
 	}
