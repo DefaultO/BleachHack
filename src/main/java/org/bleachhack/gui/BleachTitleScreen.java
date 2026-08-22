@@ -68,7 +68,8 @@ public class BleachTitleScreen extends WindowScreen {
 		addWindow(new Window(width / 8,
 				height / 8,
 				width - width / 8,
-				height - height / 8 + 2, "BleachHack", new ItemStack(Items.MUSIC_DISC_CAT)));
+				height - height / 8 + 2, "BleachHack",
+				(java.util.function.Supplier<ItemStack>) () -> new ItemStack(Items.MUSIC_DISC_CAT)));
 
 		int w = getWindow(0).x2 - getWindow(0).x1;
 		int h = getWindow(0).y2 - getWindow(0).y1;

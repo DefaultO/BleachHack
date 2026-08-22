@@ -62,7 +62,7 @@ public class BleachCreditsScreen extends WindowScreen {
 		addWindow(new Window(width / 8,
 				height / 8,
 				width - width / 8,
-				height - height / 8, "Credits", new ItemStack(Items.DRAGON_HEAD)));
+				height - height / 8, "Credits", (java.util.function.Supplier<ItemStack>) () -> new ItemStack(Items.DRAGON_HEAD)));
 
 		int w = getWindow(0).x2 - getWindow(0).x1;
 		int h = getWindow(0).y2 - getWindow(0).y1;

@@ -68,7 +68,7 @@ public class AccountManagerScreen extends WindowScreen {
 				width / 8,
 				height / 8,
 				width - width / 8,
-				height - height / 8, "Accounts", new ItemStack(Items.PAPER)));
+				height - height / 8, "Accounts", (java.util.function.Supplier<ItemStack>) () -> new ItemStack(Items.PAPER)));
 
 		int w = mainWindow.x2 - mainWindow.x1;
 		int h = mainWindow.y2 - mainWindow.y1;
@@ -127,7 +127,7 @@ public class AccountManagerScreen extends WindowScreen {
 				width / 2 - 96,
 				height / 2 - 17,
 				width / 2 + 96,
-				height / 2 + 17, "Add Account..", new ItemStack(Items.GLAZED_TERRACOTTA.pick(DyeColor.LIME)), true));
+				height / 2 + 17, "Add Account..", (java.util.function.Supplier<ItemStack>) () -> new ItemStack(Items.GLAZED_TERRACOTTA.pick(DyeColor.LIME)), true));
 
 		typeWindow.addWidget(new WindowButtonWidget(3, 15, 189, 31, "No Auth",
 				() -> openAddAccWindow(AccountType.NO_AUTH, "No Auth", new ItemStack(Items.GLAZED_TERRACOTTA.pick(DyeColor.LIGHT_BLUE)))));

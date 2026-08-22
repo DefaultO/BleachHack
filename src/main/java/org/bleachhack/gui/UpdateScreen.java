@@ -59,7 +59,7 @@ public class UpdateScreen extends WindowScreen {
 		addWindow(new Window(width / 2 - wd,
 				height / 16,
 				width / 2 + wd,
-				height - height / 16, String.format("BleachHack Update [%s -> %s]", BleachHack.VERSION, updateJson.get("name").getAsString()), new ItemStack(Items.GLAZED_TERRACOTTA.pick(DyeColor.MAGENTA))));
+				height - height / 16, String.format("BleachHack Update [%s -> %s]", BleachHack.VERSION, updateJson.get("name").getAsString()), (java.util.function.Supplier<ItemStack>) () -> new ItemStack(Items.GLAZED_TERRACOTTA.pick(DyeColor.MAGENTA))));
 
 		int w = getWindow(0).x2 - getWindow(0).x1;
 		int h = getWindow(0).y2 - getWindow(0).y1;
@@ -162,7 +162,7 @@ public class UpdateScreen extends WindowScreen {
 		addWindow(new Window(width / 2 - wd,
 				height / 2 - 15,
 				width / 2 + wd,
-				height / 2 + 15, "Error updating!", new ItemStack(Items.BANNER.pick(DyeColor.RED)), true));
+				height / 2 + 15, "Error updating!", (java.util.function.Supplier<ItemStack>) () -> new ItemStack(Items.BANNER.pick(DyeColor.RED)), true));
 
 		getWindow(1).addWidget(new WindowTextWidget("", true, WindowTextWidget.TextAlign.MIDDLE, wd, 16, 0xc05050)
 				.withRenderEvent((wg, ms, wx, wy)
