@@ -8,19 +8,12 @@
  */
 package org.bleachhack.setting.module;
 
-import net.minecraft.client.gui.GuiGraphics; // TODO(26.2): GuiGraphics removed; GUI draw pipeline is now GuiGraphicsExtractor + GuiRenderState. Needs window-framework migration.
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import org.bleachhack.gui.clickgui.window.ModuleWindow;
 import org.bleachhack.gui.window.Window;
 import org.bleachhack.setting.SettingDataHandlers;
-import com.mojang.blaze3d.systems.RenderSystem;
 
 import net.minecraft.client.Minecraft;
-// TODO(26.2): immediate-mode rendering removed. Tesselator/BufferBuilder/VertexFormat/GameRenderer.getPositionColorProgram + RenderSystem.enableBlend/defaultBlendFunc/setShader/disableBlend no longer exist. The color/hue square must be rebuilt on the 26.2 pipeline (GuiGraphicsExtractor.fill/fillGradient or a RenderPipeline). Left intact so the maintainer can migrate.
-import com.mojang.blaze3d.vertex.BufferBuilder;
-import net.minecraft.client.renderer.GameRenderer;
-import com.mojang.blaze3d.vertex.Tesselator;
-import net.minecraft.client.render.VertexFormat;
-import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 
 public class SettingColor extends ModuleSetting<float[]> {
 
@@ -28,8 +21,7 @@ public class SettingColor extends ModuleSetting<float[]> {
 		super(text, rgbToHsv(r, g, b), float[]::clone, SettingDataHandlers.FLOAT_ARRAY);
 	}
 
-	// TODO(26.2): render body uses removed immediate-mode APIs (Tesselator/BufferBuilder color square, RenderSystem blend/shader, GuiGraphics.fill/getMatrices/drawTextWithShadow). Migrate to GuiGraphicsExtractor/GuiRenderState with the window framework.
-	public void render(ModuleWindow window, GuiGraphics drawContext, int x, int y, int len) {
+	public void render(ModuleWindow window, GuiGraphicsExtractor drawContext, int x, int y, int len) {
 		int sx = x + 3;
 		int sy = y + 2;
 		int ex = x + len - 18;
@@ -42,26 +34,9 @@ public class SettingColor extends ModuleSetting<float[]> {
 
 		drawContext.fill(sx, sy, ex, ey, -1);
 
-		RenderSystem.enableBlend();
-		RenderSystem.defaultBlendFunc();
-		RenderSystem.setShader(GameRenderer::getPositionColorProgram);
-
-		// Color square
-		Tesselator tessellator = Tesselator.getInstance();
-		BufferBuilder bufferBuilder = Tesselator.getInstance().getBuffer();
-		bufferBuilder.begin(VertexFormat.DrawMode.QUADS, DefaultVertexFormat.POSITION_COLOR);
-		bufferBuilder.vertex(ex, sy, 0).color(rgb[0], rgb[1], rgb[2], 255).next();
-		bufferBuilder.vertex(sx, sy, 0).color(255, 255, 255, 255).next();
-		bufferBuilder.vertex(sx, ey, 0).color(255, 255, 255, 255).next();
-		bufferBuilder.vertex(ex, ey, 0).color(rgb[0], rgb[1], rgb[2], 255).next();
-
-		bufferBuilder.vertex(ex, sy, 0).color(0, 0, 0, 0).next();
-		bufferBuilder.vertex(sx, sy, 0).color(0, 0, 0, 0).next();
-		bufferBuilder.vertex(sx, ey, 0).color(0, 0, 0, 255).next();
-		bufferBuilder.vertex(ex, ey, 0).color(0, 0, 0, 255).next();
-		tessellator.draw();
-
-		RenderSystem.disableBlend();
+		// Color square: white -> hue left-to-right, then transparent -> black top-to-bottom
+		Window.horizontalGradient(drawContext, sx, sy, ex, ey, 0xffffffff, 0xff000000 | pack(rgb));
+		drawContext.fillGradient(sx, sy, ex, ey, 0x00000000, 0xff000000);
 
 		// Color square input handler
 		if (window.mouseOver(sx, sy, ex, ey) && window.lmHeld) {
@@ -79,10 +54,10 @@ public class SettingColor extends ModuleSetting<float[]> {
 		drawContext.fill(cursorX, cursorY - 2, cursorX + 1, cursorY, 0xffd0d0d0);
 		drawContext.fill(cursorX, cursorY + 1, cursorX + 1, cursorY + 3, 0xffd0d0d0);
 
-		drawContext.getMatrices().push();
-		drawContext.getMatrices().scale(0.75f, 0.75f, 1f);
-		drawContext.drawTextWithShadow(Minecraft.getInstance().font, getName(), (int) ((sx + 1) / 0.75), (int) ((sy + 1) / 0.75), 0x000000);
-		drawContext.getMatrices().pop();
+		drawContext.pose().pushMatrix();
+		drawContext.pose().scale(0.75f, 0.75f);
+		drawContext.text(Minecraft.getInstance().font, getName(), (int) ((sx + 1) / 0.75), (int) ((sy + 1) / 0.75), 0xff000000);
+		drawContext.pose().popMatrix();
 
 		// Hue bar
 		sx = ex + 5;

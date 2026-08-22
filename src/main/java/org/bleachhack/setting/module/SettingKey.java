@@ -8,7 +8,7 @@
  */
 package org.bleachhack.setting.module;
 
-import net.minecraft.client.gui.GuiGraphics; // TODO(26.2): GuiGraphics removed; GUI draw pipeline is now GuiGraphicsExtractor + GuiRenderState (extractRenderState). Needs window-framework migration.
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import org.bleachhack.gui.clickgui.window.ModuleWindow;
 import org.bleachhack.module.Module;
 import org.bleachhack.setting.SettingDataHandlers;
@@ -26,8 +26,7 @@ public class SettingKey extends ModuleSetting<Integer> {
 	}
 
 	@Override
-	// TODO(26.2): render body uses removed immediate-mode GuiGraphics API (fill/drawTextWithShadow). Migrate to GuiGraphicsExtractor/GuiRenderState with the window framework.
-	public void render(ModuleWindow window, GuiGraphics drawContext, int x, int y, int len) {
+	public void render(ModuleWindow window, GuiGraphicsExtractor drawContext, int x, int y, int len) {
 		if (window.mouseOver(x, y, x + len, y + 12)) {
 			drawContext.fill(x + 1, y, x + len, y + 12, 0x70303070);
 		}
@@ -45,7 +44,7 @@ public class SettingKey extends ModuleSetting<Integer> {
 		else if (name.isEmpty())
 			name = "NONE";
 
-		drawContext.drawTextWithShadow(Minecraft.getInstance().font, "Bind: " + name + (window.mouseOver(x, y, x + len, y + 12) ? "..." : ""), x + 3, y + 2, 0xcfe0cf);
+		drawContext.text(Minecraft.getInstance().font, "Bind: " + name + (window.mouseOver(x, y, x + len, y + 12) ? "..." : ""), x + 3, y + 2, 0xffcfe0cf);
 	}
 
 	public SettingKey withDesc(String desc) {

@@ -8,20 +8,23 @@
  */
 package org.bleachhack.gui;
 
-import net.minecraft.DetectedVersion;
 import net.minecraft.SharedConstants;
+import net.minecraft.WorldVersion;
 import net.minecraft.client.ClientBrandRetriever;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.server.packs.PackType;
+import net.minecraft.server.packs.metadata.pack.PackFormat;
 import net.minecraft.network.chat.Component;
 import org.apache.commons.lang3.math.NumberUtils;
 
+import java.lang.reflect.Field;
+
 
 public class ProtocolScreen extends Screen {
-	
+
 	public static String BRAND = null;
 
 	private EditBox versionField;
@@ -39,59 +42,75 @@ public class ProtocolScreen extends Screen {
 	public void init() {
 		super.init();
 
-		addButton = addDrawableChild(Button.builder(Component.literal("Done"), button -> {
-			int i = Integer.parseInt(protocolField.getText());
-			int i1 = Integer.parseInt(packVerField.getText());
+		addButton = addRenderableWidget(Button.builder(Component.literal("Done"), button -> {
+			int i = Integer.parseInt(protocolField.getValue());
+			int i1 = Integer.parseInt(packVerField.getValue());
 
-			DetectedVersion version = (DetectedVersion) SharedConstants.getGameVersion();
-			version.name = versionField.getText();
-			// version.releaseTarget = versionField.getText();
-			version.protocolVersion =  i;
-			version.dataPackVersion = i1;
-			BRAND = brandField.getText();
+			// 26.2: WorldVersion is an immutable record and SharedConstants.setVersion refuses
+			// overrides, so build a spoofed copy and swap the private CURRENT_VERSION field
+			WorldVersion cur = SharedConstants.getCurrentVersion();
+			WorldVersion spoofed = new WorldVersion.Simple(
+					cur.id(),
+					versionField.getValue(),
+					cur.dataVersion(),
+					i,
+					PackFormat.of(i1, cur.packVersion(PackType.CLIENT_RESOURCES).minor()),
+					cur.packVersion(PackType.SERVER_DATA),
+					cur.buildTime(),
+					cur.stable());
 
-			close();
-		}).position(width / 2 - 100, height / 2 + 50).size(196, 20).build());
+			try {
+				Field field = SharedConstants.class.getDeclaredField("CURRENT_VERSION");
+				field.setAccessible(true);
+				field.set(null, spoofed);
+			} catch (ReflectiveOperationException e) {
+				throw new RuntimeException("Failed to spoof game version", e);
+			}
 
-		addDrawableChild(Button.builder(Component.literal("Cancel"),
-				button -> close()).position(width / 2 - 100, height / 2 + 73).size(196, 20).build());
+			BRAND = brandField.getValue();
 
-		versionField = addDrawableChild(new EditBox(textRenderer, width / 2 - 98, height / 2 - 60, 196, 18, Component.empty()));
-		versionField.setText(SharedConstants.getGameVersion().getName());
+			onClose();
+		}).pos(width / 2 - 100, height / 2 + 50).size(196, 20).build());
 
-		protocolField = addDrawableChild(new EditBox(textRenderer, width / 2 - 98, height / 2 - 35, 196, 18, Component.empty()));
-		protocolField.setText(Integer.toString(SharedConstants.getProtocolVersion()));
-		protocolField.setChangedListener(text -> updateAddButton());
+		addRenderableWidget(Button.builder(Component.literal("Cancel"),
+				button -> onClose()).pos(width / 2 - 100, height / 2 + 73).size(196, 20).build());
 
-		packVerField = addDrawableChild(new EditBox(textRenderer, width / 2 - 98, height / 2 - 10, 196, 18, Component.empty()));
-		packVerField.setText(Integer.toString(SharedConstants.getGameVersion().getResourceVersion(PackType.CLIENT_RESOURCES)));
-		packVerField.setChangedListener(text -> updateAddButton());
-		
-		brandField = addDrawableChild(new EditBox(textRenderer, width / 2 - 98, height / 2 + 15, 128, 18, Component.empty()));
-		brandField.setText(ClientBrandRetriever.getClientModName());
-		
-		addDrawableChild(Button.builder(Component.literal("V"),
-				button -> brandField.setText("vanilla")).position(width / 2 + 33, height / 2 + 14).size(20, 20).build());
-		addDrawableChild(Button.builder(Component.literal("Fa"),
-				button -> brandField.setText("fabric")).position(width / 2 + 56, height / 2 + 14).size(20, 20).build());
-		addDrawableChild(Button.builder(Component.literal("Fo"),
-				button -> brandField.setText("forge")).position(width / 2 + 79, height / 2 + 14).size(20, 20).build());
+		versionField = addRenderableWidget(new EditBox(font, width / 2 - 98, height / 2 - 60, 196, 18, Component.empty()));
+		versionField.setValue(SharedConstants.getCurrentVersion().name());
+
+		protocolField = addRenderableWidget(new EditBox(font, width / 2 - 98, height / 2 - 35, 196, 18, Component.empty()));
+		protocolField.setValue(Integer.toString(SharedConstants.getProtocolVersion()));
+		protocolField.setResponder(text -> updateAddButton());
+
+		packVerField = addRenderableWidget(new EditBox(font, width / 2 - 98, height / 2 - 10, 196, 18, Component.empty()));
+		packVerField.setValue(Integer.toString(SharedConstants.getCurrentVersion().packVersion(PackType.CLIENT_RESOURCES).major()));
+		packVerField.setResponder(text -> updateAddButton());
+
+		brandField = addRenderableWidget(new EditBox(font, width / 2 - 98, height / 2 + 15, 128, 18, Component.empty()));
+		brandField.setValue(ClientBrandRetriever.getClientModName());
+
+		addRenderableWidget(Button.builder(Component.literal("V"),
+				button -> brandField.setValue("vanilla")).pos(width / 2 + 33, height / 2 + 14).size(20, 20).build());
+		addRenderableWidget(Button.builder(Component.literal("Fa"),
+				button -> brandField.setValue("fabric")).pos(width / 2 + 56, height / 2 + 14).size(20, 20).build());
+		addRenderableWidget(Button.builder(Component.literal("Fo"),
+				button -> brandField.setValue("forge")).pos(width / 2 + 79, height / 2 + 14).size(20, 20).build());
 	}
 
-	public void render(GuiGraphics drawContext, int mouseX, int mouseY, float delta) {
-		renderBackground(drawContext, mouseX, mouseY, delta);
-		drawContext.drawTextWithShadow(textRenderer, "NOTE: This will not make the game compatible with other versions", width / 5, 5, 0xaaaaaa);
-		drawContext.drawTextWithShadow(textRenderer, "It will only change what the client says it is to servers.", width / 5, 15, 0xaaaaaa);
-		drawContext.drawTextWithShadow(textRenderer, "Version:", width / 2 - 103 - textRenderer.getWidth("Version:"), height / 2 - 55, 0xaaaaaa);
-		drawContext.drawTextWithShadow(textRenderer, "Protocol:", width / 2 - 103 - textRenderer.getWidth("Protocol:"), height / 2 - 30, 0xaaaaaa);
-		drawContext.drawTextWithShadow(textRenderer, "Pack Ver:", width / 2 - 103 - textRenderer.getWidth("Pack Ver:"), height / 2 - 5, 0xaaaaaa);
-		drawContext.drawTextWithShadow(textRenderer, "Brand:", width / 2 - 103 - textRenderer.getWidth("Brand:"), height / 2 + 20, 0xaaaaaa);
+	public void extractRenderState(GuiGraphicsExtractor drawContext, int mouseX, int mouseY, float delta) {
+		// background is drawn by the vanilla extractBackground pass before this is called
+		drawContext.text(font, "NOTE: This will not make the game compatible with other versions", width / 5, 5, 0xffaaaaaa);
+		drawContext.text(font, "It will only change what the client says it is to servers.", width / 5, 15, 0xffaaaaaa);
+		drawContext.text(font, "Version:", width / 2 - 103 - font.width("Version:"), height / 2 - 55, 0xffaaaaaa);
+		drawContext.text(font, "Protocol:", width / 2 - 103 - font.width("Protocol:"), height / 2 - 30, 0xffaaaaaa);
+		drawContext.text(font, "Pack Ver:", width / 2 - 103 - font.width("Pack Ver:"), height / 2 - 5, 0xffaaaaaa);
+		drawContext.text(font, "Brand:", width / 2 - 103 - font.width("Brand:"), height / 2 + 20, 0xffaaaaaa);
 
-		super.render(drawContext, mouseX, mouseY, delta);
+		super.extractRenderState(drawContext, mouseX, mouseY, delta);
 	}
 
-	public void close() {
-		client.setScreen(parent);
+	public void onClose() {
+		minecraft.gui.setScreen(parent);
 	}
 
 	public void tick() {
@@ -105,6 +124,6 @@ public class ProtocolScreen extends Screen {
 	}
 
 	private void updateAddButton() {
-		addButton.active = NumberUtils.isDigits(protocolField.getText()) && NumberUtils.isDigits(packVerField.getText());
+		addButton.active = NumberUtils.isDigits(protocolField.getValue()) && NumberUtils.isDigits(packVerField.getValue());
 	}
 }

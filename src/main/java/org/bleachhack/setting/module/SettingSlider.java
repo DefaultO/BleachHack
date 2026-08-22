@@ -53,7 +53,7 @@ public class SettingSlider extends ModuleSetting<Double> {
 		}
 
 		int pixels = (int) Math.round(Mth.clamp(len * ((getValue() - min) / (max - min)), 0, len));
-		Window.horizontalGradient(x + 1, y, x + pixels, y + 12,
+		Window.horizontalGradient(drawContext, x + 1, y, x + pixels, y + 12,
 				mo ? 0xf03078b0 : 0xf03080a0, mo ? 0xf02068c0 : 0xf02070b0);
 
 		drawContext.text(Minecraft.getInstance().font, getName() + ": " + (decimals == 0 ? Integer.toString(getValueInt()) : getValue()),

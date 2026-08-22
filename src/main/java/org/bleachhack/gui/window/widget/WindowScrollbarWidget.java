@@ -1,6 +1,6 @@
 package org.bleachhack.gui.window.widget;
 
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.util.Mth;
 import org.bleachhack.gui.window.Window;
 
@@ -24,7 +24,7 @@ public class WindowScrollbarWidget extends WindowWidget {
 	}
 
 	@Override
-	public void render(GuiGraphics drawContext, int windowX, int windowY, int mouseX, int mouseY) {
+	public void render(GuiGraphicsExtractor drawContext, int windowX, int windowY, int mouseX, int mouseY) {
 		super.render(drawContext, windowX, windowY, mouseX, mouseY);
 
 		int[] pos = getCurrentPos(windowX, windowY);

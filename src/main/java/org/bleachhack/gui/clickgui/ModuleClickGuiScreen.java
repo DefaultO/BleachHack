@@ -9,7 +9,7 @@
 package org.bleachhack.gui.clickgui;
 
 import net.minecraft.SharedConstants;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.network.chat.Component;
 import org.apache.commons.lang3.StringUtils;
@@ -42,11 +42,11 @@ public class ModuleClickGuiScreen extends ClickGuiScreen {
 	public void init() {
 		super.init();
 
-		searchField = new EditBox(textRenderer, 2, 14, 100, 12, Component.empty() /* @LasnikProgram is author lol */);
+		searchField = new EditBox(font, 2, 14, 100, 12, Component.empty() /* @LasnikProgram is author lol */);
 		searchField.visible = false;
 		searchField.setMaxLength(20);
 		searchField.setSuggestion("Search here");
-		addDrawableChild(searchField);
+		addRenderableWidget(searchField);
 	}
 
 	public void initWindows() {
@@ -65,19 +65,19 @@ public class ModuleClickGuiScreen extends ClickGuiScreen {
 		}
 	}
 
-	public void render(GuiGraphics drawContext, int mouseX, int mouseY, float delta) {
+	public void extractRenderState(GuiGraphicsExtractor drawContext, int mouseX, int mouseY, float delta) {
 		BleachFileHelper.SCHEDULE_SAVE_CLICKGUI.set(true);
 		ClickGui clickGui = ModuleManager.getModule(ClickGui.class);
 
 		searchField.visible = clickGui.getSetting(1).asToggle().getState();
 
 		if (clickGui.getSetting(1).asToggle().getState()) {
-			searchField.setSuggestion(searchField.getText().isEmpty() ? "Search here" : "");
+			searchField.setSuggestion(searchField.getValue().isEmpty() ? "Search here" : "");
 
 			Set<Module> seachMods = new HashSet<>();
-			if (!searchField.getText().isEmpty()) {
+			if (!searchField.getValue().isEmpty()) {
 				for (Module m : ModuleManager.getModules()) {
-					if (m.getName().toLowerCase(Locale.ENGLISH).contains(searchField.getText().toLowerCase(Locale.ENGLISH).replace(" ", ""))) {
+					if (m.getName().toLowerCase(Locale.ENGLISH).contains(searchField.getValue().toLowerCase(Locale.ENGLISH).replace(" ", ""))) {
 						seachMods.add(m);
 					}
 				}
@@ -97,14 +97,15 @@ public class ModuleClickGuiScreen extends ClickGuiScreen {
 			}
 		}
 
-		super.render(drawContext, mouseX, mouseY, delta);
+		super.extractRenderState(drawContext, mouseX, mouseY, delta);
 
-		drawContext.drawTextWithShadow(textRenderer, "BleachHack-" + BleachHack.VERSION + "-" + SharedConstants.getGameVersion().getName(), 3, 3, 0x305090);
-		drawContext.drawTextWithShadow(textRenderer, "BleachHack-" + BleachHack.VERSION + "-" + SharedConstants.getGameVersion().getName(), 2, 2, 0x6090d0);
+		// 26.2 text() skips zero-alpha colors, so alpha is written out explicitly
+		drawContext.text(font, "BleachHack-" + BleachHack.VERSION + "-" + SharedConstants.getCurrentVersion().name(), 3, 3, 0xff305090);
+		drawContext.text(font, "BleachHack-" + BleachHack.VERSION + "-" + SharedConstants.getCurrentVersion().name(), 2, 2, 0xff6090d0);
 
 		if (clickGui.getSetting(2).asToggle().getState()) {
-			drawContext.drawTextWithShadow(textRenderer, "BleachHack-" + BleachHack.VERSION + "Current prefix is: \"" + Command.getPrefix() + "\" (" + Command.getPrefix() + "help)", 2, height - 20, 0x99ff99);
-			drawContext.drawTextWithShadow(textRenderer, "BleachHack-" + BleachHack.VERSION + "Use " + Command.getPrefix() + "clickgui to reset the clickgui", 2, height - 10, 0x9999ff);
+			drawContext.text(font, "BleachHack-" + BleachHack.VERSION + "Current prefix is: \"" + Command.getPrefix() + "\" (" + Command.getPrefix() + "help)", 2, height - 20, 0xff99ff99);
+			drawContext.text(font, "BleachHack-" + BleachHack.VERSION + "Use " + Command.getPrefix() + "clickgui to reset the clickgui", 2, height - 10, 0xff9999ff);
 		}
 	}
 }

@@ -8,10 +8,10 @@
  */
 package org.bleachhack.gui;
 
-import net.minecraft.block.enums.Instrument;
-import net.minecraft.client.gui.GuiGraphics;
-import com.mojang.blaze3d.platform.Lighting;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.state.properties.NoteBlockInstrument;
 import net.minecraft.world.item.Items;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Util;
@@ -68,15 +68,12 @@ public class NotebotScreen extends WindowScreen {
 		int xEnd = getWindow(0).x2 - getWindow(0).x1;
 
 		getWindow(0).addWidget(new WindowButtonWidget(xEnd - 30, 14, xEnd - 3, 24, "Help", () ->
-		Util.getOperatingSystem().open(URI.create("https://www.youtube.com/watch?v=Z6O80jItoAk"))));
+		Util.getPlatform().openUri(URI.create("https://www.youtube.com/watch?v=Z6O80jItoAk"))));
 	}
 
-	public void render(GuiGraphics drawContext, int mouseX, int mouseY, float delta) {
-		renderBackground(drawContext, mouseX, mouseY, delta);
-		super.render(drawContext, mouseX, mouseY, delta);
-	}
+	// no extractRenderState override needed: the framework draws the background and windows
 
-	public void onRenderWindow(GuiGraphics drawContext, int window, int mouseX, int mouseY) {
+	public void onRenderWindow(GuiGraphicsExtractor drawContext, int window, int mouseX, int mouseY) {
 		super.onRenderWindow(drawContext, window, mouseX, mouseY);
 
 		if (window == 0) {
@@ -89,10 +86,10 @@ public class NotebotScreen extends WindowScreen {
 			for (int i = y + 20; i < y + h - 27; i += 10)
 				pageEntries++;
 
-			drawContext.drawTextWithShadow(textRenderer, "Page " + (page + 1), x + 55, y + 5, 0xc0c0ff);
+			drawContext.text(font, "Page " + (page + 1), x + 55, y + 5, 0xffc0c0ff);
 
 			fillButton(drawContext, x + 10, y + h - 13, x + 99, y + h - 3, 0xff3a3a3a, 0xff353535, mouseX, mouseY);
-			drawContext.drawTextWithShadow(textRenderer, "Download Songs..", x + 55, y + h - 12, 0xc0dfdf);
+			drawContext.text(font, "Download Songs..", x + 55, y + h - 12, 0xffc0dfdf);
 
 			Song nbSong = ModuleManager.getModule(Notebot.class).song;
 			int c = 0, c1 = -1;
@@ -106,33 +103,31 @@ public class NotebotScreen extends WindowScreen {
 				fillButton(drawContext, x + 5, y + 15 + c * 10, x + 105, y + 25 + c * 10,
 						nbSong != null && s.equals(nbSong.filename) ? 0xf0408040 : entry != null && s.equals(entry.filename) ? 0xf0202020 : 0xf0404040, 0xf0303030, mouseX, mouseY);
 
-				drawContext.drawTextWithShadow(textRenderer, textRenderer.trimToWidth(s, 100), x + 55, y + 16 + c * 10, -1);
+				drawContext.text(font, font.plainSubstrByWidth(s, 100), x + 55, y + 16 + c * 10, -1);
 
 				c++;
 			}
 
 			if (entry != null) {
 				int textX = x + w - w / 4;
-				drawContext.drawTextWithShadow(textRenderer,  entry.name, textX, y + 8, 0xffffff);
-				drawContext.drawTextWithShadow(textRenderer, "By: " + entry.author, textX, y + 18, 0xb0b0b0);
+				drawContext.text(font,  entry.name, textX, y + 8, 0xffffffff);
+				drawContext.text(font, "By: " + entry.author, textX, y + 18, 0xffb0b0b0);
 
-				drawContext.drawTextWithShadow(textRenderer,"Format: §a" + entry.format, textX, y + 35, 0xb0b0b0);
-				drawContext.drawTextWithShadow(textRenderer, "Length: §f" +  entry.length / 20 + "s", textX, y + 45, 0xb0b0b0);
+				drawContext.text(font,"Format: §a" + entry.format, textX, y + 35, 0xffb0b0b0);
+				drawContext.text(font, "Length: §f" +  entry.length / 20 + "s", textX, y + 45, 0xffb0b0b0);
 				//drawCenteredText(matrices, textRenderer, "Notes: §f" + entry.notes.size(), textX, y + 55, 0xb0b0b0);
-				drawContext.drawTextWithShadow(textRenderer, "Noteblocks: ", textX, y + 62, 0x80f080);
+				drawContext.text(font, "Noteblocks: ", textX, y + 62, 0xff80f080);
 
 				int c2 = 0;
-				for (Entry<Instrument, ItemStack> e : NotebotUtils.INSTRUMENT_TO_ITEM.entrySet()) {
+				for (Entry<NoteBlockInstrument, ItemStack> e : NotebotUtils.INSTRUMENT_TO_ITEM.entrySet()) {
 					int count = (int) entry.requirements.stream().filter(n -> n.instrument == e.getKey().ordinal()).count();
 
 					if (count != 0) {
-						// itemRenderer.zOffset = 500 - c2 * 20;
-						drawContext.drawTextWithShadow(textRenderer, StringUtils.capitalize(e.getKey().asString()) + " x" + count,
-								textX, y + 74 + c2 * 10, 0x50f050);
+						drawContext.text(font, StringUtils.capitalize(e.getKey().getSerializedName()) + " x" + count,
+								textX, y + 74 + c2 * 10, 0xff50f050);
 
-						Lighting.enableGuiDepthLighting();
-						drawContext.drawItem(e.getValue(), textX + 55, y + 70 + c2 * 10);
-						Lighting.disableGuiDepthLighting();
+						// 26.2: item() manages its own gui lighting; the old Lighting calls are gone
+						drawContext.item(e.getValue(), textX + 55, y + 70 + c2 * 10);
 
 						c2++;
 					}
@@ -145,9 +140,9 @@ public class NotebotScreen extends WindowScreen {
 				int pixels = (int) Math.round(Mth.clamp((w / 4d) * ((double) playTick / (double) entry.length), 0, w / 4d));
 				drawContext.fill(x + w - w / 4 - w / 8, y + h - 27, (x + w - w / 4 - w / 8) + pixels, y + h - 17, 0x507050ff);
 
-				drawContext.drawTextWithShadow(textRenderer, "Delete", (int) (x + w - w / 2.8), y + h - 14, 0xff0000);
-				drawContext.drawTextWithShadow(textRenderer, "Select", x + w - w / 8, y + h - 14, 0x00ff00);
-				drawContext.drawTextWithShadow(textRenderer, playing ? "Previewing.." : "Preview", x + w - w / 4, y + h - 26, 0x6060ff);
+				drawContext.text(font, "Delete", (int) (x + w - w / 2.8), y + h - 14, 0xffff0000);
+				drawContext.text(font, "Select", x + w - w / 8, y + h - 14, 0xff00ff00);
+				drawContext.text(font, playing ? "Previewing.." : "Preview", x + w - w / 4, y + h - 26, 0xff6060ff);
 			}
 		}
 	}
@@ -160,11 +155,14 @@ public class NotebotScreen extends WindowScreen {
 	}
 
 	@Override
-	public boolean shouldPause() {
+	public boolean isPauseScreen() {
 		return false;
 	}
 
-	public boolean mouseClicked(double mouseX, double mouseY, int button) {
+	public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
+		double mouseX = event.x();
+		double mouseY = event.y();
+
 		if (!getWindow(0).closed) {
 			int x = getWindow(0).x1;
 			int y = getWindow(0).y1 + 10;
@@ -180,7 +178,7 @@ public class NotebotScreen extends WindowScreen {
 				/* Pfft why use buttons when you can use meaningless rectangles with messy code */
 				if (mouseX > x + w - w / 2 + 10 && mouseX < x + w - w / 4 && mouseY > y + h - 15 && mouseY < y + h - 5) {
 					BleachFileMang.deleteFile("notebot/" + entry.filename);
-					client.setScreen(this);
+					minecraft.setScreen(this);
 				}
 				if (mouseX > x + w - w / 4 + 5 && mouseX < x + w - 5 && mouseY > y + h - 15 && mouseY < y + h - 5) {
 					ModuleManager.getModule(Notebot.class).song = entry;
@@ -212,10 +210,10 @@ public class NotebotScreen extends WindowScreen {
 			}
 		}
 
-		return super.mouseClicked(mouseX, mouseY, button);
+		return super.mouseClicked(event, doubleClick);
 	}
 
-	private void fillButton(GuiGraphics drawContext, int x1, int y1, int x2, int y2, int color, int colorHover, int mouseX, int mouseY) {
+	private void fillButton(GuiGraphicsExtractor drawContext, int x1, int y1, int x2, int y2, int color, int colorHover, int mouseX, int mouseY) {
 		drawContext.fill(x1, y1, x2, y2, (mouseX > x1 && mouseX < x2 && mouseY > y1 && mouseY < y2 ? colorHover : color));
 	}
 }

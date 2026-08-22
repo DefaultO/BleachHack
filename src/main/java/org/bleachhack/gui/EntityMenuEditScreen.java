@@ -10,8 +10,11 @@ package org.bleachhack.gui;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.input.CharacterEvent;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.network.chat.Component;
@@ -59,23 +62,20 @@ public class EntityMenuEditScreen extends WindowScreen {
 				"Edit Interactions", new ItemStack(Items.OAK_SIGN)));
 
 		if (editNameField == null) {
-			editNameField = new EditBox(textRenderer, 0, 0, 1000, 16, Component.empty());
+			editNameField = new EditBox(font, 0, 0, 1000, 16, Component.empty());
 		}
 
 		if (editValueField == null) {
-			editValueField = new EditBox(textRenderer, 0, 0, 1000, 16, Component.empty());
+			editValueField = new EditBox(font, 0, 0, 1000, 16, Component.empty());
 		}
 	}
 
-	@Override
-	public void render(GuiGraphics drawContext, int mouseX, int mouseY, float delta) {
-		renderBackground(drawContext, mouseX, mouseY, delta);
-		super.render(drawContext, mouseX, mouseY, delta);
-	}
+	// the old render() override only drew the background first — 26.2 already calls
+	// extractBackground before extractRenderState, so no override is needed
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public void onRenderWindow(GuiGraphics drawContext, int window, int mouseX, int mouseY) {
+	public void onRenderWindow(GuiGraphicsExtractor drawContext, int window, int mouseX, int mouseY) {
 		super.onRenderWindow(drawContext, window, mouseX, mouseY);
 
 		if (window == 0) {
@@ -94,12 +94,12 @@ public class EntityMenuEditScreen extends WindowScreen {
 			int seperator = (int) (x + w / 3.25);
 			drawContext.fill(seperator, y, seperator + 1, y + h, 0xff606090);
 
-			drawContext.drawTextWithShadow(textRenderer, "Interactions:", x + 6, y + 5, 0xffffff);
+			drawContext.text(font, "Interactions:", x + 6, y + 5, 0xffffffff);
 
 			boolean mouseOverAdd = mouseX >= seperator - 16 && mouseX <= seperator - 3 && mouseY >= y + 3 && mouseY <= y + 15;
 			Window.fill(drawContext, seperator - 16, y + 3, seperator - 3, y + 15,
 					mouseOverAdd ? 0x4fb070f0 : 0x60606090);
-			drawContext.drawTextWithShadow(textRenderer, "§a+", seperator - 12, y + 5, 0xffffff);
+			drawContext.text(font, "§a+", seperator - 12, y + 5, 0xffffffff);
 
 			if (mouseOverAdd) {
 				addEntry = true;
@@ -115,7 +115,7 @@ public class EntityMenuEditScreen extends WindowScreen {
 
 				Window.fill(drawContext, x + 3, y + 17, seperator - 2, y + 33,
 						mouseOver ? 0x4fb070f0 : 0x50606090);
-				drawContext.drawTextWithShadow(textRenderer, "§a§l^", x + (seperator - x) / 2, y + 21, 0xffffff);
+				drawContext.text(font, "§a§l^", x + (seperator - x) / 2, y + 21, 0xffffffff);
 
 				entries++;
 				if (mouseOver) {
@@ -128,7 +128,7 @@ public class EntityMenuEditScreen extends WindowScreen {
 
 				Window.fill(drawContext, x + 3, y + 17 + (maxEntries * 17), seperator - 2, y + 33 + (maxEntries * 17),
 						mouseOver ? 0x4fb070f0 : 0x50606090);
-				drawContext.drawTextWithShadow(textRenderer, "§a§lv", x + (seperator - x) / 2, y + 21 + (maxEntries * 17), 0xffffff);
+				drawContext.text(font, "§a§lv", x + (seperator - x) / 2, y + 21 + (maxEntries * 17), 0xffffffff);
 
 				maxEntries--;
 				if (mouseOver) {
@@ -148,7 +148,7 @@ public class EntityMenuEditScreen extends WindowScreen {
 
 				Window.fill(drawContext, x + 3, curY, seperator - 2, curY + 16,
 						entry.equals(selectedEntry) ? 0x4f90f090 : mouseOver ? 0x4fb070f0 : 0x50606090);
-				drawContext.drawTextWithShadow(textRenderer, textRenderer.trimToWidth(entry, seperator - x - 6), x + (seperator - x) / 2, curY + 4, 0xffffff);
+				drawContext.text(font, font.plainSubstrByWidth(entry, seperator - x - 6), x + (seperator - x) / 2, curY + 4, 0xffffffff);
 
 				if (mouseOver) {
 					hoverEntry = entry;
@@ -161,36 +161,36 @@ public class EntityMenuEditScreen extends WindowScreen {
 			}
 
 			if (selectedEntry != null) {
-				drawContext.drawTextWithShadow(textRenderer, "Name:", seperator + 8, y + 5, 0xffffff);
+				drawContext.text(font, "Name:", seperator + 8, y + 5, 0xffffffff);
 
 				editNameField.setX(seperator + 8);
 				editNameField.setY(y + 18);
 				editNameField.setWidth(w - (seperator - x) - 16);
-				editNameField.render(drawContext, mouseX, mouseY, client.getTickDelta());
+				editNameField.extractRenderState(drawContext, mouseX, mouseY, 0f);
 
-				drawContext.drawTextWithShadow(textRenderer, "Value:", seperator + 8, y + 45, 0xffffff);
+				drawContext.text(font, "Value:", seperator + 8, y + 45, 0xffffffff);
 
 				editValueField.setX(seperator + 8);
 				editValueField.setY(y + 57);
 				editValueField.setWidth(w - (seperator - x) - 16);
-				editValueField.render(drawContext, mouseX, mouseY, client.getTickDelta());
+				editValueField.extractRenderState(drawContext, mouseX, mouseY, 0f);
 
-				if (!selectedEntry.equals(editNameField.getText()) && !interactions.containsKey(editNameField.getText())) {
+				if (!selectedEntry.equals(editNameField.getValue()) && !interactions.containsKey(editNameField.getValue())) {
 					MutablePair<String, String> pair = interactions.getPair(selectedEntry);
-					selectedEntry = editNameField.getText();
+					selectedEntry = editNameField.getValue();
 					pair.setLeft(selectedEntry);
 				}
 
-				if (!interactions.getValue(selectedEntry).equals(editValueField.getText())) {
-					interactions.getPair(selectedEntry).setRight(editValueField.getText());
+				if (!interactions.getValue(selectedEntry).equals(editValueField.getValue())) {
+					interactions.getPair(selectedEntry).setRight(editValueField.getValue());
 				}
 
-				drawContext.drawTextWithShadow(textRenderer, "Insert:", seperator + 8, y + 85, 0xffffff);
+				drawContext.text(font, "Insert:", seperator + 8, y + 85, 0xffffffff);
 
 				int line = 0;
 				int curX = 0;
 				for (String insert: new String[] { "%name%", "%uuid%", "%health%", "%x%", "%y%", "%z%"}) {
-					int textLen = textRenderer.getWidth(insert);
+					int textLen = font.width(insert);
 
 					if (seperator + 9 + curX + textLen > x + w) {
 						line++;
@@ -199,7 +199,7 @@ public class EntityMenuEditScreen extends WindowScreen {
 
 					boolean mouseOverInsert = mouseX >= seperator + 7 + curX && mouseX <= seperator + 10 + curX + textLen && mouseY >= y + 97 + line * 14 && mouseY <= y + 108 + line * 14;
 					drawContext.fill(seperator + 7 + curX, y + 97 + line * 14, seperator + 10 + curX + textLen, y + 108 + line * 14, mouseOverInsert ? 0x9f6060b0 : 0x9f8070b0);
-					drawContext.drawTextWithShadow(textRenderer, insert, seperator + 9 + curX, y + 99 + line * 14, 0xffffff);
+					drawContext.text(font, insert, seperator + 9 + curX, y + 99 + line * 14, 0xffffffff);
 
 
 					if (mouseOverInsert) {
@@ -209,13 +209,13 @@ public class EntityMenuEditScreen extends WindowScreen {
 					curX += textLen + 7;
 				}
 
-				drawContext.drawTextWithShadow(textRenderer, "Mode:", seperator + 8, y + 120 + line * 14, 0xffffff);
+				drawContext.text(font, "Mode:", seperator + 8, y + 120 + line * 14, 0xffffffff);
 
 				int startY = y + 132 + line * 14;
 				line = 0;
 				curX = 0;
 				for (Pair<String, String> pair: new Pair[] { Pair.of("Normal", ""), Pair.of("Suggest", ">suggest "), Pair.of("Open Url", ">url ") }) {
-					int textLen = textRenderer.getWidth(pair.getLeft());
+					int textLen = font.width(pair.getLeft());
 
 					if (seperator + 9 + curX + textLen > x + w) {
 						line++;
@@ -224,7 +224,7 @@ public class EntityMenuEditScreen extends WindowScreen {
 
 					boolean mouseOverInsert = mouseX >= seperator + 7 + curX && mouseX <= seperator + 10 + curX + textLen && mouseY >= startY + line * 14 && mouseY <= startY + 11 + line * 14;
 					drawContext.fill(seperator + 7 + curX, startY + line * 14, seperator + 10 + curX + textLen, startY + 11 + line * 14, mouseOverInsert ? 0x9f6060b0 : 0x9f8070b0);
-					drawContext.drawTextWithShadow(textRenderer, pair.getLeft(), seperator + 9 + curX, startY + 2 + line * 14, 0xffffff);
+					drawContext.text(font, pair.getLeft(), seperator + 9 + curX, startY + 2 + line * 14, 0xffffffff);
 
 					if (mouseOverInsert) {
 						insertStartString = pair.getRight();
@@ -235,7 +235,7 @@ public class EntityMenuEditScreen extends WindowScreen {
 
 				boolean mouseOverDelete = mouseX >= x + w - 70 && mouseX <= x + w - 5 && mouseY >= y + h - 22 && mouseY <= y + h - 4;
 				Window.fill(drawContext, x + w - 70, y + h - 22, x + w - 5, y + h - 4, 0x60e05050, 0x60c07070, mouseOverDelete ? 0x20e05050 : 0x10e07070);
-				drawContext.drawTextWithShadow(textRenderer, "Delete", x + w - 37, y + h - 17, 0xf0f0f0);
+				drawContext.text(font, "Delete", x + w - 37, y + h - 17, 0xfff0f0f0);
 
 				if (mouseOverDelete) {
 					deleteEntry = selectedEntry;
@@ -245,7 +245,7 @@ public class EntityMenuEditScreen extends WindowScreen {
 	}
 
 	@Override
-	public void close() {
+	public void onClose() {
 		JsonObject json = new JsonObject();
 		for (MutablePair<String, String> entry: interactions) {
 			json.add(entry.getLeft(), new JsonPrimitive(entry.getRight()));
@@ -253,20 +253,20 @@ public class EntityMenuEditScreen extends WindowScreen {
 
 		BleachFileHelper.saveMiscSetting("entityMenu", json);
 
-		super.close();
+		super.onClose();
 	}
 
 	@Override
-	public boolean mouseClicked(double mouseX, double mouseY, int button) {
-		editNameField.setFocused(editNameField.mouseClicked(mouseX, mouseY, button));
-		editValueField.setFocused(editValueField.mouseClicked(mouseX, mouseY, button));
+	public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
+		editNameField.setFocused(editNameField.mouseClicked(event, doubleClick));
+		editValueField.setFocused(editValueField.mouseClicked(event, doubleClick));
 
 		if (hoverEntry != null && interactions.containsKey(hoverEntry)) {
 			selectedEntry = hoverEntry;
 			hoverEntry = null;
 
-			editNameField.setText(selectedEntry);
-			editValueField.setText(interactions.getValue(selectedEntry));
+			editNameField.setValue(selectedEntry);
+			editValueField.setValue(interactions.getValue(selectedEntry));
 		}
 
 		if (deleteEntry != null) {
@@ -291,40 +291,40 @@ public class EntityMenuEditScreen extends WindowScreen {
 		}
 
 		if (insertString != null) {
-			editValueField.write(insertString);
+			editValueField.insertText(insertString);
 			insertString = null;
 		}
 
 		if (insertStartString != null) {
-			if (editValueField.getText().startsWith(">")) {
-				editValueField.setText(editValueField.getText().replaceFirst(">.*? ", ""));
+			if (editValueField.getValue().startsWith(">")) {
+				editValueField.setValue(editValueField.getValue().replaceFirst(">.*? ", ""));
 			}
 
-			editValueField.setText(insertStartString + editValueField.getText());
+			editValueField.setValue(insertStartString + editValueField.getValue());
 			insertString = null;
 		}
 
-		return super.mouseClicked(mouseX, mouseY, button);
+		return super.mouseClicked(event, doubleClick);
 	}
 
 	@Override
-	public boolean charTyped(char chr, int modifiers) {
-		if (editNameField.isFocused()) editNameField.charTyped(chr, modifiers);
-		if (editValueField.isFocused()) editValueField.charTyped(chr, modifiers);
+	public boolean charTyped(CharacterEvent event) {
+		if (editNameField.isFocused()) editNameField.charTyped(event);
+		if (editValueField.isFocused()) editValueField.charTyped(event);
 
-		return super.charTyped(chr, modifiers);
+		return super.charTyped(event);
 	}
 
 	@Override
-	public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-		if (editNameField.isFocused()) editNameField.keyPressed(keyCode, scanCode, modifiers);
-		if (editValueField.isFocused()) editValueField.keyPressed(keyCode, scanCode, modifiers);
+	public boolean keyPressed(KeyEvent event) {
+		if (editNameField.isFocused()) editNameField.keyPressed(event);
+		if (editValueField.isFocused()) editValueField.keyPressed(event);
 
-		return super.keyPressed(keyCode, scanCode, modifiers);
+		return super.keyPressed(event);
 	}
 
 	@Override
-	public boolean shouldPause() {
+	public boolean isPauseScreen() {
 		return false;
 	}
 }

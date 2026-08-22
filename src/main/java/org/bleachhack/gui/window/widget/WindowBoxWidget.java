@@ -1,6 +1,6 @@
 package org.bleachhack.gui.window.widget;
 
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import org.bleachhack.gui.window.Window;
 
 public class WindowBoxWidget extends WindowWidget {
@@ -31,7 +31,7 @@ public class WindowBoxWidget extends WindowWidget {
 	}
 
 	@Override
-	public void render(GuiGraphics drawContext, int windowX, int windowY, int mouseX, int mouseY) {
+	public void render(GuiGraphicsExtractor drawContext, int windowX, int windowY, int mouseX, int mouseY) {
 		super.render(drawContext, windowX, windowY, mouseX, mouseY);
 
 		Window.fill(drawContext, windowX + x1, windowY + y1, windowX + x2, windowY + y2,

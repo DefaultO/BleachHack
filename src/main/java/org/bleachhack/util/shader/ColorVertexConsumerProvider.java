@@ -1,140 +1,49 @@
+/*
+ * This file is part of the BleachHack distribution (https://github.com/BleachDev/BleachHack/).
+ * Copyright (c) 2021 Bleach and contributors.
+ *
+ * This source code is subject to the terms of the GNU General Public
+ * License, version 3. If a copy of the GPL was not distributed with this
+ * file, You can obtain one at: https://www.gnu.org/licenses/gpl-3.0.txt
+ */
 package org.bleachhack.util.shader;
 
-import com.mojang.blaze3d.systems.RenderSystem;
-import net.minecraft.client.Minecraft;
-import com.mojang.blaze3d.pipeline.RenderTarget;
-import com.mojang.blaze3d.opengl.GlProgram;
-import net.minecraft.client.render.*;
-import net.minecraft.client.render.RenderPhase.TextureBase;
-import net.minecraft.resources.Identifier;
-
-import java.util.HashMap;
-import java.util.Map;
-import java.util.function.Function;
 import java.util.function.Supplier;
 
+import com.mojang.blaze3d.opengl.GlProgram;
+import com.mojang.blaze3d.pipeline.RenderTarget;
+import net.minecraft.client.renderer.SubmitNodeCollector;
+
+/**
+ * TODO(26.2): the fixed-color re-rendering trick (Chams-style tinting into a
+ * shader framebuffer) needs a rebuild on the submit pipeline. Providers now
+ * pass entities through untinted so ESP/BlockHighlight shader modes render
+ * normally instead of colored.
+ */
 public class ColorVertexConsumerProvider {
 
-	private final VertexConsumerProvider.Immediate plainDrawer = VertexConsumerProvider.immediate(new BufferBuilder(256));
-
-	private Supplier<GlProgram> shader;
-	private Function<TextureBase, RenderLayer> layerCreator;
+	@SuppressWarnings("unused")
+	private RenderTarget framebuffer;
+	@SuppressWarnings("unused")
+	private final Supplier<GlProgram> shader;
 
 	public ColorVertexConsumerProvider(RenderTarget framebuffer, Supplier<GlProgram> shader) {
+		this.framebuffer = framebuffer;
 		this.shader = shader;
-		setFramebuffer(framebuffer);
 	}
-	
-	public VertexConsumerProvider createDualProvider(VertexConsumerProvider parent, int red, int green, int blue, int alpha) {
-		return layer -> {
-			VertexConsumer parentBuffer = parent.getBuffer(layer);
 
-			if (!(layer instanceof RenderLayer.MultiPhase)
-					|| ((RenderLayer.MultiPhase) layer).getPhases().outlineMode == RenderLayer.OutlineMode.NONE) {
-				return parentBuffer;
-			}
-
-			VertexConsumer plainBuffer = this.plainDrawer.getBuffer(
-					layerCreator.apply(((RenderLayer.MultiPhase) layer).getPhases().texture));
-			ColorVertexConsumer outlineVertexConsumer = new ColorVertexConsumer(plainBuffer, red, green, blue, alpha);
-			return VertexConsumers.union(outlineVertexConsumer, parentBuffer);
-		};
+	public SubmitNodeCollector createDualProvider(SubmitNodeCollector parent, int red, int green, int blue, int alpha) {
+		return parent;
 	}
-	
-	public VertexConsumerProvider createSingleProvider(VertexConsumerProvider parent, int red, int green, int blue, int alpha) {
-		return layer -> {
-			VertexConsumer parentBuffer = parent.getBuffer(layer);
 
-			if (!(layer instanceof RenderLayer.MultiPhase)
-					|| ((RenderLayer.MultiPhase) layer).getPhases().outlineMode == RenderLayer.OutlineMode.NONE) {
-				return parentBuffer;
-			}
-
-			VertexConsumer plainBuffer = this.plainDrawer.getBuffer(
-					layerCreator.apply(((RenderLayer.MultiPhase) layer).getPhases().texture));
-			return new ColorVertexConsumer(plainBuffer, red, green, blue, alpha);
-		};
+	public SubmitNodeCollector createSingleProvider(SubmitNodeCollector parent, int red, int green, int blue, int alpha) {
+		return parent;
 	}
 
 	public void setFramebuffer(RenderTarget framebuffer) {
-		layerCreator = memoizeTexture(texture -> new RenderLayer(
-				"bleachhack_outline", VertexFormats.POSITION_COLOR_TEXTURE, VertexFormat.DrawMode.QUADS, 256, false, false,
-				() -> {
-					texture.startDrawing();
-					RenderSystem.setShader(shader);
-					framebuffer.beginWrite(false);
-				},
-				() -> Minecraft.getInstance().getFramebuffer().beginWrite(false)) {});
-	}
-
-	private Function<TextureBase, RenderLayer> memoizeTexture(Function<TextureBase, RenderLayer> function) {
-		return new Function<>() {
-			private final Map<Identifier, RenderLayer> cache = new HashMap<>();
-
-			public RenderLayer apply(TextureBase texture) {
-				return this.cache.computeIfAbsent(texture.getId().get(), id -> function.apply(texture));
-			}
-		};
+		this.framebuffer = framebuffer;
 	}
 
 	public void draw() {
-		this.plainDrawer.draw();
-	}
-
-	static class ColorVertexConsumer extends FixedColorVertexConsumer {
-		private final VertexConsumer delegate; // plainBuffer
-		private double x;
-		private double y;
-		private double z;
-		private float u;
-		private float v;
-
-		ColorVertexConsumer(VertexConsumer vertexConsumer, int i, int j, int k, int l) {
-			this.delegate = vertexConsumer;
-			super.fixedColor(i, j, k, l);
-		}
-
-		public void fixedColor(int red, int green, int blue, int alpha) {
-		}
-
-		public void unfixColor() {
-		}
-
-		public VertexConsumer vertex(double x, double y, double z) {
-			this.x = x;
-			this.y = y;
-			this.z = z;
-			return this;
-		}
-
-		public VertexConsumer color(int red, int green, int blue, int alpha) {
-			return this;
-		}
-
-		public VertexConsumer texture(float u, float v) {
-			this.u = u;
-			this.v = v;
-			return this;
-		}
-
-		public VertexConsumer overlay(int u, int v) {
-			return this;
-		}
-
-		public VertexConsumer light(int u, int v) {
-			return this;
-		}
-
-		public VertexConsumer normal(float x, float y, float z) {
-			return this;
-		}
-
-		public void vertex(float x, float y, float z, float red, float green, float blue, float alpha, float u, float v, int overlay, int light, float normalX, float normalY, float normalZ) {
-			this.delegate.vertex(x, y, z).color(this.fixedRed, this.fixedGreen, this.fixedBlue, this.fixedAlpha).texture(u, v).next();
-		}
-
-		public void next() {
-			this.delegate.vertex(this.x, this.y, this.z).color(this.fixedRed, this.fixedGreen, this.fixedBlue, this.fixedAlpha).texture(this.u, this.v).next();
-		}
 	}
 }

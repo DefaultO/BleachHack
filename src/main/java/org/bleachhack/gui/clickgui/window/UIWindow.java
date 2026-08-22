@@ -11,7 +11,7 @@ package org.bleachhack.gui.clickgui.window;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import org.apache.logging.log4j.util.TriConsumer;
 
 import java.util.Map.Entry;
@@ -26,11 +26,11 @@ public class UIWindow extends ClickGuiWindow {
 
 	private BooleanSupplier enabledSupplier;
 	private Supplier<int[]> sizeSupplier;
-	private TriConsumer<GuiGraphics, Integer, Integer> renderConsumer;
+	private TriConsumer<GuiGraphicsExtractor, Integer, Integer> renderConsumer;
 
 	private UIContainer parentContainer;
 
-	public UIWindow(Position pos, UIContainer parentContainer, BooleanSupplier enabledSupplier, Supplier<int[]> sizeSupplier, TriConsumer<GuiGraphics, Integer, Integer> renderConsumer) {
+	public UIWindow(Position pos, UIContainer parentContainer, BooleanSupplier enabledSupplier, Supplier<int[]> sizeSupplier, TriConsumer<GuiGraphicsExtractor, Integer, Integer> renderConsumer) {
 		super(0, 0, 0, 0, "", null);
 
 		this.position = pos;
@@ -44,7 +44,7 @@ public class UIWindow extends ClickGuiWindow {
 		return sizeSupplier.get();
 	}
 
-	public void renderUI(GuiGraphics context) {
+	public void renderUI(GuiGraphicsExtractor context) {
 		renderConsumer.accept(context, x1, y1);
 	}
 
@@ -65,15 +65,15 @@ public class UIWindow extends ClickGuiWindow {
 		position.getAttachments().keySet().removeIf(id -> detachFromConstants || id.length() > 1);
 	}
 
-	public void render(GuiGraphics drawContext, int mouseX, int mouseY) {
+	public void render(GuiGraphicsExtractor drawContext, int mouseX, int mouseY) {
 		// Handling of attaching/detaching when dragging
 		int sens = 5;
 		if (dragging) {
 			detachFromOthers(true);
 
 			String thisId = parentContainer.getIdFromWindow(this);
-			int width = mc.getWindow().getScaledWidth();
-			int height = mc.getWindow().getScaledHeight();
+			int width = mc.getWindow().getGuiScaledWidth();
+			int height = mc.getWindow().getGuiScaledHeight();
 			int wWidth = x2 - x1;
 			int wHeight = y2 - y1;
 
@@ -174,7 +174,7 @@ public class UIWindow extends ClickGuiWindow {
 		renderUI(drawContext);
 	}
 
-	protected void drawBackground(GuiGraphics drawContext, int mouseX, int mouseY, Font textRend) {
+	protected void drawBackground(GuiGraphicsExtractor drawContext, int mouseX, int mouseY, Font textRend) {
 		// background
 		/*DrawableHelper.fill(matrices, x1, y1 + 1, x1 + 1, y2 - 1, 0xff6060b0);
 		horizontalGradient(matrices, x1 + 1, y1, x2 - 1, y1 + 1, 0xff6060b0, 0xff8070b0);

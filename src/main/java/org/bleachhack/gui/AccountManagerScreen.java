@@ -13,13 +13,15 @@ import com.google.gson.JsonParser;
 import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.exceptions.AuthenticationException;
 import com.mojang.authlib.minecraft.MinecraftProfileTexture.Type;
-import com.mojang.blaze3d.systems.RenderSystem;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.SharedConstants;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.client.User;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.client.resources.DefaultPlayerSkin;
+import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.sounds.SoundEvents;
@@ -78,7 +80,7 @@ public class AccountManagerScreen extends WindowScreen {
 		mainWindow.addWidget(new WindowButtonWidget(w - 70, h - 22, w - 3, h - 3, "Login", () -> {
 			Account account = accounts.get(selected);
 			for (int i = 0; i < textFieldWidgets.size(); i++) {
-				account.input[i] = textFieldWidgets.get(i).textField.getText();
+				account.input[i] = textFieldWidgets.get(i).textField.getValue();
 			}
 
 			AuthenticationException exception = account.login();
@@ -125,29 +127,29 @@ public class AccountManagerScreen extends WindowScreen {
 				width / 2 - 96,
 				height / 2 - 17,
 				width / 2 + 96,
-				height / 2 + 17, "Add Account..", new ItemStack(Items.LIME_GLAZED_TERRACOTTA), true));
+				height / 2 + 17, "Add Account..", new ItemStack(Items.GLAZED_TERRACOTTA.pick(DyeColor.LIME)), true));
 
 		typeWindow.addWidget(new WindowButtonWidget(3, 15, 189, 31, "No Auth",
-				() -> openAddAccWindow(AccountType.NO_AUTH, "No Auth", new ItemStack(Items.LIGHT_BLUE_GLAZED_TERRACOTTA))));
+				() -> openAddAccWindow(AccountType.NO_AUTH, "No Auth", new ItemStack(Items.GLAZED_TERRACOTTA.pick(DyeColor.LIGHT_BLUE)))));
 		/*typeWindow.addWidget(new WindowButtonWidget(66, 15, 126, 31, "Mojang",
 				() -> openAddAccWindow(AccountType.MOJANG, "Mojang", new ItemStack(Items.GREEN_GLAZED_TERRACOTTA))));
 		typeWindow.addWidget(new WindowButtonWidget(129, 15, 189, 31, "Microsoft",
 				() -> openAddAccWindow(AccountType.MICROSOFT, "Microsoft", new ItemStack(Items.PURPLE_GLAZED_TERRACOTTA))));*/
 	}
 
-	public void render(GuiGraphics drawContext, int mouseX, int mouseY, float delta) {
-		this.renderBackground(drawContext, mouseX, mouseY, delta);
+	public void extractRenderState(GuiGraphicsExtractor drawContext, int mouseX, int mouseY, float delta) {
+		// background is drawn by the framework (extractBackground) before this is called
 
-		drawContext.drawTextWithShadow(textRenderer, "Fabric: " + FabricLoader.getInstance().getModContainer("fabricloader").get().getMetadata().getVersion().getFriendlyString(),
+		drawContext.text(font, "Fabric: " + FabricLoader.getInstance().getModContainer("fabricloader").get().getMetadata().getVersion().getFriendlyString(),
 				4, height - 30, -1);
-		drawContext.drawTextWithShadow(textRenderer, "Minecraft: " + SharedConstants.getGameVersion().getName(), 4, height - 20, -1);
-		drawContext.drawTextWithShadow(textRenderer, "Logged in as: §a" + client.getSession().getUsername(), 4, height - 10, -1);
+		drawContext.text(font, "Minecraft: " + SharedConstants.getCurrentVersion().name(), 4, height - 20, -1);
+		drawContext.text(font, "Logged in as: §a" + minecraft.getUser().getName(), 4, height - 10, -1);
 
 		hovered = -1;
-		super.render(drawContext, mouseX, mouseY, delta);
+		super.extractRenderState(drawContext, mouseX, mouseY, delta);
 	}
 
-	public void onRenderWindow(GuiGraphics drawContext, int window, int mouseX, int mouseY) {
+	public void onRenderWindow(GuiGraphicsExtractor drawContext, int window, int mouseX, int mouseY) {
 		super.onRenderWindow(drawContext, window, mouseX, mouseY);
 
 		if (window == 0) {
@@ -176,60 +178,63 @@ public class AccountManagerScreen extends WindowScreen {
 		}
 	}
 
-	private void drawEntry(GuiGraphics drawContext, Account acc, int x, int y, int width, int height, int color) {
+	private void drawEntry(GuiGraphicsExtractor drawContext, Account acc, int x, int y, int width, int height, int color) {
 		Window.fill(drawContext, x, y, x + width, y + height, color);
 
-		if (acc.bindSkin()) {
-			double pixelSize = (height - 6) / 8d;
+		{
+			// skin face (8x8 region at u8,v8 of the 64x64 skin), scaled
+			double skinPixel = (height - 6) / 8d;
 			drawContext.fill(x + 2, y + 2,
 					x + height - 2, y + height - 2,
 					0x60d86ceb);
-			drawContext.drawTexture(OPTIONS_BACKGROUND_TEXTURE,
+			drawContext.blit(RenderPipelines.GUI_TEXTURED, acc.getSkinTexture(),
 					x + 3, y + 3,
-					(int) (pixelSize * 8), (int) (pixelSize * 8),
-					(int) (pixelSize * 8), (int) (pixelSize * 8),
-					(int) (pixelSize * 64), (int) (pixelSize * 64));
+					8f, 8f,
+					(int) (skinPixel * 8), (int) (skinPixel * 8),
+					8, 8, 64, 64);
 		}
 
-		boolean extendText = acc.bindCape();
+		Identifier capeTexture = acc.getCapeTexture();
+		boolean extendText = capeTexture != null;
 		if (extendText) {
-			double pixelSize = ((height - 6) / 10d) * 0.625;
+			// cape front (10x16 region at u1,v1 of the 64x32 cape), scaled
+			double capePixel = ((height - 6) / 10d) * 0.625;
 			drawContext.fill(x + height - 1, y + 2,
-					(int) (x + height + pixelSize * 10 + 1), y + height - 2,
+					(int) (x + height + capePixel * 10 + 1), y + height - 2,
 					0x60d86ceb);
-			drawContext.drawTexture(OPTIONS_BACKGROUND_TEXTURE,
+			drawContext.blit(RenderPipelines.GUI_TEXTURED, capeTexture,
 					x + height, y + 3,
-					(int) Math.ceil(pixelSize), (int) Math.ceil(pixelSize),
-					(int) (pixelSize * 10), (int) (pixelSize * 16),
-					(int) (pixelSize * 64), (int) (pixelSize * 32));
+					1f, 1f,
+					(int) (capePixel * 10), (int) (capePixel * 16),
+					10, 16, 64, 32);
 		}
 
 		double pixelSize = ((height - 6) / 10d) * 0.625;
-		drawContext.drawTextWithShadow(textRenderer, "§7Name: " + acc.username,
+		drawContext.text(font, "§7Name: " + acc.username,
 				extendText ? (int) (x + height + pixelSize * 10 + 3) : x + height, y + 4, -1);
-		drawContext.drawTextWithShadow(textRenderer, "§eNo Auth",
+		drawContext.text(font, "§eNo Auth",
 				extendText ? (int) (x + height + pixelSize * 10 + 3) : x + height, y + height - 11, -1);
 
 		if (acc.type != AccountType.NO_AUTH) {
-			drawContext.drawTextWithShadow(textRenderer, (acc.success == 0 ? "§6?" : acc.success == 1 ? "§cx" : "§a+"),
+			drawContext.text(font, (acc.success == 0 ? "§6?" : acc.success == 1 ? "§cx" : "§a+"),
 					x + width - 10, y + height - 11, -1);
 		}
 	}
 
-	public boolean mouseClicked(double mouseX, double mouseY, int button) {
+	public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
 		if (hovered >= 0 && hovered < accounts.size()) {
 			if (selected >= 0 && selected < accounts.size()) {
 				for (int i = 0; i < textFieldWidgets.size(); i++) {
-					accounts.get(selected).input[i] = textFieldWidgets.get(i).textField.getText();
+					accounts.get(selected).input[i] = textFieldWidgets.get(i).textField.getValue();
 				}
 			}
 
 			selected = hovered;
 			updateRightside();
-			client.getSoundManager().play(SimpleSoundInstance.master(SoundEvents.UI_BUTTON_CLICK, 1.0F));
+			minecraft.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0F));
 		}
 
-		return super.mouseClicked(mouseX, mouseY, button);
+		return super.mouseClicked(event, doubleClick);
 	}
 
 	private void saveAccounts() {
@@ -277,11 +282,11 @@ public class AccountManagerScreen extends WindowScreen {
 		}
 
 		addWindow.addWidget(new WindowButtonWidget(100, h - 20, 157, h - 3, "Add", () -> {
-			Account account = new Account(type, 0, null, null, tf.stream().map(t -> t.textField.getText()).toArray(String[]::new));
+			Account account = new Account(type, 0, null, null, tf.stream().map(t -> t.textField.getValue()).toArray(String[]::new));
 			try {
 				User session = account.getSession();
 				account.uuid = NO_UUID;
-				account.username = session.getUsername();
+				account.username = session.getName();
 				addAccount(account);
 				getWindow(2).closed = true;
 			} catch (AuthenticationException e) {
@@ -330,17 +335,12 @@ public class AccountManagerScreen extends WindowScreen {
 		if (account.uuid == null) {
 			try {
 				User session = account.getSession();
-				account.uuid = session.getUuidOrNull().toString();
-				account.username = session.getUsername();
-				account.textures.clear();
-				// TODO: fix this
-				client.getSkinProvider().getSkinTextures(new GameProfile(UUID.fromString(account.uuid), account.username));
+				account.uuid = session.getProfileId().toString();
+				account.username = session.getName();
+				loadTextures(account, new GameProfile(UUID.fromString(account.uuid), account.username));
 			} catch (AuthenticationException ignored) { }
 		} else {
-			GameProfile profile = new GameProfile(UUID.randomUUID(), account.username);
-
-			account.textures.clear();
-			client.getSkinProvider().getSkinTextures(profile);
+			loadTextures(account, new GameProfile(UUID.randomUUID(), account.username));
 		}
 
 		for (int i = 0; i <= accounts.size(); i++) {
@@ -351,6 +351,15 @@ public class AccountManagerScreen extends WindowScreen {
 		}
 
 		scrollbar.setTotalHeight(accounts.size() * 28 - 1);
+	}
+
+	private void loadTextures(Account account, GameProfile profile) {
+		account.textures.clear();
+		minecraft.getSkinManager().get(profile).thenAccept(skin -> skin.ifPresent(s -> {
+			account.textures.put(Type.SKIN, s.body().texturePath());
+			if (s.cape() != null)
+				account.textures.put(Type.CAPE, s.cape().texturePath());
+		}));
 	}
 
 	private static class Account {
@@ -409,23 +418,13 @@ public class AccountManagerScreen extends WindowScreen {
 			return type.createSession(input);
 		}
 
-		public boolean bindSkin() {
-			if (textures.containsKey(Type.SKIN)) {
-				RenderSystem.setShaderTexture(0, textures.get(Type.SKIN));
-			} else {
-				RenderSystem.setShaderTexture(0, DefaultPlayerSkin.getTexture());
-			}
-
-			return true;
+		// 26.2 has no texture binding for gui draws; drawEntry blits these directly
+		public Identifier getSkinTexture() {
+			return textures.getOrDefault(Type.SKIN, DefaultPlayerSkin.getDefaultTexture());
 		}
 
-		public boolean bindCape() {
-			if (textures.containsKey(Type.CAPE)) {
-				RenderSystem.setShaderTexture(0, textures.get(Type.CAPE));
-				return true;
-			}
-
-			return false;
+		public Identifier getCapeTexture() {
+			return textures.get(Type.CAPE);
 		}
 	}
 
@@ -441,9 +440,9 @@ public class AccountManagerScreen extends WindowScreen {
 				if (id.length() == 32)
 					id = id.substring(0, 8) + "-" + id.substring(8, 12) + "-" + id.substring(12, 16) + "-" + id.substring(16, 20) + "-" + id.substring(20);
 
-				return new User(input[0], UUID.fromString(id), "", Optional.empty(), Optional.empty(), User.AccountType.MOJANG);
+				return new User(input[0], UUID.fromString(id), "", Optional.empty(), Optional.empty());
 			} catch (Exception e) {
-				return new User(input[0], UUID.randomUUID(), "", Optional.empty(), Optional.empty(), User.AccountType.MOJANG);
+				return new User(input[0], UUID.randomUUID(), "", Optional.empty(), Optional.empty());
 			}
 		}, Pair.of("Username", false));
 		/*MOJANG(input -> {

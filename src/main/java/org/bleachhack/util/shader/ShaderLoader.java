@@ -1,30 +1,33 @@
+/*
+ * This file is part of the BleachHack distribution (https://github.com/BleachDev/BleachHack/).
+ * Copyright (c) 2021 Bleach and contributors.
+ *
+ * This source code is subject to the terms of the GNU General Public
+ * License, version 3. If a copy of the GPL was not distributed with this
+ * file, You can obtain one at: https://www.gnu.org/licenses/gpl-3.0.txt
+ */
 package org.bleachhack.util.shader;
 
-import com.google.gson.JsonSyntaxException;
-import net.minecraft.client.Minecraft;
-import com.mojang.blaze3d.pipeline.RenderTarget;
-import net.minecraft.client.renderer.PostChain;
 import com.mojang.blaze3d.opengl.GlProgram;
-import net.minecraft.client.render.VertexFormat;
-import net.minecraft.client.renderer.texture.TextureManager;
-import net.minecraft.server.packs.resources.ResourceManager;
+import com.mojang.blaze3d.pipeline.RenderTarget;
+import com.mojang.blaze3d.vertex.VertexFormat;
+import net.minecraft.client.renderer.PostChain;
 import net.minecraft.resources.Identifier;
+import org.jspecify.annotations.Nullable;
 
-import java.io.IOException;
-
+/**
+ * TODO(26.2): GlProgram/PostChain lost their resource-constructed forms;
+ * shaders are data-driven via ShaderManager/PostChainConfig now. Loading
+ * custom shaders from mod resources (the MixinJsonEffectShaderProgram +
+ * OpenResourceManager trick) needs a full rebuild. Inert until then.
+ */
 public class ShaderLoader {
 
-	public static GlProgram load(VertexFormat format, Identifier id) throws IOException {
-		ResourceManager resMang = Minecraft.getInstance().getResourceManager();
-		
-		return new GlProgram(new OpenResourceManager(resMang), id.toString(), format);
+	public static @Nullable GlProgram load(VertexFormat format, Identifier id) {
+		return null;
 	}
 
-	public static PostChain loadEffect(RenderTarget framebuffer, Identifier id) throws JsonSyntaxException, IOException {
-		ResourceManager resMang = Minecraft.getInstance().getResourceManager();
-		TextureManager texMang = Minecraft.getInstance().getTextureManager();
-	
-		return new PostChain(texMang, new OpenResourceManager(resMang), framebuffer, id);
+	public static @Nullable PostChain loadEffect(RenderTarget framebuffer, Identifier id) {
+		return null;
 	}
-
 }

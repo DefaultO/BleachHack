@@ -8,7 +8,7 @@
  */
 package org.bleachhack.gui.clickgui;
 
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.network.chat.Component;
@@ -44,10 +44,10 @@ public class UIClickGuiScreen extends ClickGuiScreen {
 		uiContainer.windows.values().forEach(this::addWindow);
 
 		addWindow(new ModuleWindow(List.of(ModuleManager.getModule(UI.class)),
-				200, 200, 75, "Render", new ItemStack(Items.YELLOW_STAINED_GLASS)));
+				200, 200, 75, "Render", new ItemStack(Items.STAINED_GLASS.yellow())));
 	}
 
-	public void render(GuiGraphics drawContext, int mouseX, int mouseY, float delta) {
+	public void extractRenderState(GuiGraphicsExtractor drawContext, int mouseX, int mouseY, float delta) {
 		BleachFileHelper.SCHEDULE_SAVE_UI.set(true);
 
 		uiContainer.updatePositions(width, height);
@@ -60,7 +60,7 @@ public class UIClickGuiScreen extends ClickGuiScreen {
 			w.closed = shouldClose;
 		}
 
-		super.render(drawContext, mouseX, mouseY, delta);
+		super.extractRenderState(drawContext, mouseX, mouseY, delta);
 	}
 
 	public UIContainer getUIContainer() {

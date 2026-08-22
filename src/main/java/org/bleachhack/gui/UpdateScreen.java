@@ -11,8 +11,9 @@ package org.bleachhack.gui;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.network.chat.FormattedText;
@@ -58,7 +59,7 @@ public class UpdateScreen extends WindowScreen {
 		addWindow(new Window(width / 2 - wd,
 				height / 16,
 				width / 2 + wd,
-				height - height / 16, String.format("BleachHack Update [%s -> %s]", BleachHack.VERSION, updateJson.get("name").getAsString()), new ItemStack(Items.MAGENTA_GLAZED_TERRACOTTA)));
+				height - height / 16, String.format("BleachHack Update [%s -> %s]", BleachHack.VERSION, updateJson.get("name").getAsString()), new ItemStack(Items.GLAZED_TERRACOTTA.pick(DyeColor.MAGENTA))));
 
 		int w = getWindow(0).x2 - getWindow(0).x1;
 		int h = getWindow(0).y2 - getWindow(0).y1;
@@ -74,7 +75,7 @@ public class UpdateScreen extends WindowScreen {
 					if (string.charAt(0) == '-')
 						string = "§7-§r" + string.substring(1);
 
-					List<FormattedText> wrapped = client.textRenderer.getTextHandler().wrapLines(string, w - 32, Style.EMPTY);
+					List<FormattedText> wrapped = minecraft.font.getSplitter().splitLines(string, w - 32, Style.EMPTY);
 					for (int i = 0; i < wrapped.size(); i++)
 						changelog.add(wrapped.get(i).getString(), i == 0);
 				}
@@ -101,7 +102,7 @@ public class UpdateScreen extends WindowScreen {
 
 		getWindow(0).addWidget(
 				new WindowButtonWidget(3, h - 21, w / 2 - 2, h - 3, "Website", () ->
-				Util.getOperatingSystem().open(URI.create("https://bleachhack.org/"))
+				Util.getPlatform().openUri(URI.create("https://bleachhack.org/"))
 						));
 
 		getWindow(0).addWidget(
@@ -149,7 +150,7 @@ public class UpdateScreen extends WindowScreen {
 								+ " "
 								+ installerJson.get("url").getAsString());
 
-						client.scheduleStop();
+						minecraft.stop();
 					} catch (Exception e) {
 						updateResult = "Unknown error!";
 						selectWindow(1);
@@ -161,7 +162,7 @@ public class UpdateScreen extends WindowScreen {
 		addWindow(new Window(width / 2 - wd,
 				height / 2 - 15,
 				width / 2 + wd,
-				height / 2 + 15, "Error updating!", new ItemStack(Items.RED_BANNER), true));
+				height / 2 + 15, "Error updating!", new ItemStack(Items.BANNER.pick(DyeColor.RED)), true));
 
 		getWindow(1).addWidget(new WindowTextWidget("", true, WindowTextWidget.TextAlign.MIDDLE, wd, 16, 0xc05050)
 				.withRenderEvent((wg, ms, wx, wy)
@@ -169,8 +170,8 @@ public class UpdateScreen extends WindowScreen {
 	}
 
 	@Override
-	public void render(GuiGraphics drawContext, int mouseX, int mouseY, float delta) {
-		this.renderBackground(drawContext, mouseX, mouseY, delta);
+	public void extractRenderState(GuiGraphicsExtractor drawContext, int mouseX, int mouseY, float delta) {
+		// background is drawn by the vanilla extractBackground pass before this is called
 
 		int offset = scrollbar.getOffsetSinceRender();
 		int wh = getWindow(0).y2 - getWindow(0).y1;
@@ -180,11 +181,11 @@ public class UpdateScreen extends WindowScreen {
 			widget.y2 -= offset;
 		}
 
-		super.render(drawContext, mouseX, mouseY, delta);
+		super.extractRenderState(drawContext, mouseX, mouseY, delta);
 	}
 
 	@Override
-	public void close() {
-		client.setScreen(parent);
+	public void onClose() {
+		minecraft.gui.setScreen(parent);
 	}
 }

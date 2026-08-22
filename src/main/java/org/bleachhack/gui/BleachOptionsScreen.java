@@ -8,7 +8,7 @@
  */
 package org.bleachhack.gui;
 
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import org.bleachhack.gui.window.Window;
 import org.bleachhack.gui.window.WindowScreen;
 import org.bleachhack.gui.window.widget.WindowButtonWidget;
@@ -84,7 +84,7 @@ public class BleachOptionsScreen extends WindowScreen {
 
 			// Name text (at the end because of... reasons)
 			getWindow(window).addWidget(new WindowTextWidget(
-					Component.literal(entry.getName()).styled(s -> s.withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.literal(entry.getTooltip())))),
+					Component.literal(entry.getName()).withStyle(s -> s.withHoverEvent(new HoverEvent.ShowText(Component.literal(entry.getTooltip())))),
 					true, x - 107, y, 0xffffff));
 
 
@@ -95,8 +95,8 @@ public class BleachOptionsScreen extends WindowScreen {
 	}
 
 	@Override
-	public void render(GuiGraphics drawContext, int mouseX, int mouseY, float delta) {
-		this.renderBackground(drawContext, mouseX, mouseY, delta);
+	public void extractRenderState(GuiGraphicsExtractor drawContext, int mouseX, int mouseY, float delta) {
+		// background is drawn by the vanilla extractBackground pass before this is called
 
 		int offset = scrollbar.getOffsetSinceRender();
 		for (WindowWidget widget: getWindow(0).getWidgets()) {
@@ -106,7 +106,7 @@ public class BleachOptionsScreen extends WindowScreen {
 			}
 		}
 
-		super.render(drawContext, mouseX, mouseY, delta);
+		super.extractRenderState(drawContext, mouseX, mouseY, delta);
 	}
 
 	@Override
@@ -117,7 +117,7 @@ public class BleachOptionsScreen extends WindowScreen {
 	}
 
 	@Override
-	public void close() {
-		client.setScreen(parent);
+	public void onClose() {
+		minecraft.gui.setScreen(parent);
 	}
 }

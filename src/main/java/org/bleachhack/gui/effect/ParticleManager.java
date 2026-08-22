@@ -8,7 +8,7 @@
  */
 package org.bleachhack.gui.effect;
 
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,7 +21,7 @@ public class ParticleManager {
 		particles.add(new Particle(x, y));
 	}
 
-	public void renderParticles(GuiGraphics drawContext) {
+	public void renderParticles(GuiGraphicsExtractor drawContext) {
 		List<Particle> tempParts = new ArrayList<>();
 
 		for (Particle p : particles) {

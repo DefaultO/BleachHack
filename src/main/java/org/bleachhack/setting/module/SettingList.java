@@ -8,10 +8,11 @@
  */
 package org.bleachhack.setting.module;
 
-import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics; // TODO(26.2): GuiGraphics removed; GUI draw pipeline is now GuiGraphicsExtractor + GuiRenderState (Screen.render -> extractRenderState). Needs window-framework migration.
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.client.input.MouseButtonInfo;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -43,19 +44,17 @@ public abstract class SettingList<T> extends ModuleSetting<LinkedHashSet<T>> {
 		this.itemPool = new LinkedHashSet<>(itemPool);
 	}
 
-	// TODO(26.2): render body uses removed immediate-mode GuiGraphics API (fill/drawTextWithShadow). Migrate to GuiGraphicsExtractor/GuiRenderState with the window framework.
-	public void render(ModuleWindow window, GuiGraphics drawContext, int x, int y, int len) {
+	public void render(ModuleWindow window, GuiGraphicsExtractor drawContext, int x, int y, int len) {
 		if (window.mouseOver(x, y, x + len, y + 12)) {
 			drawContext.fill(x + 1, y, x + len, y + 12, 0x70303070);
 		}
 
-		drawContext.drawTextWithShadow(Minecraft.getInstance().font, getName(), x + 3, y + 2, 0xcfe0cf);
-		drawContext.drawTextWithShadow(Minecraft.getInstance().font, "...", x + len - 7, y + 2, 0xcfd0cf);
+		drawContext.text(Minecraft.getInstance().font, getName(), x + 3, y + 2, 0xffcfe0cf);
+		drawContext.text(Minecraft.getInstance().font, "...", x + len - 7, y + 2, 0xffcfd0cf);
 
 		if (window.mouseOver(x, y, x + len, y + 12) && window.lmDown) {
 			window.mouseReleased(window.mouseX, window.mouseY, 1);
-			// TODO(26.2): Screen.mouseReleased(double,double,int) is now mouseReleased(MouseButtonEvent). Rework this click-forwarding hack with the mouse-event framework migration.
-			Minecraft.getInstance().gui.screen().mouseReleased(window.mouseX, window.mouseY, 0);
+			Minecraft.getInstance().gui.screen().mouseReleased(new MouseButtonEvent(window.mouseX, window.mouseY, new MouseButtonInfo(0, 0)));
 			Minecraft.getInstance().getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK.value(), 1.0F, 0.3F));
 			Minecraft.getInstance().setScreenAndShow(new ListWidowScreen(Minecraft.getInstance().gui.screen()));
 		}
@@ -65,18 +64,17 @@ public abstract class SettingList<T> extends ModuleSetting<LinkedHashSet<T>> {
 		return getValue().contains(item);
 	}
 
-	// TODO(26.2): render body uses removed APIs (GuiGraphics.getMatrices/drawTextWithShadow). Migrate to GuiGraphicsExtractor + Matrix3x2fStack pose() with the window framework.
-	public void renderItem(Minecraft mc, GuiGraphics drawContext, T item, int x, int y, int w, int h) {
-		drawContext.getMatrices().push();
+	public void renderItem(Minecraft mc, GuiGraphicsExtractor drawContext, T item, int x, int y, int w, int h) {
+		drawContext.pose().pushMatrix();
 
 		float scale = (h - 2) / 10f;
 		float offset = 1f / scale;
 
-		drawContext.getMatrices().scale(scale, scale, 1f);
+		drawContext.pose().scale(scale, scale);
 
-		drawContext.drawTextWithShadow(mc.font, "?", (int) ((x + 5) * offset), (int) ((y + 4) * offset), -1);
+		drawContext.text(mc.font, "?", (int) ((x + 5) * offset), (int) ((y + 4) * offset), -1);
 
-		drawContext.getMatrices().pop();
+		drawContext.pose().popMatrix();
 	}
 
 	/**
@@ -144,14 +142,9 @@ public abstract class SettingList<T> extends ModuleSetting<LinkedHashSet<T>> {
 			scrollbar = getWindow(0).addWidget(new WindowScrollbarWidget(x2 - 11, 12, 0, y2 - 39, scrollbar == null ? 0 : scrollbar.getPageOffset()));
 		}
 
-		// TODO(26.2): Screen.render(GuiGraphics,...) removed; replaced by extractRenderState(GuiGraphicsExtractor,...). Migrate override with the window framework (WindowScreen).
-		public void render(GuiGraphics drawContext, int mouseX, int mouseY, float delta) {
-			renderBackground(drawContext, mouseX, mouseY, delta);
-			super.render(drawContext, mouseX, mouseY, delta);
-		}
+		// 26.2: no render() override needed — the screen pipeline calls extractBackground before extractRenderState
 
-		// TODO(26.2): GuiGraphics param + body (RenderSystem model-view stack, GuiGraphics.getMatrices) removed. Migrate with the window framework.
-		public void onRenderWindow(GuiGraphics drawContext, int window, int mouseX, int mouseY) {
+		public void onRenderWindow(GuiGraphicsExtractor drawContext, int window, int mouseX, int mouseY) {
 			super.onRenderWindow(drawContext, window, mouseX, mouseY);
 
 			toAddItem = null;
@@ -179,8 +172,8 @@ public abstract class SettingList<T> extends ModuleSetting<LinkedHashSet<T>> {
 					entries++;
 				}
 
-				//Window.horizontalGradient(matrix, x1 + 1, y2 - 25, x2 - 1, y2 - 1, 0x70606090, 0x00606090);
-				Window.horizontalGradient(x1 + 1, y2 - 27, x2 - 1, y2 - 26, 0xff606090, 0x50606090);
+				//Window.horizontalGradient(drawContext, x1 + 1, y2 - 25, x2 - 1, y2 - 1, 0x70606090, 0x00606090);
+				Window.horizontalGradient(drawContext, x1 + 1, y2 - 27, x2 - 1, y2 - 26, 0xff606090, 0x50606090);
 
 				if (inputField.textField.isFocused()) {
 					Set<T> toDraw = new LinkedHashSet<>();
@@ -195,27 +188,20 @@ public abstract class SettingList<T> extends ModuleSetting<LinkedHashSet<T>> {
 					}
 
 					int curY = y1 + inputField.y1 - 4 - toDraw.size() * 17;
-					int longest = toDraw.stream().mapToInt(e -> textRenderer.getWidth(getName(e))).max().orElse(0);
+					int longest = toDraw.stream().mapToInt(e -> font.width(getName(e))).max().orElse(0);
 
-					RenderSystem.getModelViewStack().push();
-					RenderSystem.getModelViewStack().translate(0, 0, 150);
-
-					drawContext.getMatrices().push();
-					drawContext.getMatrices().translate(0, 0, 150);
+					// 26.2: z-translate(150) replaced by lifting the search popup onto the next stratum
+					drawContext.nextStratum();
 
 					for (T e: toDraw) {
 						drawSearchEntry(drawContext, e, x1 + inputField.x1, curY, longest + 23, 16, mouseX, mouseY);
 						curY += 17;
 					}
-
-					drawContext.getMatrices().pop();
-					RenderSystem.getModelViewStack().pop();
-					RenderSystem.applyModelViewMatrix();
 				}
 			}
 		}
 
-		private void drawEntry(GuiGraphics drawContext, T item, int x, int y, int width, int height, int mouseX, int mouseY) {
+		private void drawEntry(GuiGraphicsExtractor drawContext, T item, int x, int y, int width, int height, int mouseX, int mouseY) {
 			boolean mouseOverDelete = mouseX >= x + width - 14 && mouseX <= x + width - 1 && mouseY >= y + 2 && mouseY <= y + height - 2;
 			Window.fill(drawContext, x + width - 14, y + 2, x + width - 1, y + height - 2, mouseOverDelete ? 0x4fb070f0 : 0x60606090);
 
@@ -225,11 +211,11 @@ public abstract class SettingList<T> extends ModuleSetting<LinkedHashSet<T>> {
 
 			renderItem(minecraft, drawContext, item, x, y, height, height);
 
-			drawContext.drawTextWithShadow(textRenderer, getName(item), x + height + 4, y + 4, -1);
-			drawContext.drawTextWithShadow(textRenderer, "§cx", x + width - 10, y + 5, -1);
+			drawContext.text(font, getName(item), x + height + 4, y + 4, -1);
+			drawContext.text(font, "§cx", x + width - 10, y + 5, -1);
 		}
 
-		private void drawSearchEntry(GuiGraphics drawContext, T item, int x, int y, int width, int height, int mouseX, int mouseY) {
+		private void drawSearchEntry(GuiGraphicsExtractor drawContext, T item, int x, int y, int width, int height, int mouseX, int mouseY) {
 			boolean mouseOver = mouseX >= x && mouseX <= x + width && mouseY >= y && mouseY <= y + height;
 			drawContext.fill(x, y - 1, x + width, y + height, mouseOver ? 0xdf8070d0 : 0xb0606090);
 
@@ -238,7 +224,7 @@ public abstract class SettingList<T> extends ModuleSetting<LinkedHashSet<T>> {
 			}
 
 			renderItem(minecraft, drawContext, item, x, y, height, height);
-			drawContext.drawTextWithShadow(textRenderer, getName(item), x + height + 4, y + 4, -1);
+			drawContext.text(font, getName(item), x + height + 4, y + 4, -1);
 		}
 
 		@Override
@@ -251,7 +237,7 @@ public abstract class SettingList<T> extends ModuleSetting<LinkedHashSet<T>> {
 			return false;
 		}
 
-		public boolean mouseClicked(double mouseX, double mouseY, int button) {
+		public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
 			if (toAddItem != null) {
 				getValue().add(toAddItem);
 				inputField.textField.setFocused(true);
@@ -264,7 +250,7 @@ public abstract class SettingList<T> extends ModuleSetting<LinkedHashSet<T>> {
 				BleachFileHelper.SCHEDULE_SAVE_MODULES.set(true);
 			}
 
-			return super.mouseClicked(mouseX, mouseY, button);
+			return super.mouseClicked(event, doubleClick);
 		}
 
 		public boolean mouseScrolled(double mouseX, double mouseY, double amountH, double amountV) {

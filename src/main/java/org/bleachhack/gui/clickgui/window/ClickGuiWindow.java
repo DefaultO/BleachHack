@@ -10,7 +10,7 @@ package org.bleachhack.gui.clickgui.window;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.sounds.SoundEvents;
@@ -39,28 +39,29 @@ public abstract class ClickGuiWindow extends Window {
 		return false;
 	}
 
-	protected void drawBackground(GuiGraphics drawContext, int mouseX, int mouseY, Font textRend) {
+	protected void drawBackground(GuiGraphicsExtractor drawContext, int mouseX, int mouseY, Font textRend) {
 		/* background */
 		drawContext.fill(x1, y1 + 1, x1 + 1, y2 - 1, 0xff6060b0);
-		horizontalGradient(x1 + 1, y1, x2 - 1, y1 + 1, 0xff6060b0, 0xff8070b0);
+		horizontalGradient(drawContext, x1 + 1, y1, x2 - 1, y1 + 1, 0xff6060b0, 0xff8070b0);
 		drawContext.fill(x2 - 1, y1 + 1, x2, y2 - 1, 0xff8070b0);
-		horizontalGradient(x1 + 1, y2 - 1, x2 - 1, y2, 0xff6060b0, 0xff8070b0);
+		horizontalGradient(drawContext, x1 + 1, y2 - 1, x2 - 1, y2, 0xff6060b0, 0xff8070b0);
 
 		drawContext.fill(x1 + 1, y1 + 12, x2 - 1, y2 - 1, 0x90606090);
 
 		/* title bar */
-		horizontalGradient(x1 + 1, y1 + 1, x2 - 1, y1 + 12, 0xff6060b0, 0xff8070b0);
+		horizontalGradient(drawContext, x1 + 1, y1 + 1, x2 - 1, y1 + 12, 0xff6060b0, 0xff8070b0);
 
 		/* +/- text */
-		drawContext.drawText(textRend, hiding ? "+" : "_", x2 - 10, y1 + (hiding ? 4 : 2), 0x000000, false);
-		drawContext.drawText(textRend, hiding ? "+" : "_", x2 - 11, y1 + (hiding ? 3 : 1), 0xffffff, false);
+		// 26.2 text() skips zero-alpha colors, so alpha is written out explicitly
+		drawContext.text(textRend, hiding ? "+" : "_", x2 - 10, y1 + (hiding ? 4 : 2), 0xff000000, false);
+		drawContext.text(textRend, hiding ? "+" : "_", x2 - 11, y1 + (hiding ? 3 : 1), 0xffffffff, false);
 	}
 
-	public void render(GuiGraphics drawContext, int mouseX, int mouseY) {
+	public void render(GuiGraphicsExtractor drawContext, int mouseX, int mouseY) {
 		super.render(drawContext, mouseX, mouseY);
 
 		if (rmDown && mouseOver(x1, y1, x1 + (x2 - x1), y1 + 13)) {
-			mc.getSoundManager().play(SimpleSoundInstance.master(SoundEvents.UI_BUTTON_CLICK, 1.0F));
+			mc.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0F));
 			hiding = !hiding;
 		}
 	}

@@ -1,85 +1,47 @@
+/*
+ * This file is part of the BleachHack distribution (https://github.com/BleachDev/BleachHack/).
+ * Copyright (c) 2021 Bleach and contributors.
+ *
+ * This source code is subject to the terms of the GNU General Public
+ * License, version 3. If a copy of the GPL was not distributed with this
+ * file, You can obtain one at: https://www.gnu.org/licenses/gpl-3.0.txt
+ */
 package org.bleachhack.util.shader;
 
-import com.mojang.blaze3d.platform.GlStateManager;
-import com.mojang.blaze3d.systems.RenderSystem;
-import net.minecraft.client.Minecraft;
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import net.minecraft.client.renderer.PostChain;
-import com.mojang.blaze3d.opengl.GlProgram;
-import net.minecraft.client.render.*;
+import org.jspecify.annotations.Nullable;
 
+/**
+ * TODO(26.2): post-processing chains are data-driven now (ShaderManager +
+ * PostChainConfig); the old resource-constructed PostChain with named
+ * framebuffers is gone. Inert wrapper so dependents compile; ShaderRender
+ * and shader-based outlines do nothing until rebuilt.
+ */
 public class ShaderEffectWrapper {
 
-	private static Minecraft mc = Minecraft.getInstance();
-
 	private PostChain shader;
-	private int lastWidth = -1;
-	private int lastHeight = -1;
 
 	public ShaderEffectWrapper(PostChain effect) {
 		this.shader = effect;
 	}
 
 	public void prepare() {
-		if (lastWidth != mc.getWindow().getFramebufferWidth() || lastHeight != mc.getWindow().getFramebufferHeight())
-			resizeShader();
 	}
 
 	public void render() {
-		shader.render(mc.getTickDelta());
-		mc.getFramebuffer().beginWrite(false);
 	}
-	
-	public RenderTarget getFramebuffer(String framebuffer) {
-		return shader.getSecondaryTarget(framebuffer);
+
+	public @Nullable RenderTarget getFramebuffer(String framebuffer) {
+		return null;
 	}
 
 	public void clearFramebuffer(String framebuffer) {
-		getFramebuffer(framebuffer).clear(Minecraft.IS_SYSTEM_MAC);
-		mc.getFramebuffer().beginWrite(false);
 	}
 
 	public void drawFramebufferToMain(String framebuffer) {
-		RenderTarget buffer = getFramebuffer(framebuffer);
-		GlProgram blitshader = mc.gameRenderer.blitScreenProgram;
-		blitshader.addSampler("DiffuseSampler", buffer.getColorAttachment());
-
-		double w = mc.getWindow().getFramebufferWidth();
-		double h = mc.getWindow().getFramebufferHeight();
-		float ws = (float) buffer.viewportWidth / (float) buffer.textureWidth;
-		float hs = (float) buffer.viewportHeight / (float) buffer.textureHeight;
-
-		RenderSystem.enableBlend();
-		RenderSystem.blendFuncSeparate(GlStateManager.SrcFactor.SRC_ALPHA, GlStateManager.DstFactor.ONE_MINUS_SRC_ALPHA, GlStateManager.SrcFactor.ZERO, GlStateManager.DstFactor.ONE);
-
-		GlStateManager._colorMask(true, true, true, false);
-		GlStateManager._disableDepthTest();
-		GlStateManager._depthMask(false);
-		GlStateManager._viewport(0, 0, (int) w, (int) h);
-
-		blitshader.bind();
-		Tessellator tessellator = RenderSystem.renderThreadTesselator();
-		BufferBuilder bufferBuilder = tessellator.getBuffer();
-		bufferBuilder.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_TEXTURE_COLOR);
-		bufferBuilder.vertex(0, h, 0).texture(0f, 0f).color(255, 255, 255, 255).next();
-		bufferBuilder.vertex(w, h, 0).texture(ws, 0f).color(255, 255, 255, 255).next();
-		bufferBuilder.vertex(w, 0, 0).texture(ws, hs).color(255, 255, 255, 255).next();
-		bufferBuilder.vertex(0, 0, 0).texture(0f, hs).color(255, 255, 255, 255).next();
-		BufferRenderer.draw(bufferBuilder.end());
-		blitshader.unbind();
-
-		GlStateManager._depthMask(true);
-		GlStateManager._colorMask(true, true, true, true);
-
-		RenderSystem.disableBlend();
 	}
 
-	private void resizeShader() {
-		shader.setupDimensions(mc.getWindow().getFramebufferWidth(), mc.getWindow().getFramebufferHeight());
-		lastWidth = mc.getWindow().getFramebufferWidth();
-		lastHeight = mc.getWindow().getFramebufferHeight();
-	}
-	
 	public PostChain getShader() {
 		return shader;
 	}

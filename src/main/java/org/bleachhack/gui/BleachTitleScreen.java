@@ -12,7 +12,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.SharedConstants;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.client.gui.screens.multiplayer.JoinMultiplayerScreen;
 import net.minecraft.client.gui.screens.options.OptionsScreen;
@@ -74,30 +74,30 @@ public class BleachTitleScreen extends WindowScreen {
 		int h = getWindow(0).y2 - getWindow(0).y1;
 		int maxY = Mth.clamp(h / 4 + 119, 0, h - 22);
 
-		getWindow(0).addWidget(new WindowButtonWidget(w / 2 - 100, h / 4 + 38, w / 2 + 100, h / 4 + 58, I18n.translate("menu.singleplayer"), () ->
-			client.setScreen(new SelectWorldScreen(client.currentScreen))
+		getWindow(0).addWidget(new WindowButtonWidget(w / 2 - 100, h / 4 + 38, w / 2 + 100, h / 4 + 58, I18n.get("menu.singleplayer"), () ->
+			minecraft.gui.setScreen(new SelectWorldScreen(minecraft.gui.screen()))
 		));
 
-		getWindow(0).addWidget(new WindowButtonWidget(w / 2 - 100, h / 4 + 62, w / 2 + 100, h / 4 + 82, I18n.translate("menu.multiplayer"), () ->
-			client.setScreen(new JoinMultiplayerScreen(client.currentScreen))
+		getWindow(0).addWidget(new WindowButtonWidget(w / 2 - 100, h / 4 + 62, w / 2 + 100, h / 4 + 82, I18n.get("menu.multiplayer"), () ->
+			minecraft.gui.setScreen(new JoinMultiplayerScreen(minecraft.gui.screen()))
 		));
 
-		getWindow(0).addWidget(new WindowButtonWidget(w / 2 - 100, h / 4 + 86, w / 2 + 100, h / 4 + 106, I18n.translate("menu.online"), () ->
-			client.setScreen(new RealmsMainScreen(this))
+		getWindow(0).addWidget(new WindowButtonWidget(w / 2 - 100, h / 4 + 86, w / 2 + 100, h / 4 + 106, I18n.get("menu.online"), () ->
+			minecraft.gui.setScreen(new RealmsMainScreen(this))
 		));
 
 		getWindow(0).addWidget(new WindowButtonWidget(w / 2 - 124, h / 4 + 86, w / 2 - 104, h / 4 + 106, "MC", () -> {
 			customTitleScreen = !customTitleScreen;
 			BleachFileHelper.saveMiscSetting("customTitleScreen", new JsonPrimitive(false));
-			client.setScreen(new TitleScreen(false));
+			minecraft.gui.setScreen(new TitleScreen(false));
 		}));
 
-		getWindow(0).addWidget(new WindowButtonWidget(w / 2 - 100, maxY, w / 2 - 2, maxY + 20, I18n.translate("menu.options"), () ->
-			client.setScreen(new OptionsScreen(client.currentScreen, client.options))
+		getWindow(0).addWidget(new WindowButtonWidget(w / 2 - 100, maxY, w / 2 - 2, maxY + 20, I18n.get("menu.options"), () ->
+			minecraft.gui.setScreen(new OptionsScreen(minecraft.gui.screen(), minecraft.options, false))
 		));
 
-		getWindow(0).addWidget(new WindowButtonWidget(w / 2 + 2, maxY, w / 2 + 100, maxY + 20, I18n.translate("menu.quit"), () ->
-			client.scheduleStop()
+		getWindow(0).addWidget(new WindowButtonWidget(w / 2 + 2, maxY, w / 2 + 100, maxY + 20, I18n.get("menu.quit"), () ->
+			minecraft.stop()
 		));
 
 		// Main Component
@@ -109,7 +109,7 @@ public class BleachTitleScreen extends WindowScreen {
 					for (char c: "BleachHack".toCharArray()) {
 						int fi = i++;
 						bhText.append(
-								Component.literal(String.valueOf(c)).styled(s -> s.withColor(TextColor.fromRgb(UI.getRainbowFromSettings(fi)))));
+								Component.literal(String.valueOf(c)).withStyle(s -> s.withColor(TextColor.fromRgb(UI.getRainbowFromSettings(fi)))));
 					}
 
 					((WindowTextWidget) widget).setText(bhText);
@@ -126,8 +126,8 @@ public class BleachTitleScreen extends WindowScreen {
 						windgetText.setText(Component.literal(splash));
 						windgetText.color = (windgetText.color & 0x00ffffff) | ((splashTicks * 17) << 24);
 
-						float scale = 1.8F - Mth.abs(Mth.sin(Util.getMeasuringTimeMs() % 1000L / 1000.0F * 6.2831855F) * 0.1F);
-						scale = scale * 66.0F / (textRenderer.getWidth(splash) + 32);
+						float scale = 1.8F - Mth.abs(Mth.sin(Util.getMillis() % 1000L / 1000.0F * 6.2831855F) * 0.1F);
+						scale = scale * 66.0F / (font.width(splash) + 32);
 						windgetText.setScale(scale);
 					}
 				}));
@@ -137,23 +137,23 @@ public class BleachTitleScreen extends WindowScreen {
 		if (updateJson != null && updateJson.has("version") && updateJson.get("version").getAsInt() > BleachHack.INTVERSION) {
 			getWindow(0).addWidget(new WindowTextWidget("§6§nUpdate§6", true, 4, h - 12, 0xffffff)
 					.withClickEvent((widget, mx, my, wx, wy) ->
-						client.setScreen(new UpdateScreen(client.currentScreen, updateJson))
+						minecraft.gui.setScreen(new UpdateScreen(minecraft.gui.screen(), updateJson))
 					));
 		}
 	}
 
 	@Override
-	public void render(GuiGraphics drawContext, int mouseX, int mouseY, float delta) {
-		this.renderBackground(drawContext, mouseX, mouseY, delta);
+	public void extractRenderState(GuiGraphicsExtractor drawContext, int mouseX, int mouseY, float delta) {
+		// background is drawn by the vanilla extractBackground pass before this is called
 
-		int copyWidth = this.textRenderer.getWidth("Copyright Mojang AB. Do not distribute!") + 2;
-		drawContext.drawTextWithShadow(textRenderer, "Copyright Mojang AB. Do not distribute!", width - copyWidth, height - 10, -1);
-		drawContext.drawTextWithShadow(textRenderer, "Fabric: " + FabricLoader.getInstance().getModContainer("fabricloader").get().getMetadata().getVersion().getFriendlyString(),
+		int copyWidth = this.font.width("Copyright Mojang AB. Do not distribute!") + 2;
+		drawContext.text(font, "Copyright Mojang AB. Do not distribute!", width - copyWidth, height - 10, -1);
+		drawContext.text(font, "Fabric: " + FabricLoader.getInstance().getModContainer("fabricloader").get().getMetadata().getVersion().getFriendlyString(),
 				4, height - 30, -1);
-		drawContext.drawTextWithShadow(textRenderer, "Minecraft: " + SharedConstants.getGameVersion().getName(), 4, height - 20, -1);
-		drawContext.drawTextWithShadow(textRenderer, "Logged in as: §a" + client.getSession().getUsername(), 4, height - 10, -1);
+		drawContext.text(font, "Minecraft: " + SharedConstants.getCurrentVersion().name(), 4, height - 20, -1);
+		drawContext.text(font, "Logged in as: §a" + minecraft.getUser().getName(), 4, height - 10, -1);
 
-		super.render(drawContext, mouseX, mouseY, delta);
+		super.extractRenderState(drawContext, mouseX, mouseY, delta);
 
 		particleMang.addParticle(mouseX, mouseY);
 		particleMang.renderParticles(drawContext);

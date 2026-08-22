@@ -9,7 +9,7 @@
 package org.bleachhack.gui;
 
 import com.google.gson.JsonObject;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.network.chat.HoverEvent;
@@ -72,27 +72,27 @@ public class BleachCreditsScreen extends WindowScreen {
 
 		getWindow(0).addWidget(new WindowTextWidget("- Main Developer -", true, WindowTextWidget.TextAlign.MIDDLE, w / 2, 65, 0xe0e0e0));
 		getWindow(0).addWidget(new WindowTextWidget(
-				Component.literal("Bleach").styled(s -> s.withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.literal("§7https://github.com/BleachDev\n\n§eMain Developer!")))),
+				Component.literal("Bleach").withStyle(s -> s.withHoverEvent(new HoverEvent.ShowText(Component.literal("§7https://github.com/BleachDev\n\n§eMain Developer!")))),
 				true, WindowTextWidget.TextAlign.MIDDLE, w / 2, 80, 0x51eff5));
 
 		getWindow(0).addWidget(new WindowTextWidget("- Contributors -", true, WindowTextWidget.TextAlign.MIDDLE, w / 2, 100, 0xe0e0e0));
 		getWindow(0).addWidget(new WindowTextWidget(
-				Component.literal("LasnikProgram").styled(s -> s.withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.literal("§7https://github.com/lasnikprogram\n\n§fMade first version of LogoutSpot, AirPlace, EntityMenu, HoleESP, AutoParkour and Search.")))),
+				Component.literal("LasnikProgram").withStyle(s -> s.withHoverEvent(new HoverEvent.ShowText(Component.literal("§7https://github.com/lasnikprogram\n\n§fMade first version of LogoutSpot, AirPlace, EntityMenu, HoleESP, AutoParkour and Search.")))),
 				true, WindowTextWidget.TextAlign.MIDDLE, w / 2, 115, 0x00a0a0));
 		getWindow(0).addWidget(new WindowTextWidget(
-				Component.literal("slcoolj").styled(s -> s.withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.literal("§7https://github.com/slcoolj\n\n§fMade Criticals, Speedmine OG mode and did the module system rewrite.")))),
+				Component.literal("slcoolj").withStyle(s -> s.withHoverEvent(new HoverEvent.ShowText(Component.literal("§7https://github.com/slcoolj\n\n§fMade Criticals, Speedmine OG mode and did the module system rewrite.")))),
 				true, WindowTextWidget.TextAlign.MIDDLE, w / 2, 127, 0x00a0a0));
 		getWindow(0).addWidget(new WindowTextWidget(
-				Component.literal("DevScyu").styled(s -> s.withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.literal("§7https://github.com/DevScyu\n\n§fMade first version of AutoTool, Trajectories, NoRender, AutoWalk, ElytraReplace, HandProgress and added Login manager encryption.")))),
+				Component.literal("DevScyu").withStyle(s -> s.withHoverEvent(new HoverEvent.ShowText(Component.literal("§7https://github.com/DevScyu\n\n§fMade first version of AutoTool, Trajectories, NoRender, AutoWalk, ElytraReplace, HandProgress and added Login manager encryption.")))),
 				true, WindowTextWidget.TextAlign.MIDDLE, w / 2, 139, 0x00a0a0));
 		getWindow(0).addWidget(new WindowTextWidget(
-				Component.literal("Bunt3rhund").styled(s -> s.withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.literal("§7https://github.com/Bunt3rhund\n\n§fMade first version of Zoom.")))),
+				Component.literal("Bunt3rhund").withStyle(s -> s.withHoverEvent(new HoverEvent.ShowText(Component.literal("§7https://github.com/Bunt3rhund\n\n§fMade first version of Zoom.")))),
 				true, WindowTextWidget.TextAlign.MIDDLE, w / 2, 151, 0x00a0a0));
 		getWindow(0).addWidget(new WindowTextWidget(
-				Component.literal("MorganAnkan").styled(s -> s.withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.literal("§7https://github.com/MorganAnkan\n\n§fMade the title screen text Rgb.")))),
+				Component.literal("MorganAnkan").withStyle(s -> s.withHoverEvent(new HoverEvent.ShowText(Component.literal("§7https://github.com/MorganAnkan\n\n§fMade the title screen text Rgb.")))),
 				true, WindowTextWidget.TextAlign.MIDDLE, w / 2, 163, 0x00a0a0));
 		getWindow(0).addWidget(new WindowTextWidget(
-				Component.literal("ThePapanoob").styled(s -> s.withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.literal("§7https://github.com/thepapanoob\n\n§fAdded Projectiles mode in Killaura.")))),
+				Component.literal("ThePapanoob").withStyle(s -> s.withHoverEvent(new HoverEvent.ShowText(Component.literal("§7https://github.com/thepapanoob\n\n§fAdded Projectiles mode in Killaura.")))),
 				true, WindowTextWidget.TextAlign.MIDDLE, w / 2, 175, 0x00a0a0));
 
 		getWindow(0).addWidget(new WindowTextWidget("- Donators/Boosters -", true, WindowTextWidget.TextAlign.MIDDLE, w / 2, 195, 0xe0e0e0));
@@ -120,14 +120,14 @@ public class BleachCreditsScreen extends WindowScreen {
 	private Component getBoosterText(ImmutablePair<Boolean, String> pair) {
 		int color = pair.getLeft() ? 0x1abc9c : 0xf579ff;
 		String[] split = pair.getRight().split("#");
-		return Component.literal(split[0]).styled(s -> s
+		return Component.literal(split[0]).withStyle(s -> s
 				.withColor(color)
-				.withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, 
-						Component.literal(pair.getRight()).styled(s1 -> s1.withColor(color)))));
+				.withHoverEvent(new HoverEvent.ShowText(
+						Component.literal(pair.getRight()).withStyle(s1 -> s1.withColor(color)))));
 	}
 
-	public void render(GuiGraphics drawContext, int mouseX, int mouseY, float delta) {
-		this.renderBackground(drawContext, mouseX, mouseY, delta);
+	public void extractRenderState(GuiGraphicsExtractor drawContext, int mouseX, int mouseY, float delta) {
+		// background is drawn by the vanilla extractBackground pass before this is called
 		
 		if (!boostersLoaded && boosterList != null) {
 			int scroll = scrollbar.getPageOffset();
@@ -143,7 +143,7 @@ public class BleachCreditsScreen extends WindowScreen {
 			}
 		}
 
-		super.render(drawContext, mouseX, mouseY, delta);
+		super.extractRenderState(drawContext, mouseX, mouseY, delta);
 	}
 
 	public boolean mouseScrolled(double mouseX, double mouseY, double amountH, double amountV) {

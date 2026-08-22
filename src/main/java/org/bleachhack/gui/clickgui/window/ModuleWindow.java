@@ -9,7 +9,7 @@
 package org.bleachhack.gui.clickgui.window;
 
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.sounds.SoundEvents;
@@ -47,7 +47,7 @@ public class ModuleWindow extends ClickGuiWindow {
 		y2 = getHeight();
 	}
 
-	public void render(GuiGraphics drawContext, int mouseX, int mouseY) {
+	public void render(GuiGraphicsExtractor drawContext, int mouseX, int mouseY) {
 		tooltip = null;
 		int x = x1 + 1;
 		int y = y1 + 13;
@@ -58,7 +58,7 @@ public class ModuleWindow extends ClickGuiWindow {
 
 		if (hiding) return;
 
-		Font textRend = mc.textRenderer;
+		Font textRend = mc.font;
 
 		int curY = 0;
 		for (Entry<Module, Boolean> m : mods.entrySet()) {
@@ -71,8 +71,9 @@ public class ModuleWindow extends ClickGuiWindow {
 				drawContext.fill(x, y + curY, x + len, y + 12 + curY, 0x50ff0000);
 			}
 
-			drawContext.drawTextWithShadow(textRend, textRend.trimToWidth(m.getKey().getName(), len),
-					x + 2, y + 2 + curY, m.getKey().isEnabled() ? 0x70efe0 : 0xc0c0c0);
+			// 26.2 text() skips zero-alpha colors, so alpha is written out explicitly
+			drawContext.text(textRend, textRend.plainSubstrByWidth(m.getKey().getName(), len),
+					x + 2, y + 2 + curY, m.getKey().isEnabled() ? 0xff70efe0 : 0xffc0c0c0);
 
 			// Set which module settings show on
 			if (mouseOver(x, y + curY, x + len, y + 12 + curY)) {
@@ -83,7 +84,7 @@ public class ModuleWindow extends ClickGuiWindow {
 				if (rmDown)
 					mods.replace(m.getKey(), !m.getValue());
 				if (lmDown || rmDown)
-					mc.getSoundManager().play(SimpleSoundInstance.master(SoundEvents.UI_BUTTON_CLICK, 1.0F));
+					mc.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0F));
 			}
 
 			curY += 12;

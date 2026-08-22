@@ -8,16 +8,15 @@
  */
 package org.bleachhack.gui;
 
-import com.mojang.blaze3d.platform.GlStateManager;
-import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.ChatScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.client.KeyMapping;
-import net.minecraft.client.renderer.GameRenderer;
+import net.minecraft.client.renderer.RenderPipelines;
 import com.mojang.blaze3d.platform.InputConstants;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Util;
@@ -40,6 +39,8 @@ import java.util.List;
  */
 public class EntityMenuScreen extends Screen {
 
+	private static final Identifier CROSSHAIR_SPRITE = Identifier.withDefaultNamespace("hud/crosshair");
+
 	private LivingEntity entity;
 	private String focusedString;
 	private int crosshairX, crosshairY, focusedDot = -1;
@@ -53,26 +54,27 @@ public class EntityMenuScreen extends Screen {
 	public void init() {
 		super.init();
 		this.cursorMode(GLFW.GLFW_CURSOR_HIDDEN);
-		yaw = client.player.getYaw();
-		pitch = client.player.getPitch();
+		yaw = minecraft.player.getYRot();
+		pitch = minecraft.player.getXRot();
 	}
 
 	private void cursorMode(int mode) {
-		double x = this.client.getWindow().getWidth() / 2d;
-		double y = this.client.getWindow().getHeight() / 2d;
+		double x = this.minecraft.getWindow().getWidth() / 2d;
+		double y = this.minecraft.getWindow().getHeight() / 2d;
 
-		KeyMapping.unpressAll();
-		InputConstants.setCursorParameters(this.client.getWindow().getHandle(), GLFW.GLFW_CURSOR_HIDDEN, x, y);
+		KeyMapping.releaseAll();
+		InputConstants.grabOrReleaseMouse(this.minecraft.getWindow(), GLFW.GLFW_CURSOR_HIDDEN, x, y);
 	}
 
 	public void tick() {
-		if (GLFW.glfwGetMouseButton(Minecraft.getInstance().getWindow().getHandle(),
+		if (GLFW.glfwGetMouseButton(Minecraft.getInstance().getWindow().handle(),
 				GLFW.GLFW_MOUSE_BUTTON_MIDDLE) == GLFW.GLFW_RELEASE) {
-			close();
+			onClose();
 		}
 	}
 
-	public void close() {
+	@Override
+	public void onClose() {
 		cursorMode(GLFW.GLFW_CURSOR_NORMAL);
 
 		// This makes the magic
@@ -82,72 +84,64 @@ public class EntityMenuScreen extends Screen {
 			String message = ModuleManager.getModule(EntityMenu.class)
 					.interactions.getValue(focusedString)
 					.replaceAll("%name%", entity.getDisplayName().getString())
-					.replaceAll("%uuid%", entity.getUuidAsString())
+					.replaceAll("%uuid%", entity.getStringUUID())
 					.replaceAll("%health%", String.valueOf((int) entity.getHealth()))
 					.replaceAll("%x%", coordFormat.format(entity.getX()))
 					.replaceAll("%y%", coordFormat.format(entity.getY()))
 					.replaceAll("%z%", coordFormat.format(entity.getZ()));
 
 			if (message.startsWith(">suggest ")) {
-				client.setScreen(new ChatScreen(message.substring(9)));
+				minecraft.gui.setScreen(new ChatScreen(message.substring(9), false));
 			} else if (message.startsWith(">url ")) {
 				try {
-					Util.getOperatingSystem().open(new URI(message.substring(5)));
+					Util.getPlatform().openUri(new URI(message.substring(5)));
 				} catch (Exception e) {
 					BleachLogger.error("Invalid url \"" + message.substring(5) + "\"");
 				}
 
-				client.setScreen(null);
+				minecraft.gui.setScreen(null);
 			} else {
-				client.player.networkHandler.sendChatMessage(message);
-				client.setScreen(null);
+				minecraft.player.connection.sendChat(message);
+				minecraft.gui.setScreen(null);
 			}
 		} else {
-			client.setScreen(null);
+			minecraft.gui.setScreen(null);
 		}
 	}
 
 	@Override
-	public boolean shouldPause() {
+	public boolean isPauseScreen() {
 		return false;
 	}
 
-	public void render(GuiGraphics drawContext, int mouseX, int mouseY, float delta) {
+	@Override
+	public void extractRenderState(GuiGraphicsExtractor drawContext, int mouseX, int mouseY, float delta) {
 		// Draw entity
-		RenderSystem.setShader(GameRenderer::getPositionTexProgram);
-		RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
-		RenderSystem.setShaderTexture(0, InventoryScreen.BACKGROUND_TEXTURE);
-
 		int entitySize = (int) (120 / Boxes.getCornerLength(entity.getBoundingBox()));
 		int entityHeight = entitySize / 2 - (int) (10 / Boxes.getAxisLength(entity.getBoundingBox(), Axis.Y));
-		InventoryScreen.drawEntity(drawContext,
+		InventoryScreen.extractEntityInInventoryFollowsMouse(drawContext,
 				(width - entitySize) / 2, (height - entitySize) / 2,
 				(width + entitySize) / 2 + entitySize, (height + entitySize) / 2 + entitySize,
-				entitySize, 0,
+				entitySize, 0f,
 				(float) (width / 2) - mouseX,
 				(float) (height / 2 + entityHeight - 45) - mouseY,
 				entity
 		);
 
-		// Fake crosshair
-		RenderSystem.setShaderTexture(0, 0);
-		RenderSystem.enableBlend();
-		RenderSystem.blendFuncSeparate(
-				GlStateManager.SrcFactor.ONE_MINUS_DST_COLOR, GlStateManager.DstFactor.ONE_MINUS_SRC_COLOR,
-				GlStateManager.SrcFactor.ONE, GlStateManager.DstFactor.ZERO);
-		drawContext.drawTexture(OPTIONS_BACKGROUND_TEXTURE, crosshairX - 8, crosshairY - 8, 0, 0, 15, 15);
+		// Fake crosshair (the CROSSHAIR pipeline does the color-invert blend the old GlStateManager calls set up)
+		drawContext.blitSprite(RenderPipelines.CROSSHAIR, CROSSHAIR_SPRITE, crosshairX - 8, crosshairY - 8, 15, 15);
 
 		drawDots(drawContext, (int) (Math.min(height, width) / 2 * 0.75), mouseX, mouseY);
 
-		drawContext.getMatrices().push();
-		drawContext.getMatrices().scale(2.5f, 2.5f, 1f);
-		drawContext.drawCenteredTextWithShadow(textRenderer, entity.getDisplayName().getString(), width / 5, 5, 0xFFFFFFFF);
-		drawContext.getMatrices().pop();
+		drawContext.pose().pushMatrix();
+		drawContext.pose().scale(2.5f, 2.5f);
+		drawContext.centeredText(font, entity.getDisplayName().getString(), width / 5, 5, 0xFFFFFFFF);
+		drawContext.pose().popMatrix();
 
 		Vector2 center = new Vector2(width / 2, height / 2);
 		Vector2 mouse = new Vector2(mouseX, mouseY).subtract(center).normalize();
 
-		int scale = Math.max(1, client.options.getGuiScale().getValue());
+		int scale = Math.max(1, minecraft.options.guiScale().get());
 
 		// Move crossHair based on distance between mouse and center. But with limit
 		float hypot = (float) Math.hypot(width / 2 - mouseX, height / 2 - mouseY);
@@ -156,12 +150,12 @@ public class EntityMenuScreen extends Screen {
 		this.crosshairX = (int) mouse.x + width / 2;
 		this.crosshairY = (int) mouse.y + height / 2;
 
-		client.player.setYaw(yaw + mouse.x / 3);
-		client.player.setPitch(Mth.clamp(pitch + mouse.y / 3, -90f, 90f));
-		super.render(drawContext, mouseX, mouseY, delta);
+		minecraft.player.setYRot(yaw + mouse.x / 3);
+		minecraft.player.setXRot(Mth.clamp(pitch + mouse.y / 3, -90f, 90f));
+		super.extractRenderState(drawContext, mouseX, mouseY, delta);
 	}
 
-	private void drawDots(GuiGraphics drawContext, int radius, int mouseX, int mouseY) {
+	private void drawDots(GuiGraphicsExtractor drawContext, int radius, int mouseX, int mouseY) {
 		MutablePairList<String, String> map = ModuleManager.getModule(EntityMenu.class).interactions;
 		List<Vector2> pointList = new ArrayList<>();
 		String[] cache = new String[map.size()];
@@ -197,26 +191,26 @@ public class EntityMenuScreen extends Screen {
 		}
 	}
 
-	private void drawRect(GuiGraphics drawContext, int startX, int startY, int width, int height, int colorInner,int colorOuter) {
-		drawContext.drawHorizontalLine(startX, startX + width, startY, colorOuter);
-		drawContext.drawHorizontalLine(startX, startX + width, startY + height, colorOuter);
-		drawContext.drawVerticalLine(startX, startY, startY + height, colorOuter);
-		drawContext.drawVerticalLine(startX + width, startY, startY + height, colorOuter);
+	private void drawRect(GuiGraphicsExtractor drawContext, int startX, int startY, int width, int height, int colorInner,int colorOuter) {
+		drawContext.horizontalLine(startX, startX + width, startY, colorOuter);
+		drawContext.horizontalLine(startX, startX + width, startY + height, colorOuter);
+		drawContext.verticalLine(startX, startY, startY + height, colorOuter);
+		drawContext.verticalLine(startX + width, startY, startY + height, colorOuter);
 		drawContext.fill(startX + 1, startY + 1, startX + width, startY + height, colorInner);
 	}
 
-	private void drawTextField(GuiGraphics drawContext, int x, int y, String text) {
+	private void drawTextField(GuiGraphicsExtractor drawContext, int x, int y, String text) {
 		if (x >= width / 2) {
-			drawRect(drawContext, x + 10, y - 8, textRenderer.getWidth(text) + 3, 15, 0x80808080, 0xFF000000);
-			drawContext.drawTextWithShadow(textRenderer, text, x + 12, y - 4, 0xFFFFFFFF);
+			drawRect(drawContext, x + 10, y - 8, font.width(text) + 3, 15, 0x80808080, 0xFF000000);
+			drawContext.text(font, text, x + 12, y - 4, 0xFFFFFFFF);
 		} else {
-			drawRect(drawContext, x - 14 - textRenderer.getWidth(text), y - 8, textRenderer.getWidth(text) + 3, 15, 0x80808080, 0xFF000000);
-			drawContext.drawTextWithShadow(textRenderer, text, x - 12 - textRenderer.getWidth(text), y - 4, 0xFFFFFFFF);
+			drawRect(drawContext, x - 14 - font.width(text), y - 8, font.width(text) + 3, 15, 0x80808080, 0xFF000000);
+			drawContext.text(font, text, x - 12 - font.width(text), y - 4, 0xFFFFFFFF);
 		}
 	}
 
 	// Literally drawing it in code
-	private void drawDot(GuiGraphics drawContext, int centerX, int centerY, int colorInner) {
+	private void drawDot(GuiGraphicsExtractor drawContext, int centerX, int centerY, int colorInner) {
 		// Black background
 		drawContext.fill(centerX - 1, centerY - 5, centerX + 2, centerY + 6, 0xff000000);
 		drawContext.fill(centerX - 3, centerY - 4, centerX + 4, centerY + 5, 0xff000000);

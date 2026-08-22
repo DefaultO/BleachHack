@@ -1,25 +1,23 @@
+/*
+ * This file is part of the BleachHack distribution (https://github.com/BleachDev/BleachHack/).
+ * Copyright (c) 2021 Bleach and contributors.
+ *
+ * This source code is subject to the terms of the GNU General Public
+ * License, version 3. If a copy of the GPL was not distributed with this
+ * file, You can obtain one at: https://www.gnu.org/licenses/gpl-3.0.txt
+ */
 package org.bleachhack.util.shader;
 
 import com.mojang.blaze3d.opengl.GlProgram;
-import com.mojang.blaze3d.vertex.DefaultVertexFormat;
-import net.minecraft.resources.Identifier;
 
-import java.io.IOException;
-
+/**
+ * TODO(26.2): custom core shaders need a rewrite on the data-driven
+ * ShaderManager/RenderPipeline system (the old Program/loadShader path is
+ * gone). Inert until then - shader-based ESP outlines fall back to nothing.
+ */
 public class BleachCoreShaders {
-	
-	private static final GlProgram COLOR_OVERLAY_SHADER;
-	
-	public static GlProgram getColorOverlayShader() {
-		return COLOR_OVERLAY_SHADER;
-	}
-	
-	static {
-		try {
-			COLOR_OVERLAY_SHADER = ShaderLoader.load(DefaultVertexFormat.POSITION_COLOR_TEXTURE, new Identifier("bleachhack", "color_overlay"));
-		} catch (IOException e) {
-			throw new RuntimeException("Failed to initilize BleachHack core shaders", e);
-		}
-	}
 
+	public static GlProgram getColorOverlayShader() {
+		return null;
+	}
 }

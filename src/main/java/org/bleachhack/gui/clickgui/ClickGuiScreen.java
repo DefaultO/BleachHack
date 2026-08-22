@@ -8,8 +8,10 @@
  */
 package org.bleachhack.gui.clickgui;
 
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.network.chat.Component;
@@ -46,12 +48,13 @@ public abstract class ClickGuiScreen extends WindowScreen {
 	}
 
 	@Override
-	public boolean shouldPause() {
+	public boolean isPauseScreen() {
 		return false;
 	}
 
-	public void render(GuiGraphics drawContext, int mouseX, int mouseY, float delta) {
-		this.renderBackground(drawContext, mouseX, mouseY, delta);
+	@Override
+	public void extractRenderState(GuiGraphicsExtractor drawContext, int mouseX, int mouseY, float delta) {
+		// background is drawn by the vanilla flow (extractBackground) before this runs
 
 		for (Window w : getWindows()) {
 			if (w instanceof ClickGuiWindow) {
@@ -59,10 +62,10 @@ public abstract class ClickGuiScreen extends WindowScreen {
 			}
 		}
 
-		super.render(drawContext, mouseX, mouseY, delta);
+		super.extractRenderState(drawContext, mouseX, mouseY, delta);
 
-		drawContext.getMatrices().push();
-		drawContext.getMatrices().translate(0, 0, 250);
+		// was getMatrices().translate(0, 0, 250) — strata replace z-translation in 26.2
+		drawContext.nextStratum();
 
 		for (Window w : getWindows()) {
 			if (w instanceof ClickGuiWindow) {
@@ -88,10 +91,10 @@ public abstract class ClickGuiScreen extends WindowScreen {
 						int start = tooltipY - lines.size() * 10;
 						for (int l = 0; l < lines.size(); l++) {
 							drawContext.fill(tooltip.x, start + (l * 10) - 1,
-									tooltip.x + textRenderer.getWidth(lines.get(l)) + 3,
+									tooltip.x + font.width(lines.get(l)) + 3,
 									start + (l * 10) + 9, 0xff000000);
 
-							drawContext.drawTextWithShadow(textRenderer, lines.get(l), tooltip.x + 2, start + (l * 10), -1);
+							drawContext.text(font, lines.get(l), tooltip.x + 2, start + (l * 10), -1);
 						}
 
 						tooltipY -= lines.size() * 10;
@@ -105,16 +108,15 @@ public abstract class ClickGuiScreen extends WindowScreen {
 		Window.fill(drawContext, width / 2 + 2, -1, width / 2 + 50, 12,
 				mouseX >= width / 2 + 2 && mouseX <= width / 2 + 50 && mouseY >= 0 && mouseY <= 12 ? 0x60b070f0 : 0x60606090);
 
-		drawContext.drawTextWithShadow(textRenderer, "Modules", width / 2 - 26, 2, 0xf0f0f0);
-		drawContext.drawTextWithShadow(textRenderer, "UI", width / 2 + 26, 2, 0xf0f0f0);
-		
+		// 26.2 text() skips zero-alpha colors, so alpha is written out explicitly
+		drawContext.text(font, "Modules", width / 2 - 26, 2, 0xfff0f0f0);
+		drawContext.text(font, "UI", width / 2 + 26, 2, 0xfff0f0f0);
+
 		if (warningOpacity > 3) {
-			drawContext.drawTextWithShadow(textRenderer, "UI not available on the main menu!", width / 2, 17,
-					warningOpacity > 255 ? 0xd14a3b : (warningOpacity << 24) | 0xd14a3b);
+			drawContext.text(font, "UI not available on the main menu!", width / 2, 17,
+					warningOpacity > 255 ? 0xffd14a3b : (warningOpacity << 24) | 0xd14a3b);
 			warningOpacity -= 3;
 		}
-
-		drawContext.getMatrices().pop();
 
 		lmDown = false;
 		rmDown = false;
@@ -122,13 +124,18 @@ public abstract class ClickGuiScreen extends WindowScreen {
 		mwScroll = 0;
 	}
 
-	public boolean mouseClicked(double mouseX, double mouseY, int button) {
+	@Override
+	public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
+		double mouseX = event.x();
+		double mouseY = event.y();
+		int button = event.button();
+
 		if (button == 0) {
 			if (mouseX >= width / 2 - 50 && mouseX <= width / 2 - 2 && mouseY >= 0 && mouseY <= 12) {
-				client.getSoundManager().play(SimpleSoundInstance.master(SoundEvents.UI_BUTTON_CLICK, 1f));
+				minecraft.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1f));
 				tryOpen(ModuleClickGuiScreen.INSTANCE);
 			} else if (mouseX >= width / 2 + 2 && mouseX <= width / 2 + 50 && mouseY >= 0 && mouseY <= 12) {
-				client.getSoundManager().play(SimpleSoundInstance.master(SoundEvents.UI_BUTTON_CLICK, 1f));
+				minecraft.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1f));
 				tryOpen(UIClickGuiScreen.INSTANCE);
 			} else {
 				lmDown = true;
@@ -138,28 +145,31 @@ public abstract class ClickGuiScreen extends WindowScreen {
 			rmDown = true;
 		}
 
-		return super.mouseClicked(mouseX, mouseY, button);
+		return super.mouseClicked(event, doubleClick);
 	}
 
-	public boolean mouseReleased(double mouseX, double mouseY, int button) {
-		if (button == 0)
+	@Override
+	public boolean mouseReleased(MouseButtonEvent event) {
+		if (event.button() == 0)
 			lmHeld = false;
-		return super.mouseReleased(mouseX, mouseY, button);
+		return super.mouseReleased(event);
 	}
 
-	public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-		keyDown = keyCode;
-		return super.keyPressed(keyCode, scanCode, modifiers);
+	@Override
+	public boolean keyPressed(KeyEvent event) {
+		keyDown = event.key();
+		return super.keyPressed(event);
 	}
 
-	public boolean mouseScrolled(double mouseX, double mouseY, double amount) {
-		mwScroll = (int) amount;
-		return super.mouseScrolled(mouseX, mouseY, amount, amount);
+	@Override
+	public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+		mwScroll = (int) scrollY;
+		return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
 	}
-	
+
 	private void tryOpen(Screen screen) {
-		if (client.world != null) {
-			client.setScreen(screen);
+		if (minecraft.level != null) {
+			minecraft.gui.setScreen(screen);
 		} else {
 			warningOpacity = 500;
 		}

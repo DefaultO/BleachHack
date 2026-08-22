@@ -1,1 +1,159 @@
 accessWidener	v2	official
+
+
+## =========== Misc ===========
+
+
+# ClientPlayerInteractionManager
+# - For Nuker to get the current breaking progress
+accessible	field	net/minecraft/client/multiplayer/MultiPlayerGameMode	destroyProgress	F
+
+
+# MinecraftVersion
+# - For ProtocolScreen to make the version constants accessible
+# UNMAPPED (yarn member absent in 1.21.11): accessible	field	net/minecraft/DetectedVersion	name	Ljava/lang/String;
+# UNMAPPED (yarn member absent in 1.21.11): mutable	field	net/minecraft/DetectedVersion	name	Ljava/lang/String;
+# accessible    field    net/minecraft/MinecraftVersion    releaseTarget    Ljava/lang/String;
+# mutable       field    net/minecraft/MinecraftVersion    releaseTarget    Ljava/lang/String;
+# UNMAPPED (yarn member absent in 1.21.11): accessible	field	net/minecraft/DetectedVersion	protocolVersion	I
+# UNMAPPED (yarn member absent in 1.21.11): mutable	field	net/minecraft/DetectedVersion	protocolVersion	I
+# UNMAPPED (yarn member absent in 1.21.11): accessible	field	net/minecraft/DetectedVersion	dataPackVersion	I
+# UNMAPPED (yarn member absent in 1.21.11): mutable	field	net/minecraft/DetectedVersion	dataPackVersion	I
+
+
+# MinecraftClient
+# - For AccountManager to change the session
+accessible	field	net/minecraft/client/Minecraft	user	Lnet/minecraft/client/User;
+mutable	field	net/minecraft/client/Minecraft	user	Lnet/minecraft/client/User;
+# - For FastUse to change the item use cooldown and rightclick the mouse
+accessible	method	net/minecraft/client/Minecraft	startUseItem	()V
+accessible	field	net/minecraft/client/Minecraft	rightClickDelay	I
+# - For UI to get the current FPS
+accessible	field	net/minecraft/client/Minecraft	fps	I
+
+
+# SoundManager
+# - For NotebotStealer to access soundsystem
+accessible	field	net/minecraft/client/sounds/SoundManager	soundEngine	Lnet/minecraft/client/sounds/SoundEngine;
+accessible	field	net/minecraft/client/sounds/SoundEngine	instanceBySource	Lcom/google/common/collect/Multimap;
+
+
+## =========== Render ===========
+
+
+# ChunkBuilder
+# - For MixinChunkRebuildTask to overwrite the chunk building method
+# GONE(26.2): accessible	class	net/minecraft/client/renderer/chunk/SectionRenderDispatcher$RenderSection$RebuildTask
+# GONE(26.2): accessible	class	net/minecraft/client/render/chunk/ChunkBuilder$BuiltChunk$RebuildTask$RenderData
+# GONE(26.2) class: accessible	field	net/minecraft/client/render/chunk/ChunkBuilder$ChunkData	nonEmptyLayers	Ljava/util/Set;
+# GONE(26.2) class: accessible	field	net/minecraft/client/render/chunk/ChunkBuilder$ChunkData	occlusionGraph	Lnet/minecraft/client/renderer/chunk/VisibilitySet;
+# accessible    field    net/minecraft/client/render/chunk/ChunkBuilder$ChunkData    bufferState    Lnet/minecraft/client/render/BufferBuilder$State;
+# GONE(26.2) class: accessible	method	net/minecraft/client/render/chunk/ChunkBuilder$BuiltChunk$RebuildTask$RenderData	<init>	()V
+
+
+# RenderLayer
+# - Making various classes accessible for ColorVertexConsumerProvider
+# GONE(26.2): accessible	class	net/minecraft/client/render/RenderLayer$MultiPhase
+# GONE(26.2) class: accessible	method	net/minecraft/client/render/RenderLayer$MultiPhase	getPhases	()Lnet/minecraft/client/render/RenderLayer$MultiPhaseParameters;
+
+# GONE(26.2): accessible	class	net/minecraft/client/render/RenderLayer$MultiPhaseParameters
+# GONE(26.2) class: accessible	field	net/minecraft/client/render/RenderLayer$MultiPhaseParameters	texture	Lnet/minecraft/client/render/RenderPhase$TextureBase;
+# GONE(26.2) class: accessible	field	net/minecraft/client/render/RenderLayer$MultiPhaseParameters	outlineMode	Lnet/minecraft/client/render/RenderLayer$OutlineMode;
+
+# GONE(26.2): accessible	class	net/minecraft/client/render/RenderPhase$TextureBase
+# GONE(26.2) class: accessible	method	net/minecraft/client/render/RenderPhase$TextureBase	getId	()Ljava/util/Optional;
+
+# GONE(26.2): accessible	class	net/minecraft/client/render/RenderLayer$OutlineMode
+# GONE(26.2) class: accessible	field	net/minecraft/client/render/RenderLayer$MultiPhaseParameters	outlineMode	Lnet/minecraft/client/render/RenderLayer$OutlineMode;
+
+
+# TextRenderer
+# - Making the font storage accessible so WindowPassTextFieldWidget can override the text renderer
+# UNMAPPED (yarn member absent in 1.21.11): accessible	field	net/minecraft/client/gui/Font	fontStorageAccessor	Ljava/util/function/Function;
+
+
+## =========== Screens ===========
+
+
+# DisconnectedScreen
+# - For AutoReconnect to read the various fields of DisconnectedScreen
+accessible	field	net/minecraft/client/gui/screens/DisconnectedScreen	parent	Lnet/minecraft/client/gui/screens/Screen;
+# UNMAPPED (yarn member absent in 1.21.11): accessible	field	net/minecraft/client/gui/screens/DisconnectedScreen	reason	Lnet/minecraft/network/chat/Component;
+
+
+# HandledScreen
+# - For Peek to get the focused slot
+accessible	field	net/minecraft/client/gui/screens/inventory/AbstractContainerScreen	hoveredSlot	Lnet/minecraft/world/inventory/Slot;
+
+
+# SignEditScreen
+# - For AutoSign to read the sign entity from the sign screen
+accessible	field	net/minecraft/client/gui/screens/inventory/AbstractSignEditScreen	sign	Lnet/minecraft/world/level/block/entity/SignBlockEntity;
+
+
+## =========== Entities ===========
+
+
+# FishingBobberEntity
+# - For AutoFish to read if the player hook has caught a fish
+accessible	field	net/minecraft/world/entity/projectile/FishingHook	DATA_BITING	Lnet/minecraft/network/syncher/EntityDataAccessor;
+
+
+## =========== Packets ===========
+
+
+# EntityVelocityUpdateS2CPacket
+# - For NoVelocity to cancel entity velocity
+# UNMAPPED (yarn member absent in 1.21.11): accessible	field	net/minecraft/network/protocol/game/ClientboundSetEntityMotionPacket	velocityX	I
+# UNMAPPED (yarn member absent in 1.21.11): mutable	field	net/minecraft/network/protocol/game/ClientboundSetEntityMotionPacket	velocityX	I
+# UNMAPPED (yarn member absent in 1.21.11): accessible	field	net/minecraft/network/protocol/game/ClientboundSetEntityMotionPacket	velocityY	I
+# UNMAPPED (yarn member absent in 1.21.11): mutable	field	net/minecraft/network/protocol/game/ClientboundSetEntityMotionPacket	velocityY	I
+# UNMAPPED (yarn member absent in 1.21.11): accessible	field	net/minecraft/network/protocol/game/ClientboundSetEntityMotionPacket	velocityZ	I
+# UNMAPPED (yarn member absent in 1.21.11): mutable	field	net/minecraft/network/protocol/game/ClientboundSetEntityMotionPacket	velocityZ	I
+
+
+# ExplosionS2CPacket
+# - For NoVelocity to cancel explosion velocity
+# UNMAPPED (yarn member absent in 1.21.11): accessible	field	net/minecraft/network/protocol/game/ClientboundExplodePacket	playerVelocityX	F
+# UNMAPPED (yarn member absent in 1.21.11): mutable	field	net/minecraft/network/protocol/game/ClientboundExplodePacket	playerVelocityX	F
+# UNMAPPED (yarn member absent in 1.21.11): accessible	field	net/minecraft/network/protocol/game/ClientboundExplodePacket	playerVelocityY	F
+# UNMAPPED (yarn member absent in 1.21.11): mutable	field	net/minecraft/network/protocol/game/ClientboundExplodePacket	playerVelocityY	F
+# UNMAPPED (yarn member absent in 1.21.11): accessible	field	net/minecraft/network/protocol/game/ClientboundExplodePacket	playerVelocityZ	F
+# UNMAPPED (yarn member absent in 1.21.11): mutable	field	net/minecraft/network/protocol/game/ClientboundExplodePacket	playerVelocityZ	F
+
+
+# GameMessageS2CPacket
+# - For BetterChat to be able to edit the inbound message
+# accessible    field    net/minecraft/network/packet/s2c/play/GameMessageS2CPacket    message    Lnet/minecraft/text/Text;
+# mutable       field    net/minecraft/network/packet/s2c/play/GameMessageS2CPacket    message    Lnet/minecraft/text/Text;
+
+
+# PlayerMoveC2SPacket
+# - For AntiHunger, AntiVoid, EntityControl & Flight to change the values in playermove packets
+accessible	field	net/minecraft/network/protocol/game/ServerboundMovePlayerPacket	y	D
+mutable	field	net/minecraft/network/protocol/game/ServerboundMovePlayerPacket	y	D
+accessible	field	net/minecraft/network/protocol/game/ServerboundMovePlayerPacket	yRot	F
+mutable	field	net/minecraft/network/protocol/game/ServerboundMovePlayerPacket	yRot	F
+accessible	field	net/minecraft/network/protocol/game/ServerboundMovePlayerPacket	xRot	F
+mutable	field	net/minecraft/network/protocol/game/ServerboundMovePlayerPacket	xRot	F
+accessible	field	net/minecraft/network/protocol/game/ServerboundMovePlayerPacket	onGround	Z
+mutable	field	net/minecraft/network/protocol/game/ServerboundMovePlayerPacket	onGround	Z
+
+
+# PlayerPositionLookS2CPacket
+# - For ElytraFly & PacketFly to change the yaw and pitch
+# UNMAPPED (yarn member absent in 1.21.11): accessible	field	net/minecraft/network/protocol/game/ClientboundPlayerPositionPacket	pitch	F
+# UNMAPPED (yarn member absent in 1.21.11): mutable	field	net/minecraft/network/protocol/game/ClientboundPlayerPositionPacket	pitch	F
+# UNMAPPED (yarn member absent in 1.21.11): accessible	field	net/minecraft/network/protocol/game/ClientboundPlayerPositionPacket	yaw	F
+# UNMAPPED (yarn member absent in 1.21.11): mutable	field	net/minecraft/network/protocol/game/ClientboundPlayerPositionPacket	yaw	F
+
+
+# VehicleMoveC2SPacket
+# - For EntityControl to change the pitch and yaw of the vehicle
+accessible	field	net/minecraft/network/protocol/game/ServerboundMoveVehiclePacket	yRot	F
+mutable	field	net/minecraft/network/protocol/game/ServerboundMoveVehiclePacket	yRot	F
+accessible	field	net/minecraft/network/protocol/game/ServerboundMoveVehiclePacket	xRot	F
+mutable	field	net/minecraft/network/protocol/game/ServerboundMoveVehiclePacket	xRot	F
+
+
+

@@ -37,7 +37,7 @@ public class WindowCheckboxWidget extends WindowWidget {
 
 		// 26.2 text() skips zero-alpha colors (old TextRenderer forced them opaque), hence the ff alpha
 		if (checked) {
-			drawContext.text(textRenderer, "✔", x + 2, y + 2, 0xffffeeff);
+			drawContext.text(textRenderer, "\u2714", x + 2, y + 2, 0xffffeeff);
 			//fill(matrix, x + 3, y + 3, x + 7, y + 7, 0xffffffff);
 		}
 		drawContext.text(textRenderer, text, x + 15, y + 2, 0xffc0c0c0);

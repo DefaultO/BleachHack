@@ -2,7 +2,7 @@ package org.bleachhack.gui.clickgui.window;
 
 import it.unimi.dsi.fastutil.objects.Object2IntMap.Entry;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.ChatScreen;
 import org.apache.commons.lang3.ArrayUtils;
 
@@ -16,7 +16,7 @@ public class UIContainer {
 	public UIContainer() {
 	}
 
-	public void render(GuiGraphics context) {
+	public void render(GuiGraphicsExtractor context) {
 		for (UIWindow w: windows.values()) {
 			if (!w.shouldClose()) {
 				w.renderUI(context);
@@ -99,6 +99,6 @@ public class UIContainer {
 	}
 
 	public int getScreenBottom(int height) {
-		return height - (Minecraft.getInstance().currentScreen instanceof ChatScreen ? 14 : 0);
+		return height - (Minecraft.getInstance().gui.screen() instanceof ChatScreen ? 14 : 0);
 	}
 }

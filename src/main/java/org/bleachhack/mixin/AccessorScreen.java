@@ -18,10 +18,10 @@ import java.util.List;
 @Mixin(Screen.class)
 public interface AccessorScreen {
 
-	@Accessor
+	@Accessor("renderables")
 	public abstract List<Renderable> getDrawables();
-	
-	@Accessor
+
+	@Accessor("renderables")
 	public abstract void setDrawables(List<Renderable> drawables);
 
 }
